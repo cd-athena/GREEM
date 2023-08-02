@@ -5,11 +5,20 @@ from dataclasses import dataclass, field
 
 @dataclass
 class NvidiaGPU():
+
+    gpu_handle: str
+    memory_total: int
+    memory_used: int
+    memory_free: int
+
+
+@dataclass
+class NvidiaGPUHandler():
     '''Represents an NVIDIA GPUs on the system'''
 
     gpu_count: int = field(init=False)
     has_nvidia_gpu: bool = field(init=False)
-    total_memory: int = field(init=False, default=0)
+    nvidia_gpus: list[NvidiaGPU] = field(init=False)
     _nvidia_smi: nvidia_smi = field(
         init=False, default_factory=nvidia_smi.getInstance())
 

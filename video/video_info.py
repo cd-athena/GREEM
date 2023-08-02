@@ -10,7 +10,7 @@ class VideoInfo():
     def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         self.video = cv2.VideoCapture(self.file_path)
-        self.ffprobe_values: dict = {}
+        self.ffprobe_values: dict = dict()
 
     def _get_ffprobe_values(self):
         cmd = [
