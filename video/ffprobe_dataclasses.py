@@ -87,6 +87,7 @@ class BaseStream():
 
     @classmethod
     def from_dict(cls: Type['BaseStream'], data: dict):
+        print('width' in data.keys())
         if 'width' in data.keys():
             return fd(data_class=VideoStreamFFP, data=data)
         elif 'channel_layout' in data.keys():
@@ -135,16 +136,16 @@ class AudioStreamFFP(BaseStream):
 @dataclass
 class VideoMetadataFFP():
 
-    streams: list[BaseStream]
+    streams: list[VideoStreamFFP | AudioStreamFFP]
     format: VideoFormatFFP
 
     @classmethod
-    def from_dict(cls: Type['VideoMetadataFFP'], data: dict):
+    def from_dict(cls: Type['VideoMetadataFFP'], data: dict) -> Type['VideoMetadataFFP']:
         vm: VideoMetadataFFP = fd(data_class=VideoMetadataFFP, data=data)
         return vm
 
     @classmethod
-    def from_file(cls: Type['VideoMetadataFFP'], file_path: str):
+    def from_file(cls: Type['VideoMetadataFFP'], file_path: str) -> Type['VideoMetadataFFP']:
         cmd = [
             'ffprobe',
             '-v', 'quiet',
@@ -166,3 +167,8 @@ class VideoMetadataFFP():
             return json.loads(pipe_output)
         else:
             return dict()
+
+
+if __name__ == '__main__':
+    vm = VideoMetadataFFP.from_file('../data/AncientThought.mp4')
+    print(vm.streams)
