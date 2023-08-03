@@ -1,32 +1,69 @@
-from pynvml import nvmlInit, nvmlDeviceGetCount
-from pynvml.smi import nvidia_smi
+from pynvml import (
+    nvmlInit,
+    nvmlDeviceGetCount,
+    nvmlDeviceGetMemoryInfo,
+    nvmlSystemGetDriverVersion,
+    nvmlDeviceGetUtilizationRates,
+    nvmlDeviceGetHandleByIndex
+)
 from dataclasses import dataclass, field
 
 
 @dataclass
 class NvidiaGPU():
 
-    gpu_handle: str
-    memory_total: int
-    memory_used: int
-    memory_free: int
+    gpu_handle: str = field(init=True, default='undefinded')
+    version: str = field(init=False, default='undefined')
+    memory_total: int = field(init=False, default=0)
+    memory_used: int = field(init=False, default=0)
+    memory_free: int = field(init=False, default=0)
+    memory_reserved: int = field(init=False, default=0)
+    memory_utilised: float = field(init=False, default=0)
+    gpu_utilised: float = field(init=False, default=0)
+
+    def __post_init__(self):
+        self.version = nvmlSystemGetDriverVersion()
+        self.update_utilisation()
+
+    def get_current_gpu_utilisation(self) -> float:
+        self.update_utilisation()
+
+        return (self.memory_reserved + self.memory_used) / self.memory_total
+
+    def update_utilisation(self):
+        memory_info = nvmlDeviceGetMemoryInfo(self.gpu_handle, self.version)
+        self.memory_total = memory_info.total
+        self.memory_free = memory_info.free
+        self.memory_used = memory_info.used
+
+        if self.version is not None:
+            self.memory_reserved = memory_info.reserved
+
+        util = nvmlDeviceGetUtilizationRates(self.gpu_handle)
+        self.memory_utilised = util.memory
+        self.gpu_utilised = util.gpu
 
 
 @dataclass
 class NvidiaGPUHandler():
-    '''Represents an NVIDIA GPUs on the system'''
+    '''Represents the NVIDIA GPUs on the system'''
 
-    gpu_count: int = field(init=False)
+    gpu_count: int = field(init=False, default=0)
     has_nvidia_gpu: bool = field(init=False)
-    nvidia_gpus: list[NvidiaGPU] = field(init=False)
-    _nvidia_smi: nvidia_smi = field(
-        init=False, default_factory=nvidia_smi.getInstance())
+    nvidia_gpus: list[NvidiaGPU] = field(init=False, default_factory=list)
 
     def __post_init__(self):
-        self.has_nvidia_gpu = self.has_nvidia_gpu()
-        self.gpu_count = self.get_device_count()
+        self.has_nvidia_gpu = self.__has_nvidia_gpu()
 
-    def has_nvidia_gpu(self):
+        if self.has_nvidia_gpu:
+            self.gpu_count = nvmlDeviceGetCount()
+
+            for idx in range(self.gpu_count):
+                gpu_handle = nvmlDeviceGetHandleByIndex(idx)
+                nvidia_gpu = NvidiaGPU(gpu_handle)
+                self.nvidia_gpus.append(nvidia_gpu)
+
+    def __has_nvidia_gpu(self):
         '''Check if the system has an NVIDIA GPU.'''
         try:
             nvmlInit()
@@ -34,6 +71,4 @@ class NvidiaGPUHandler():
         except:
             return False
 
-    def get_device_count(self):
-        '''Returns the number of available NVIDIA GPUs.'''
-        return nvmlDeviceGetCount()
+
