@@ -4,7 +4,10 @@ from pynvml import (
     nvmlDeviceGetMemoryInfo,
     nvmlSystemGetDriverVersion,
     nvmlDeviceGetUtilizationRates,
-    nvmlDeviceGetHandleByIndex
+    nvmlDeviceGetHandleByIndex,
+    nvmlDeviceGetComputeRunningProcesses,
+
+
 )
 from dataclasses import dataclass, field
 
@@ -12,7 +15,7 @@ from dataclasses import dataclass, field
 @dataclass
 class NvidiaGPU():
 
-    gpu_handle: str = field(init=True, default='undefinded')
+    handle: str = field(init=True, default='undefinded')
     version: str = field(init=False, default='undefined')
     memory_total: int = field(init=False, default=0)
     memory_used: int = field(init=False, default=0)
@@ -31,7 +34,7 @@ class NvidiaGPU():
         return (self.memory_reserved + self.memory_used) / self.memory_total
 
     def update_utilisation(self):
-        memory_info = nvmlDeviceGetMemoryInfo(self.gpu_handle, self.version)
+        memory_info = nvmlDeviceGetMemoryInfo(self.handle, self.version)
         self.memory_total = memory_info.total
         self.memory_free = memory_info.free
         self.memory_used = memory_info.used
@@ -39,7 +42,7 @@ class NvidiaGPU():
         if self.version is not None:
             self.memory_reserved = memory_info.reserved
 
-        util = nvmlDeviceGetUtilizationRates(self.gpu_handle)
+        util = nvmlDeviceGetUtilizationRates(self.handle)
         self.memory_utilised = util.memory
         self.gpu_utilised = util.gpu
 
@@ -71,4 +74,15 @@ class NvidiaGPUHandler():
         except:
             return False
 
+    def remove_unused_gpus(self) -> list[str]:
 
+        to_remove: list[str] = list()
+
+        for gpu in self.nvidia_gpus:
+            if len(nvmlDeviceGetComputeRunningProcesses(gpu.handle)) == 0:
+                to_remove.append(gpu.handle)
+
+        self.nvidia_gpus = [
+            gpu for gpu in self.nvidia_gpus if gpu.handle not in to_remove]
+        
+        return to_remove
