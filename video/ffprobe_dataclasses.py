@@ -167,6 +167,12 @@ class VideoMetadataFFP():
             return json.loads(pipe_output)
         else:
             return dict()
+        
+    def get_video_streams(self) -> list[VideoStreamFFP]:
+        return [stream for stream in self.streams if isinstance(stream, VideoStreamFFP)]
+    
+    def get_audio_streams(self) -> list[VideoStreamFFP]:
+        return [stream for stream in self.streams if isinstance(stream, AudioStreamFFP)]
 
 
 if __name__ == '__main__':
