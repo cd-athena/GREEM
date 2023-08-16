@@ -32,7 +32,8 @@ class Resolution:
 class Rendition(Resolution):
     '''Represents a rendition of a video file
     
-    Example: 1080x1920_1000k
+    Example: 
+    `Rendition(1080, 1920, 8100)` represents a rendition with a height of 1080, a width of 1920 and a bitrate of 8100KB
     '''
     bitrate: int
 
