@@ -6,7 +6,7 @@ from dacite import from_dict as fd
 
 
 @dataclass
-class VideoTagsFFP():
+class VideoFormatTags():
 
     major_brand: str
     minor_version: str
@@ -15,7 +15,7 @@ class VideoTagsFFP():
 
 
 @dataclass
-class VideoFormatFFP():
+class VideoFormat():
 
     filename: str
     nb_streams: int
@@ -27,11 +27,11 @@ class VideoFormatFFP():
     size: str
     bit_rate: str
     probe_score: int
-    tags: VideoTagsFFP
+    tags: VideoFormatTags
 
 
 @dataclass
-class StreamDispositionFFP():
+class StreamDisposition():
 
     default: int
     dub: int
@@ -53,20 +53,25 @@ class StreamDispositionFFP():
 
 
 @dataclass
-class StreamTagsFFP():
+class StreamTags():
 
     language: str
     handler_name: str
     vendor_id: str
+
+
+@dataclass
+class VideoStreamTags(StreamTags):
     encoder: str
 
 
 @dataclass
 class BaseStream():
+    """Base Stream class that is the parent class for both video and audio streaming format"""
 
     avg_frame_rate: str
     r_frame_rate: str
-    disposition: StreamDispositionFFP
+    disposition: StreamDisposition
     extradata_size: int
     codec_long_name: str
     start_time: str
@@ -77,7 +82,7 @@ class BaseStream():
     duration_ts: int
     start_pts: int
     nb_frames: str
-    tags: dict
+    tags: VideoStreamTags | StreamTags
     codec_name: str
     duration: str
     bit_rate: str
@@ -89,14 +94,14 @@ class BaseStream():
     def from_dict(cls: Type['BaseStream'], data: dict):
         print('width' in data.keys())
         if 'width' in data.keys():
-            return fd(data_class=VideoStreamFFP, data=data)
+            return fd(data_class=VideoStream, data=data)
         elif 'channel_layout' in data.keys():
-            return fd(data_class=AudioStreamFFP, data=data)
+            return fd(data_class=AudioStream, data=data)
         return fd(data_class=BaseStream, data=data)
 
 
 @dataclass
-class VideoStreamFFP(BaseStream):
+class VideoStream(BaseStream):
 
     width: int
     height: int
@@ -123,7 +128,7 @@ class VideoStreamFFP(BaseStream):
 
 
 @dataclass
-class AudioStreamFFP(BaseStream):
+class AudioStream(BaseStream):
 
     channel_layout: str
     initial_padding: int
@@ -134,18 +139,18 @@ class AudioStreamFFP(BaseStream):
 
 
 @dataclass
-class VideoMetadataFFP():
+class VideoMetadata():
 
-    streams: list[VideoStreamFFP | AudioStreamFFP]
-    format: VideoFormatFFP
+    streams: list[VideoStream | AudioStream]
+    format: VideoFormat
 
     @classmethod
-    def from_dict(cls: Type['VideoMetadataFFP'], data: dict) -> Type['VideoMetadataFFP']:
-        vm: VideoMetadataFFP = fd(data_class=VideoMetadataFFP, data=data)
+    def from_dict(cls: Type['VideoMetadata'], data: dict) -> Type['VideoMetadata']:
+        vm: VideoMetadata = fd(data_class=VideoMetadata, data=data)
         return vm
 
     @classmethod
-    def from_file(cls: Type['VideoMetadataFFP'], file_path: str) -> Type['VideoMetadataFFP']:
+    def from_file(cls: Type['VideoMetadata'], file_path: str) -> Type['VideoMetadata']:
         cmd = [
             'ffprobe',
             '-v', 'quiet',
@@ -158,7 +163,7 @@ class VideoMetadataFFP():
         output, _ = p.communicate()
 
         return cls.from_dict(
-            VideoMetadataFFP.__convert_pipe_output_to_dict(output)
+            VideoMetadata.__convert_pipe_output_to_dict(output)
         )
 
     @staticmethod
@@ -167,14 +172,16 @@ class VideoMetadataFFP():
             return json.loads(pipe_output)
         else:
             return dict()
-        
-    def get_video_streams(self) -> list[VideoStreamFFP]:
-        return [stream for stream in self.streams if isinstance(stream, VideoStreamFFP)]
-    
-    def get_audio_streams(self) -> list[VideoStreamFFP]:
-        return [stream for stream in self.streams if isinstance(stream, AudioStreamFFP)]
+
+    def get_video_streams(self) -> list[VideoStream]:
+        return [stream for stream in self.streams if isinstance(stream, VideoStream)]
+
+    def get_audio_streams(self) -> list[VideoStream]:
+        return [stream for stream in self.streams if isinstance(stream, AudioStream)]
 
 
 if __name__ == '__main__':
-    vm = VideoMetadataFFP.from_file('../data/AncientThought.mp4')
-    print(vm.streams)
+    vm = VideoMetadata.from_file('../data/AncientThought.mp4')
+    # print(vm.streams)
+    print(vm)
+    # print(vm.get_audio_streams()[0].tags)
