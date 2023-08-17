@@ -62,6 +62,7 @@ class StreamTags():
 
 @dataclass
 class VideoStreamTags(StreamTags):
+
     encoder: str
 
 
@@ -89,6 +90,7 @@ class BaseStream():
     profile: str
     id: str
     index: int
+    average_fps: float = field(init=False)
 
     @classmethod
     def from_dict(cls: Type['BaseStream'], data: dict):
@@ -98,6 +100,10 @@ class BaseStream():
         elif 'channel_layout' in data.keys():
             return fd(data_class=AudioStream, data=data)
         return fd(data_class=BaseStream, data=data)
+    
+    def __post_init__(self):
+        avg_fps = self.avg_frame_rate.split('/')[0]
+        self.average_fps = float(avg_fps) / 1000
 
 
 @dataclass
@@ -181,7 +187,7 @@ class VideoMetadata():
 
 
 if __name__ == '__main__':
-    vm = VideoMetadata.from_file('../data/AncientThought.mp4')
+    vm = VideoMetadata.from_file('../data/Eldorado.mp4')
     # print(vm.streams)
+    # print(vm)
     print(vm)
-    # print(vm.get_audio_streams()[0].tags)
