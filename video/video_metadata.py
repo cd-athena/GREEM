@@ -187,7 +187,7 @@ class VideoMetadata():
     def get_video_streams(self) -> list[VideoStream]:
         return [stream for stream in self.streams if isinstance(stream, VideoStream)]
 
-    def get_audio_streams(self) -> list[VideoStream]:
+    def get_audio_streams(self) -> list[AudioStream]:
         return [stream for stream in self.streams if isinstance(stream, AudioStream)]
 
 
