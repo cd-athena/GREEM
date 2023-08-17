@@ -93,16 +93,21 @@ class BaseStream():
     average_fps: float = field(init=False)
 
     @classmethod
-    def from_dict(cls: Type['BaseStream'], data: dict):
-        print('width' in data.keys())
+    def from_dict(
+        cls: Type['BaseStream'],
+        data: dict
+    ) -> Type['VideoStream'] | Type['AudioStream'] | Type['BaseStream']:
+        '''Returns a Stream object depending on the fields inside of the given dictionary'''
+
         if 'width' in data.keys():
             return fd(data_class=VideoStream, data=data)
         elif 'channel_layout' in data.keys():
             return fd(data_class=AudioStream, data=data)
         return fd(data_class=BaseStream, data=data)
-    
+
     def __post_init__(self):
         avg_fps = self.avg_frame_rate.split('/')[0]
+        # ffprobe represents frames per second in the thousands
         self.average_fps = float(avg_fps) / 1000
 
 
@@ -189,5 +194,4 @@ class VideoMetadata():
 if __name__ == '__main__':
     vm = VideoMetadata.from_file('../data/Eldorado.mp4')
     # print(vm.streams)
-    # print(vm)
     print(vm)
