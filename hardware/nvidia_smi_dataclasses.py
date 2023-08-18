@@ -140,7 +140,18 @@ class NvidiaGPUMetadata():
 
 
 @dataclass
-class NvidiaDeviceQueryMetadata():
+class NvidiaMetadata():
+    """NvidiaMetadata is the main class for retrieving Nvidia GPU information of a system.
+
+    Returns
+    -------
+    `NvidiaMetadata`
+
+    Raises
+    ------
+    Exception
+        `update_metadata` function can raise an exception if the wrong query parameter is given.
+    """
 
     timestamp: str
     driver_version: str
@@ -149,16 +160,19 @@ class NvidiaDeviceQueryMetadata():
     nvidia_smi_instance: ClassVar[smi.nvidia_smi] = smi.nvidia_smi.getInstance()
 
     @classmethod
-    def from_smi(cls: Type['NvidiaDeviceQueryMetadata']) -> Type['NvidiaDeviceQueryMetadata']:
+    def from_smi(cls: Type['NvidiaMetadata']) -> Type['NvidiaMetadata']:
 
         nvdia_smi = cls.nvidia_smi_instance
         data = nvdia_smi.DeviceQuery()
 
-        dqm: NvidiaDeviceQueryMetadata = from_dict(
-            data_class=NvidiaDeviceQueryMetadata, data=data)
+        dqm: NvidiaMetadata = from_dict(
+            data_class=NvidiaMetadata, data=data)
         return dqm
 
-    def update_metadata(self, update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING) -> dict:
+    def update_metadata(
+            self,
+            update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING
+    ) -> dict:
         if isinstance(update_query, list):
             query: str = ', '.join(update_query)
         elif isinstance(update_query, str):
@@ -166,23 +180,37 @@ class NvidiaDeviceQueryMetadata():
         else:
             raise Exception('wrong query data type in parameter')
 
-        query_dict: dict = NvidiaDeviceQueryMetadata.nvidia_smi_instance.DeviceQuery(query)
-        
+        query_dict: dict = NvidiaMetadata.nvidia_smi_instance.DeviceQuery(
+            query)
+
         for query_result in query_dict['gpu']:
             gpu_metadata = self.get_gpu_per_uuid(query_result['uuid'])
             if gpu_metadata is None:
-                # TODO for now we do nothing
+                # TODO for now we do nothing if the UUID does not correspond to a GPU
+                # Probably should even raise an exception
                 print(f'GPU not found with UUID {query_result["uuid"]}')
                 continue
 
             gpu_metadata.__dict__.update(query_result)
 
         return query_dict
-    
+
     def get_gpu_per_uuid(self, uuid: str) -> NvidiaGPUMetadata | None:
+        """Get a GPU instance based on the `uuid` provided as a parameter.
+
+        Parameters
+        ----------
+        uuid : str
+            A `uuid` that represents an identifier for an Nvidia GPU on the system.
+
+        Returns
+        -------
+        NvidiaGPUMetadata | None
+            Either returns an `NvidiaGPUMetadata` class containing the metadata of a GPU that corresponds to the `uuid` 
+            or `None` if no GPU was found with the provided `uuid`
+        """        
         for gpu_metadata in self.gpu:
             if gpu_metadata.uuid == uuid:
                 return gpu_metadata
-            
-        return None
 
+        return None
