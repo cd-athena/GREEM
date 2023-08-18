@@ -1,6 +1,7 @@
 from typing import Type, ClassVar
+import pandas as pd
 from pynvml import smi
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from types import NoneType
 from dacite import from_dict
 
@@ -138,6 +139,12 @@ class NvidiaGPUMetadata():
     supported_clocks: list = field(repr=False)
     accounted_processes: NoneType = field(repr=False)
 
+    def to_pandas_dataframe(self, ignore_columns: list[str] = None) -> pd.DataFrame:
+        # TODO remove keys from dataclass that should not be included
+        normalised_dataclass = pd.json_normalize(asdict(self))
+
+        return normalised_dataclass
+
 
 @dataclass
 class NvidiaMetadata():
@@ -214,3 +221,10 @@ class NvidiaMetadata():
                 return gpu_metadata
 
         return None
+    
+    def get_gpu_metadata_as_pandas_df(self) -> pd.DataFrame:
+        gpu_dfs: list[pd.DataFrame] = [g.to_pandas_dataframe() for g in self.gpu]
+        return pd.concat(gpu_dfs, ignore_index=True)
+
+    
+    
