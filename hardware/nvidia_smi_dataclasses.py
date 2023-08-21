@@ -164,7 +164,8 @@ class NvidiaMetadata():
     driver_version: str
     count: int
     gpu: list[NvidiaGPUMetadata]
-    nvidia_smi_instance: ClassVar[smi.nvidia_smi] = smi.nvidia_smi.getInstance()
+    nvidia_smi_instance: ClassVar[smi.nvidia_smi] = smi.nvidia_smi.getInstance(
+    )
 
     @classmethod
     def from_smi(cls: Type['NvidiaMetadata']) -> Type['NvidiaMetadata']:
@@ -176,10 +177,10 @@ class NvidiaMetadata():
             data_class=NvidiaMetadata, data=data)
         return dqm
 
-    def update_metadata(
+    def get_update_metadata(
             self,
             update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING
-    ) -> dict:
+    ) -> dict | pd.DataFrame:
         if isinstance(update_query, list):
             query: str = ', '.join(update_query)
         elif isinstance(update_query, str):
@@ -193,14 +194,25 @@ class NvidiaMetadata():
         for query_result in query_dict['gpu']:
             gpu_metadata = self.get_gpu_per_uuid(query_result['uuid'])
             if gpu_metadata is None:
-                # TODO for now we do nothing if the UUID does not correspond to a GPU
-                # Probably should even raise an exception
-                print(f'GPU not found with UUID {query_result["uuid"]}')
-                continue
-
+                raise Exception(f'GPU not found with UUID {query_result["uuid"]}')
+                
             gpu_metadata.__dict__.update(query_result)
 
         return query_dict
+
+    def get_update_as_pandas_df(
+            self,
+            update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING,
+    ) -> pd.DataFrame:
+        update_query_dict = self.get_update_metadata(update_query)
+        df_entries: list[pd.DataFrame] = list()
+        for gpu in update_query_dict['gpu']:
+            df = pd.json_normalize(gpu)
+            df.index = pd.Series([pd.Timestamp('now')] * len(df))
+            df_entries.append(df)
+        return pd.concat(df_entries)
+
+
 
     def get_gpu_per_uuid(self, uuid: str) -> NvidiaGPUMetadata | None:
         """Get a GPU instance based on the `uuid` provided as a parameter.
@@ -215,16 +227,14 @@ class NvidiaMetadata():
         NvidiaGPUMetadata | None
             Either returns an `NvidiaGPUMetadata` class containing the metadata of a GPU that corresponds to the `uuid` 
             or `None` if no GPU was found with the provided `uuid`
-        """        
+        """
         for gpu_metadata in self.gpu:
             if gpu_metadata.uuid == uuid:
                 return gpu_metadata
 
         return None
-    
-    def get_gpu_metadata_as_pandas_df(self) -> pd.DataFrame:
-        gpu_dfs: list[pd.DataFrame] = [g.to_pandas_dataframe() for g in self.gpu]
-        return pd.concat(gpu_dfs, ignore_index=True)
 
-    
-    
+    def get_gpu_metadata_as_pandas_df(self) -> pd.DataFrame:
+        gpu_dfs: list[pd.DataFrame] = [g.to_pandas_dataframe()
+                                       for g in self.gpu]
+        return pd.concat(gpu_dfs, ignore_index=True)
