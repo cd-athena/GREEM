@@ -1,2 +1,14 @@
 *.pyc
 data/*
+
+# Ignore streaming chunks
+*.m4s
+
+# Ignore media files
+*.mp4
+
+# Ignore manifests
+*.mpd
+
+# Ignore csvs
+*.csv
