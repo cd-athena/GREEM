@@ -1,6 +1,9 @@
+import sys
+sys.path.append("..")
+
 from .config import Rendition
 from math import ceil
-from .video_info import VideoInfo
+from video.video_info import VideoInfo
 from .benchmark import BenchmarkParser
 
 cli_parser = BenchmarkParser()
