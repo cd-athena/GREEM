@@ -1,6 +1,6 @@
 from typing import Type, ClassVar
 import pandas as pd
-from pynvml import smi
+from pynvml import smi, nvmlInit, nvmlDeviceGetCount
 from dataclasses import dataclass, field, asdict
 from types import NoneType
 from dacite import from_dict
@@ -147,7 +147,7 @@ class NvidiaGPUMetadata():
 
 
 @dataclass
-class NvidiaMetadata():
+class NvidiaMetadataHandler():
     """NvidiaMetadata is the main class for retrieving Nvidia GPU information of a system.
 
     Returns
@@ -168,13 +168,13 @@ class NvidiaMetadata():
     )
 
     @classmethod
-    def from_smi(cls: Type['NvidiaMetadata']) -> Type['NvidiaMetadata']:
+    def from_smi(cls: Type['NvidiaMetadataHandler']) -> Type['NvidiaMetadataHandler']:
 
         nvdia_smi = cls.nvidia_smi_instance
         data = nvdia_smi.DeviceQuery()
 
-        dqm: NvidiaMetadata = from_dict(
-            data_class=NvidiaMetadata, data=data)
+        dqm: NvidiaMetadataHandler = from_dict(
+            data_class=NvidiaMetadataHandler, data=data)
         return dqm
 
     def get_update_metadata(
@@ -188,7 +188,7 @@ class NvidiaMetadata():
         else:
             raise Exception('wrong query data type in parameter')
 
-        query_dict: dict = NvidiaMetadata.nvidia_smi_instance.DeviceQuery(
+        query_dict: dict = NvidiaMetadataHandler.nvidia_smi_instance.DeviceQuery(
             query)
 
         for query_result in query_dict['gpu']:
@@ -209,9 +209,9 @@ class NvidiaMetadata():
         for gpu in update_query_dict['gpu']:
             df = pd.json_normalize(gpu)
             df.index = pd.Series([pd.Timestamp('now')] * len(df))
+            df.index.name = 'date_time'
             df_entries.append(df)
         return pd.concat(df_entries)
-
 
 
     def get_gpu_per_uuid(self, uuid: str) -> NvidiaGPUMetadata | None:
@@ -238,3 +238,27 @@ class NvidiaMetadata():
         gpu_dfs: list[pd.DataFrame] = [g.to_pandas_dataframe()
                                        for g in self.gpu]
         return pd.concat(gpu_dfs, ignore_index=True)
+
+@dataclass
+class NvidiaGpuUtils():
+    '''Checks if an Nvidia GPU is available'''
+
+    gpu_count: int = field(init=False)
+    has_nvidia_gpu: bool = field(init=False)
+
+    def __post_init__(self):
+        self.gpu_count = self.get_device_count()
+        self.has_nvidia_gpu = self.has_nvidia_gpu()
+
+
+    def has_nvidia_gpu():
+        '''Check if the system has an NVIDIA GPU.'''
+        try:
+            nvmlInit()
+            return True
+        except:
+            return False
+        
+    def get_device_count():
+        '''Returns the number of available NVIDIA GPUs.'''
+        return nvmlDeviceGetCount()
