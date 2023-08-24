@@ -1,0 +1,21 @@
+codecs:
+  - h265
+presets:
+  - ultrafast
+quality_metrics:
+  - psnr
+  - ssim
+  - vmaf
+renditions:
+  - bitrate: 145
+    height: 360
+    width: 640
+
+segment_duration:
+  - 10
+
+encode_all_videos: False
+
+videos_to_encode:
+  - AncientThought
+  # - Eldorado

@@ -123,8 +123,6 @@ def execute_encoding_benchmark():
 
         prepare_data_directories(encoding_config, video_names=input_files)
 
-        print(DRY_RUN)
-
         ffmpeg_encoding = execute_ffmpeg_encoding_code_carbon if INCLUDE_CODE_CARBON else execute_ffmpeg_encoding
 
         for duration in encoding_config.segment_duration:
