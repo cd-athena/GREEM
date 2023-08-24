@@ -1,14 +1,15 @@
 import sys
 sys.path.append("..")
 
+import os
+from pathlib import Path
+
 from monitoring.gpu_monitoring import GpuMonitoring
 from utils.ffmpeg import create_ffmpeg_command_all_renditions
 from utils.config import EncodingConfig, Rendition, EncodingVariant
 from utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
 from hardware.intel import intel_rapl_workaround
 from encoding_utility import get_video_input_files, prepare_data_directories
-
-
 
 ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
@@ -26,6 +27,40 @@ COUNTRY_ISO_CODE: str = 'AUT'
 DRY_RUN: bool = False  # if True, no encoding will be executed
 INCLUDE_CODE_CARBON: bool = False
 
+
+def prepare_data_directories(
+    encoding_config: EncodingConfig,
+    result_root: str,
+    video_names: list[str],
+    encoding_variant: EncodingVariant = EncodingVariant.SEQUENTIAL
+) -> list[str]:
+    '''Generate all directories that are used for the video encoding
+
+    Returns:
+        list[str]: returns a list of all directories that were created
+    '''
+    data_directories = encoding_config.get_all_result_directories(video_names)
+
+    if encoding_variant == EncodingVariant.BATCH:
+        data_directories = ['/'.join(data_dir.split('/')[:-1]) for data_dir in data_directories]
+
+    for directory in data_directories:
+        directory_path: str = f'{result_root}/{directory}'
+        Path(directory_path).mkdir(parents=True, exist_ok=True)
+    return data_directories
+
+
+def get_video_input_files(
+    video_dir: str,
+    encoding_config: EncodingConfig
+) -> list[str]:
+    input_files: list[str] = [file_name for file_name in os.listdir(
+        video_dir) if encoding_config.encode_all_videos or file_name.split('.')[0] in encoding_config.videos_to_encode]
+
+    if len(input_files) == 0:
+        raise ValueError('no video files to encode')
+
+    return input_files
 
 def execute_encoding_benchmark(encoding_configs: list[EncodingConfig], timing_metadata: dict[int, dict], encoding_variant: EncodingVariant):
     # TODO, think about a way to combine the benchmarks and use an enum to determine which is used
@@ -99,18 +134,6 @@ def encode_batch(
                         start_time, end_time, elapsed_time, video_name, codec, preset, Rendition.get_batch_rendition(), segment_duration)
                     timing_metadata[len(
                         timing_metadata)] = metadata.to_dict()
-
-
-def execute_batch_encoding(
-        cmd: str,
-        video_name: str,
-        codec: str,
-        preset: str,
-        renditions: list[Rendition],
-        duration: int,
-        timing_metadata: dict[int, dict]
-) -> None:
-    pass
 
 
 if __name__ == '__main__':
