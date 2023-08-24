@@ -1,22 +1,13 @@
-from enum import Enum
-from utils import get_video_input_files, prepare_data_directories
-from hardware.intel import intel_rapl_workaround
-from utils.dataframe import get_dataframe_from_csv, merge_benchmark_dataframes
-from utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
-from utils.config import EncodingConfig, get_output_directory, Rendition
-from codecarbon import track_emissions
-from datetime import datetime
-import pandas as pd
-from utils.ffmpeg import create_ffmpeg_encoding_command, create_ffmpeg_command_all_renditions
-from pathlib import Path
-import os
 import sys
 sys.path.append("..")
 
+from monitoring.gpu_monitoring import GpuMonitoring
+from utils.ffmpeg import create_ffmpeg_command_all_renditions
+from utils.config import EncodingConfig, Rendition, EncodingVariant
+from utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
+from hardware.intel import intel_rapl_workaround
+from encoding_utility import get_video_input_files, prepare_data_directories
 
-class EncodingVariant(Enum):
-    SEQUENTIAL = 1
-    BATCH = 2
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
@@ -29,17 +20,41 @@ ENCODING_CONFIG_PATHS: list[str] = [
 ]
 
 INPUT_FILE_DIR: str = 'data'
-RESULT_ROOT: str = 'results'
+RESULT_ROOT: str = 'batch_results'
 COUNTRY_ISO_CODE: str = 'AUT'
 
 DRY_RUN: bool = False  # if True, no encoding will be executed
 INCLUDE_CODE_CARBON: bool = False
 
 
-def encode(encoding_config: EncodingConfig, input_files: list[str], encoding_variant: EncodingVariant):
+def execute_encoding_benchmark(encoding_configs: list[EncodingConfig], timing_metadata: dict[int, dict], encoding_variant: EncodingVariant):
+    # TODO, think about a way to combine the benchmarks and use an enum to determine which is used
+
+    for encoding_config in encoding_configs:
+        input_files: list[str] = get_video_input_files(
+            INPUT_FILE_DIR, encoding_config)
+        
+        encode(encoding_config, input_files, timing_metadata, encoding_variant)
+
+
+def prepare_all_video_directories(encoding_configs: list[EncodingConfig], encoding_variant: EncodingVariant) -> None:
+    for encoding_config in encoding_configs:
+        video_files: list[str] = get_video_input_files(
+            INPUT_FILE_DIR, encoding_config)
+
+        prepare_data_directories(
+            encoding_config, RESULT_ROOT, video_files, encoding_variant)
+
+
+def encode(
+        encoding_config: EncodingConfig,
+        input_files: list[str],
+        timing_metadata: dict[int, dict],
+        encoding_variant: EncodingVariant
+):
 
     if encoding_variant == EncodingVariant.BATCH:
-        encode_batch(encoding_config, input_files)
+        encode_batch(encoding_config, input_files, timing_metadata)
 
     elif encoding_variant == EncodingVariant.SEQUENTIAL:
         pass
@@ -47,7 +62,12 @@ def encode(encoding_config: EncodingConfig, input_files: list[str], encoding_var
         print('WTF??')
 
 
-def encode_batch(encoding_config: EncodingConfig, input_files: list[str]) -> None:
+def encode_batch(
+        encoding_config: EncodingConfig,
+        input_files: list[str],
+        timing_metadata: dict[int, dict],
+) -> None:
+    global gpu_monitoring
     for segment_duration in encoding_config.segment_duration:
         for video in input_files:
             for codec in encoding_config.codecs:
@@ -55,8 +75,10 @@ def encode_batch(encoding_config: EncodingConfig, input_files: list[str]) -> Non
 
                     input_file_path: str = f'{INPUT_FILE_DIR}/{video}'
                     if any([x in video for x in ['.webm', '.mp4']]):
-                        video_name = video.removesuffix('.webm').removesuffix('.mp4')
+                        video_name = video.removesuffix(
+                            '.webm').removesuffix('.mp4')
 
+                    gpu_monitoring.current_video = video_name
                     output_dir: str = f'{RESULT_ROOT}/{codec}/{video_name}/{segment_duration}s/{preset}'
 
                     cmd = create_ffmpeg_command_all_renditions(
@@ -69,6 +91,16 @@ def encode_batch(encoding_config: EncodingConfig, input_files: list[str]) -> Non
                         pretty_print=DRY_RUN
                     )
 
+                    gpu_monitoring.start()
+                    start_time, end_time, elapsed_time = measure_time_of_system_cmd(
+                        cmd)
+                    gpu_monitoring.stop()
+                    metadata = TimingMetadata(
+                        start_time, end_time, elapsed_time, video_name, codec, preset, Rendition.get_batch_rendition(), segment_duration)
+                    timing_metadata[len(
+                        timing_metadata)] = metadata.to_dict()
+
+
 def execute_batch_encoding(
         cmd: str,
         video_name: str,
@@ -78,19 +110,7 @@ def execute_batch_encoding(
         duration: int,
         timing_metadata: dict[int, dict]
 ) -> None:
-    start_time, end_time, elapsed_time = measure_time_of_system_cmd(
-        cmd)
-                    
-
-
-def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
-    # TODO, think about a way to combine the benchmarks and use an enum to determine which is used
-
-    for encoding_config in encoding_configs:
-        input_files: list[str] = get_video_input_files(
-            INPUT_FILE_DIR, encoding_config)
-
-        prepare_data_directories(encoding_config, video_names=input_files)
+    pass
 
 
 if __name__ == '__main__':
@@ -102,4 +122,6 @@ if __name__ == '__main__':
         file_path) for file_path in ENCODING_CONFIG_PATHS]
     timing_metadata: dict[int, dict] = dict()
 
-    execute_encoding_benchmark()
+    prepare_all_video_directories(configs, EncodingVariant.BATCH)
+    gpu_monitoring = GpuMonitoring(RESULT_ROOT)
+    execute_encoding_benchmark(configs, timing_metadata, EncodingVariant.BATCH)
