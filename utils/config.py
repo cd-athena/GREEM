@@ -5,6 +5,11 @@ import yaml
 from dacite import from_dict as fd
 from dataclasses import dataclass, asdict
 from typing import Type
+from enum import Enum
+
+class EncodingVariant(Enum):
+    SEQUENTIAL = 1
+    BATCH = 2
 
 
 def read_yaml(file_path: str) -> dict:
@@ -54,6 +59,14 @@ class Rendition(Resolution):
             int(bitrate),
             int(height),
             int(width)
+        )
+    
+    @classmethod
+    def get_batch_rendition(cls: Type['Rendition']):
+        return cls(
+            int(0),
+            int(0),
+            int(0)
         )
     
     def to_dict(self) -> dict:
