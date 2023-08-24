@@ -97,9 +97,9 @@ def create_ffmpeg_command_all_renditions(
     cmd.extend([
         f'-keyint_min {keyframe}',
         f'-g {keyframe}',
-        '-seg_duration 4',
-        '-init_seg_name "\$RepresentationID\$/init.\$ext\$"',
-        '-media_seg_name "\$RepresentationID\$/seg-\$Number%05d\$.\$ext\$"',
+        f'-seg_duration {segment_seconds}',
+        # '-init_seg_name "\$RepresentationID\$/init.\$ext\$"',
+        # '-media_seg_name "\$RepresentationID\$/seg-\$Number%05d\$.\$ext\$"',
         '-adaptation_sets "id=0,streams=v  id=1,streams=a"',
         f'-f dash {output_dir}/manifest.mpd'
     ])
