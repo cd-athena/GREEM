@@ -9,7 +9,6 @@ from utils.ffmpeg import create_ffmpeg_command_all_renditions
 from utils.config import EncodingConfig, Rendition, EncodingVariant
 from utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
 from hardware.intel import intel_rapl_workaround
-from encoding_utility import get_video_input_files, prepare_data_directories
 
 ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
