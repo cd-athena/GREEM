@@ -12,3 +12,6 @@ data/*
 
 # Ignore csvs
 *.csv
+
+# Ignore gifs created in tests
+*.gif
