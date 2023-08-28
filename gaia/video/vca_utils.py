@@ -1,9 +1,7 @@
 from dataclasses import dataclass, field
-from math import ceil
 import pandas as pd
-from typing import Type
 
-from video_info import VideoDTO
+from gaia.video.video_info import VideoDTO
 
 
 @dataclass

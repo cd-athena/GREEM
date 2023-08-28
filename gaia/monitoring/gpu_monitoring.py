@@ -1,12 +1,12 @@
 
 from dataclasses import dataclass
-from gaia.hardware import nvidia_smi_dataclasses
+from codecarbon.core.util import suppress
 from codecarbon.external.scheduler import PeriodicScheduler
 from time import sleep
 from os import system
-from codecarbon.core.util import suppress
 import pandas as pd
 
+from gaia.hardware import nvidia_smi_dataclasses
 
 @dataclass
 class RunningEncoding:

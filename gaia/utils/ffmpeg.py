@@ -1,9 +1,9 @@
 from math import ceil
 
-from video.video_info import VideoInfo
+from gaia.video.video_info import VideoInfo
 
-from config import Rendition
-from benchmark import BenchmarkParser
+from gaia.utils.config import Rendition
+from gaia.utils.benchmark import BenchmarkParser
 
 
 cli_parser = BenchmarkParser()

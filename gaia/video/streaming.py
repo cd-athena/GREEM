@@ -1,6 +1,6 @@
 import os
 from dataclasses import dataclass, field
-from utils.config import Rendition
+from gaia.utils.config import Rendition
 
 @dataclass
 class StreamingContainer:

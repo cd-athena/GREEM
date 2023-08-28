@@ -6,7 +6,7 @@ from codecarbon import OfflineEmissionsTracker
 
 import time
 
-from config import Rendition
+from gaia.utils.config import Rendition
 
 
 class IdleTimeEnergyMeasurement():

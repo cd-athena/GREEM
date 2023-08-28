@@ -1,18 +1,15 @@
-import sys
-sys.path.append("..")
-
 import os
 from pathlib import Path
-from utils.ffmpeg import create_ffmpeg_encoding_command
 import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from utils.config import EncodingConfig, get_output_directory, Rendition
-from utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
-from utils.dataframe import get_dataframe_from_csv, merge_benchmark_dataframes
+from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
+from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
+from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
+from gaia.utils.dataframe import get_dataframe_from_csv, merge_benchmark_dataframes
 
-from hardware.intel import intel_rapl_workaround
+from gaia.hardware.intel import intel_rapl_workaround
 
 ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',

@@ -1,8 +1,4 @@
 import pandas as pd
-# import sys
-
-# sys.path.append("..")
-
 
 def get_dataframe_from_csv(csv_path: str) -> pd.DataFrame:
     '''Returns a pandas dataframe from a CSV file'''
