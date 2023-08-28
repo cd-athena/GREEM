@@ -1,10 +1,10 @@
-import sys
-sys.path.append("..")
-
-from .config import Rendition
 from math import ceil
+
 from video.video_info import VideoInfo
-from .benchmark import BenchmarkParser
+
+from config import Rendition
+from benchmark import BenchmarkParser
+
 
 cli_parser = BenchmarkParser()
 
@@ -107,3 +107,43 @@ def create_ffmpeg_command_all_renditions(
     join_string: str = ' \n' if pretty_print else ' '
 
     return join_string.join(cmd)
+
+def create_multi_video_ffmpeg_command(
+    video_input_file_paths: list[str],
+    output_directories: list[str],
+    renditions: list[Rendition],
+    preset: str,
+    codec: str,
+    segment_seconds: int = 4,
+    pretty_print: bool = False
+) -> str:
+    
+    cmd: list[str] = [
+        'ffmpeg', '-y'
+    ]
+    # add all input videos
+    cmd.extend([f'-i {video}' for video in video_input_file_paths])
+    
+    for idx in range(len(video_input_file_paths)):
+        # map_cmd = f'-map {idx} -c:v mpeg4 -q:v 1 -seg_duration 4 -f dash {output_directories[idx]}/{idx}/video{idx}.mpd'
+        # cmd.append(map_cmd)
+        map_cmd: list[str] = [
+            f'-map {idx}',
+            f'-c:v {codec}', '-q:v 1',
+            f'-seg_duration {segment_seconds}',
+            
+            '-f dash',
+            f'{output_directories}/manifest.mpd'
+            
+        ]
+        
+    
+    join_string: str = ' \n' if pretty_print else ' '
+    
+    return join_string.join(cmd)
+
+
+
+if __name__ == '__main__':
+    print('')
+    

@@ -6,7 +6,7 @@ from codecarbon import OfflineEmissionsTracker
 
 import time
 
-from .config import Rendition
+from config import Rendition
 
 
 class IdleTimeEnergyMeasurement():

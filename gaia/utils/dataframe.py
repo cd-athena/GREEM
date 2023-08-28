@@ -1,7 +1,7 @@
 import pandas as pd
-import sys
+# import sys
 
-sys.path.append("..")
+# sys.path.append("..")
 
 
 def get_dataframe_from_csv(csv_path: str) -> pd.DataFrame:

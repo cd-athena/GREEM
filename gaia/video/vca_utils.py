@@ -3,7 +3,7 @@ from math import ceil
 import pandas as pd
 from typing import Type
 
-from utility_classes.video_info_utils import VideoDTO
+from video_info import VideoDTO
 
 
 @dataclass

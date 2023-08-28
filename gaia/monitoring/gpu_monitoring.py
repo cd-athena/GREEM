@@ -1,7 +1,6 @@
-import sys
-sys.path.append("..")
+
 from dataclasses import dataclass
-from hardware import nvidia_smi_dataclasses
+from gaia.hardware import nvidia_smi_dataclasses
 from codecarbon.external.scheduler import PeriodicScheduler
 from time import sleep
 from os import system
