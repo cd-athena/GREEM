@@ -15,3 +15,4 @@ data/*
 
 # Ignore gifs created in tests
 *.gif
+gaia.egg-info/*
