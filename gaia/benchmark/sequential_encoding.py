@@ -4,12 +4,17 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
+from gaia.utils.ffmpeg import create_ffmpeg_encoding_command, prepare_sliced_videos
 from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
 from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
 from gaia.utils.dataframe import get_dataframe_from_csv, merge_benchmark_dataframes
 
 from gaia.hardware.intel import intel_rapl_workaround
+
+from gaia.utils.benchmark import BenchmarkParser
+
+CLI_PARSER = BenchmarkParser()
+
 
 ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
@@ -21,14 +26,20 @@ ENCODING_CONFIG_PATHS: list[str] = [
 ]
 
 INPUT_FILE_DIR: str = 'data'
+SLICE_FILE_DIR: str = 'slice'
 RESULT_ROOT: str = 'results'
 COUNTRY_ISO_CODE: str = 'AUT'
 
+USE_SLICED_VIDEOS: bool = True
 DRY_RUN: bool = False  # if True, no encoding will be executed
 INCLUDE_CODE_CARBON: bool = False
 
 
-def prepare_data_directories(encoding_config: EncodingConfig, result_root: str = RESULT_ROOT, video_names: list[str] = list()) -> list[str]:
+def prepare_data_directories(
+    encoding_config: EncodingConfig, 
+    result_root: str = RESULT_ROOT, 
+    video_names: list[str] = list()
+) -> list[str]:
     '''Used to generate all directories that are used for the video encoding
 
     Args:
@@ -48,12 +59,22 @@ def prepare_data_directories(encoding_config: EncodingConfig, result_root: str =
 
 
 def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> list[str]:
-    input_files: list[str] = [file_name for file_name in os.listdir(
-        video_dir) if encoding_config.encode_all_videos or file_name.split('.')[0] in encoding_config.videos_to_encode]
     
+    def is_file_in_config(file_name: str) -> bool:
+        if encoding_config.encode_all_videos: 
+            return True
+        
+        file = file_name.split('.')[0]
+        if USE_SLICED_VIDEOS:
+            file = file.split('_')[0]
+        return file in encoding_config.videos_to_encode
+    
+    input_files: list[str] = [file_name for file_name in os.listdir(
+        video_dir) if is_file_in_config(file_name)]
+
     if len(input_files) == 0:
         raise ValueError('no video files to encode')
-    
+
     return input_files
 
 
@@ -73,13 +94,13 @@ def execute_ffmpeg_encoding(
         start_time, end_time, elapsed_time, video_name, codec, preset, rendition, duration)
     timing_metadata[len(
         timing_metadata)] = metadata.to_dict()
-    
+
+
 @track_emissions(
     project_name="Encoding Benchmark",
     country_iso_code=COUNTRY_ISO_CODE,
     output_dir=RESULT_ROOT,
     offline=True,
-    
 )
 def execute_ffmpeg_encoding_code_carbon(
         cmd: str,
@@ -111,18 +132,36 @@ def write_encoding_results_to_csv(timing_metadata: dict[int, dict]):
         timing_df.to_csv(result_path)
 
 
+def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) -> list[str]:
+    input_files: list[str] = get_video_input_files(
+        input_dir, encoding_config)
+
+    if not USE_SLICED_VIDEOS:
+        return input_files
+
+    ret_input_files: list[str] = list()
+
+    for duration in encoding_config.segment_duration:
+        for file in input_files:
+            if f'_{duration}s_' in file:
+                ret_input_files.append(file)
+
+    return sorted(ret_input_files)
+
+
 def execute_encoding_benchmark():
+    input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
 
     for encoding_config in encoding_configs:
 
-        input_files: list[str] = get_video_input_files(
-            INPUT_FILE_DIR, encoding_config)
+        input_files = get_filtered_sliced_videos(encoding_config, input_dir)     
 
         prepare_data_directories(encoding_config, video_names=input_files)
 
         ffmpeg_encoding = execute_ffmpeg_encoding_code_carbon if INCLUDE_CODE_CARBON else execute_ffmpeg_encoding
 
         for duration in encoding_config.segment_duration:
+
             for video in input_files:
                 for codec in encoding_config.codecs:
                     for preset in encoding_config.presets:
@@ -130,8 +169,8 @@ def execute_encoding_benchmark():
 
                             output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video, duration, preset, rendition)}'
                             cmd = create_ffmpeg_encoding_command(
-                                f'{INPUT_FILE_DIR}/{video}', output_dir, rendition, preset, duration, codec, pretty_print=DRY_RUN)
-
+                                f'{input_dir}/{video}', output_dir, rendition, preset, duration, codec, use_dash=USE_SLICED_VIDEOS == False, pretty_print=DRY_RUN)
+                            
                             if not DRY_RUN:
                                 ffmpeg_encoding(
                                     cmd, video, codec, preset, rendition, duration, timing_metadata)
@@ -145,11 +184,15 @@ def execute_encoding_benchmark():
 
 
 if __name__ == '__main__':
-    intel_rapl_workaround()
-    IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path='encoding_idle_time.csv', idle_time_in_seconds=1)
+    # intel_rapl_workaround()
+    # IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path='encoding_idle_time.csv', idle_time_in_seconds=1)
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
         file_path) for file_path in ENCODING_CONFIG_PATHS]
     timing_metadata: dict[int, dict] = dict()
 
-    execute_encoding_benchmark()
+    # this line has only be executed as long as new segment input is added
+    if USE_SLICED_VIDEOS:
+        prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
+
+    # execute_encoding_benchmark()
