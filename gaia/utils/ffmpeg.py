@@ -6,6 +6,9 @@ from gaia.utils.config import Rendition, EncodingConfig
 
 import os
 
+QUIET_FLAG: str = '-v quiet'
+CUDA_FLAG: str = '-hwaccel cuda'
+
 def get_lib_codec(codec: str) -> str:
     '''Returns the codec for the ffmpeg command'''
     if codec == 'h264':
@@ -52,10 +55,10 @@ def create_ffmpeg_encoding_command(
 ) -> str:
     '''Creates the ffmpeg command for encoding a video file'''
     cmd: list[str] = ['ffmpeg -y']
-    # if cuda_enabled:
-    #     cmd.append(cli_parser.get_ffmpeg_cuda_flag())
-    # if quiet_mode:
-    #     cmd.append(cli_parser.get_ffmpeg_quiet_flag())
+    if cuda_enabled:
+        cmd.append(CUDA_FLAG)
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
 
     cmd.append(f'-re -i {input_file_path}')
 
@@ -230,7 +233,6 @@ def prepare_sliced_videos(
     encoding_configs: list[EncodingConfig], 
     input_dir: str, 
     output_dir: str,
-    re_encode_files: bool = False,
     dry_run: bool = False
 ) -> None:
     
@@ -268,7 +270,10 @@ def prepare_sliced_videos(
                 )
             
             for cmd in cmd_list:
-                os.system(cmd)
+                if not dry_run:
+                    os.system(cmd)
+                else:
+                    print(cmd)
                 
                 
                 
