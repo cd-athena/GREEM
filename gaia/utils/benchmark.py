@@ -1,4 +1,5 @@
 import argparse
+from gaia.utils.ffmpeg import QUIET_FLAG, CUDA_FLAG
 
 
 class BenchmarkParser():
@@ -23,9 +24,36 @@ class BenchmarkParser():
         self.parser.add_argument(
             '--quiet',
             '--quiet-ffmpeg',
+            '--q',
             action=argparse.BooleanOptionalAction,
             default=False,
             help='Suppresses CLI output of FFMPEG'
+        )
+        
+        self.parser.add_argument(
+            '--slice',
+            '--slice-videos',
+            '--sv',
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help='Slices videos into segments before encoding them instead of creating dash streams'
+        )
+        
+        self.parser.add_argument(
+            '--dry-run',
+            '--dr',
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help='Enable/Disable dry run mode that checks if a benchmark can be run'
+        )
+        
+        self.parser.add_argument(
+            '--code-carbon',
+            '--codecarbon',
+            '--cc',
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help='Enable/Disable energy monitoring done by code carbon'
         )
 
     def is_cuda_enabled(self) -> bool:
@@ -65,14 +93,25 @@ class BenchmarkParser():
             `bool`: `True` if the CLI argument provided was set to true, else returns `False`
         """
         return self.arguments.quiet
+    
+    def is_sliced_encoding(self) -> bool:
+        return self.arguments.slice
+    
+    def is_dry_run(self) -> bool:
+        return self.arguments.dry_run
+    
+    def is_code_carbon_enabled(self) -> bool:
+        return self.arguments.code_carbon
 
     def get_ffmpeg_cuda_flag(self) -> str:
-        return '-hwaccel cuda' if self.is_cuda_enabled() else ''
+        return CUDA_FLAG if self.is_cuda_enabled() else ''
 
     def get_ffmpeg_quiet_flag(self) -> str:
-        return '-v quiet' if self.is_quiet_ffmpeg() else ''
+        return QUIET_FLAG if self.is_quiet_ffmpeg() else ''
 
 
 if __name__ == '__main__':
     parser = BenchmarkParser()
-    # print(parser.parser.print_help())
+    parser.parser.print_help()
+    print(parser.is_dry_run())
+    print(parser.is_code_carbon_enabled())
