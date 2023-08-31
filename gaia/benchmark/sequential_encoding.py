@@ -8,6 +8,7 @@ from gaia.utils.ffmpeg import create_ffmpeg_encoding_command, prepare_sliced_vid
 from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
 from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
 from gaia.utils.dataframe import get_dataframe_from_csv, merge_benchmark_dataframes
+from gaia.monitoring.gpu_monitoring import GpuMonitoring
 
 from gaia.hardware.intel import intel_rapl_workaround
 
@@ -32,6 +33,7 @@ COUNTRY_ISO_CODE: str = 'AUT'
 
 USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()  # if True, no encoding will be executed
+USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
 
@@ -78,11 +80,11 @@ def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> li
     return input_files
 
 @track_emissions(
-    project_name="Encoding Benchmark",
-    country_iso_code=COUNTRY_ISO_CODE,
-    # output_dir=RESULT_ROOT,
     offline=True,
+    country_iso_code='AUT',
     measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
 )
 def execute_ffmpeg_encoding(
         cmd: str,
@@ -93,6 +95,13 @@ def execute_ffmpeg_encoding(
         duration: int,
         timing_metadata: dict[int, dict]
 ) -> None:
+
+    global gpu_monitoring, emission_tracker
+
+    if USE_CUDA:
+        gpu_monitoring.current_video = video_name
+        gpu_monitoring.rendition = rendition
+
     start_time, end_time, elapsed_time = measure_time_of_system_cmd(
         cmd)
 
@@ -136,7 +145,10 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
 
 def execute_encoding_benchmark():
+    global gpu_monitoring
     input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
+
+
 
     for encoding_config in encoding_configs:
 
@@ -159,25 +171,36 @@ def execute_encoding_benchmark():
                                 output_dir, rendition, preset, duration, codec, 
                                 use_dash=use_dash_format, 
                                 pretty_print=DRY_RUN,
-                                cuda_enabled=CLI_PARSER.is_cuda_enabled(),
+                                cuda_enabled=USE_CUDA,
                                 quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
                                 )
                             
                             if not DRY_RUN:
+                                if USE_CUDA:
+                                    gpu_monitoring.start()
+
                                 execute_ffmpeg_encoding(
                                     cmd, video, codec, preset, rendition, duration, timing_metadata)
 
+                                if USE_CUDA:
+                                    gpu_monitoring.stop()
                             else:
                                 print(cmd)
                                 execute_ffmpeg_encoding(
                                     'sleep 0.01', video, codec, preset, rendition, duration, timing_metadata)
 
+
     write_encoding_results_to_csv(timing_metadata)
 
 
+
+
 if __name__ == '__main__':
+
+    Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+
     intel_rapl_workaround()
-    IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path='encoding_idle_time.csv', idle_time_in_seconds=1)
+    IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)  
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
         file_path) for file_path in ENCODING_CONFIG_PATHS]
@@ -186,4 +209,10 @@ if __name__ == '__main__':
     if USE_SLICED_VIDEOS:
         prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
+    gpu_monitoring = None
+    if USE_CUDA:
+        gpu_monitoring = GpuMonitoring(RESULT_ROOT)
+
     execute_encoding_benchmark()
+
+
