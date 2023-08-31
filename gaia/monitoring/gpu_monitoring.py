@@ -7,6 +7,7 @@ from os import system
 import pandas as pd
 
 from gaia.hardware import nvidia_smi_dataclasses
+from gaia.utils.config import Rendition
 
 @dataclass
 class RunningEncoding:
@@ -27,6 +28,9 @@ class GpuMonitoring:
         self.file_stream = open(
             f'{monitoring_file_path}/monitoring_stream.csv', 'a')
         self.current_video: str = ''
+        self.rendition = Rendition.get_batch_rendition()
+        self.__write_to_file('start', use_header=True)
+
 
     @suppress(Exception)
     def start(self) -> None:
@@ -34,7 +38,6 @@ class GpuMonitoring:
         # TODO make sure initial energy is read for gpu
         self.start_time = pd.Timestamp('now')
         self.last_measured_time = pd.Timestamp('now')
-        self.__write_to_file('start', use_header=True)
         self.scheduler.start()
 
     def stop(self):
@@ -57,6 +60,9 @@ class GpuMonitoring:
     def __write_to_file(self, video_name: str, use_header: bool = False) -> None:
         df: pd.DataFrame = self.gpu_metadata_handler.get_update_as_pandas_df()
         df['current_video'] = video_name
+        df['bitrate'] = self.rendition.bitrate
+        df['width'] = self.rendition.width
+        df['height'] = self.rendition.height
         df.to_csv(self.file_stream, header=use_header)
         self.file_stream.flush()
 
