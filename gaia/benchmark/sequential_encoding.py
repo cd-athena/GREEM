@@ -206,8 +206,8 @@ if __name__ == '__main__':
         file_path) for file_path in ENCODING_CONFIG_PATHS]
     timing_metadata: dict[int, dict] = dict()
 
-    if USE_SLICED_VIDEOS:
-        prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
+    # if USE_SLICED_VIDEOS:
+    #     prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
     gpu_monitoring = None
     if USE_CUDA:

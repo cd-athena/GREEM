@@ -14,19 +14,38 @@ class RunningEncoding:
     file_name: str
 
 
-class GpuMonitoring:
+@dataclass
+class BaseMonitoring:
+    monitoring_file_path: str
+    monitoring_interval_in_secs: float = 1
 
-    def __init__(self, monitoring_file_path: str, monitoring_interval_in_secs: int = 1) -> None:
+    def start(self) -> None:
+        pass
+
+    def stop(self) -> None:
+        pass
+
+
+class CpuMonitoring(BaseMonitoring):
+
+    def __init__(self, monitoring_file_path: str, monitoring_interval_in_secs: int):
+        super().__init__(monitoring_file_path, monitoring_interval_in_secs)
+
+
+class GpuMonitoring(BaseMonitoring):
+
+    def __init__(self, monitoring_file_path: str, monitoring_interval_in_secs: int) -> None:
+        super().__init__(monitoring_file_path, monitoring_interval_in_secs)
 
         self.gpu_metadata_handler = nvidia_smi_dataclasses.NvidiaMetadataHandler.from_smi()
-        self.monitoring_interval_in_secs = monitoring_interval_in_secs
+
         self.scheduler = PeriodicScheduler(
             function=self.monitor_gpu,
-            interval=monitoring_interval_in_secs
+            interval=self.monitoring_interval_in_secs
         )
 
         self.file_stream = open(
-            f'{monitoring_file_path}/monitoring_stream.csv', 'a')
+            f'{self.monitoring_file_path}/monitoring_stream.csv', 'a')
         self.current_video: str = ''
         self.rendition = Rendition.get_batch_rendition()
         self.__write_to_file('start', use_header=True)
@@ -66,6 +85,8 @@ class GpuMonitoring:
         df.to_csv(self.file_stream, header=use_header)
         self.file_stream.flush()
 
+class HardwareMonitoring(BaseMonitoring):
+    pass
 
 if __name__ == '__main__':
     REPETITIONS: int = 3
