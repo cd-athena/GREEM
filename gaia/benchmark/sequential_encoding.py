@@ -77,7 +77,13 @@ def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> li
 
     return input_files
 
-
+@track_emissions(
+    project_name="Encoding Benchmark",
+    country_iso_code=COUNTRY_ISO_CODE,
+    # output_dir=RESULT_ROOT,
+    offline=True,
+    measure_power_secs=1,
+)
 def execute_ffmpeg_encoding(
         cmd: str,
         video_name: str,
@@ -94,26 +100,6 @@ def execute_ffmpeg_encoding(
         start_time, end_time, elapsed_time, video_name, codec, preset, rendition, duration)
     timing_metadata[len(
         timing_metadata)] = metadata.to_dict()
-
-
-@track_emissions(
-    project_name="Encoding Benchmark",
-    country_iso_code=COUNTRY_ISO_CODE,
-    output_dir=RESULT_ROOT,
-    offline=True,
-)
-def execute_ffmpeg_encoding_code_carbon(
-        cmd: str,
-        video_name: str,
-        codec: str,
-        preset: str,
-        rendition: Rendition,
-        duration: int,
-        timing_metadata: dict[int, dict]
-) -> None:
-    execute_ffmpeg_encoding(
-        cmd, video_name, codec, preset, rendition, duration, timing_metadata
-    )
 
 
 def write_encoding_results_to_csv(timing_metadata: dict[int, dict]):
@@ -158,8 +144,6 @@ def execute_encoding_benchmark():
 
         prepare_data_directories(encoding_config, video_names=input_files)
 
-        ffmpeg_encoding = execute_ffmpeg_encoding_code_carbon if INCLUDE_CODE_CARBON else execute_ffmpeg_encoding
-
         for duration in encoding_config.segment_duration:
 
             for video in input_files:
@@ -172,20 +156,20 @@ def execute_encoding_benchmark():
                                 f'{input_dir}/{video}', output_dir, rendition, preset, duration, codec, use_dash=USE_SLICED_VIDEOS == False, pretty_print=DRY_RUN)
                             
                             if not DRY_RUN:
-                                ffmpeg_encoding(
+                                execute_ffmpeg_encoding(
                                     cmd, video, codec, preset, rendition, duration, timing_metadata)
 
                             else:
                                 print(cmd)
-                                ffmpeg_encoding(
+                                execute_ffmpeg_encoding(
                                     'sleep 0.01', video, codec, preset, rendition, duration, timing_metadata)
 
     write_encoding_results_to_csv(timing_metadata)
 
 
 if __name__ == '__main__':
-    # intel_rapl_workaround()
-    # IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path='encoding_idle_time.csv', idle_time_in_seconds=1)
+    intel_rapl_workaround()
+    IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path='encoding_idle_time.csv', idle_time_in_seconds=1)
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
         file_path) for file_path in ENCODING_CONFIG_PATHS]
@@ -195,4 +179,4 @@ if __name__ == '__main__':
     if USE_SLICED_VIDEOS:
         prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
-    # execute_encoding_benchmark()
+    execute_encoding_benchmark()
