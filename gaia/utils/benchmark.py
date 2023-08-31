@@ -52,7 +52,7 @@ class BenchmarkParser():
             '--codecarbon',
             '--cc',
             action=argparse.BooleanOptionalAction,
-            default=False,
+            default=True,
             help='Enable/Disable energy monitoring done by code carbon'
         )
 
