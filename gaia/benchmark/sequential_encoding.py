@@ -30,9 +30,9 @@ SLICE_FILE_DIR: str = 'slice'
 RESULT_ROOT: str = 'results'
 COUNTRY_ISO_CODE: str = 'AUT'
 
-USE_SLICED_VIDEOS: bool = True
-DRY_RUN: bool = False  # if True, no encoding will be executed
-INCLUDE_CODE_CARBON: bool = False
+USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
+DRY_RUN: bool = CLI_PARSER.is_dry_run()  # if True, no encoding will be executed
+INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
 
 def prepare_data_directories(
@@ -152,8 +152,16 @@ def execute_encoding_benchmark():
                         for rendition in encoding_config.renditions:
 
                             output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video, duration, preset, rendition)}'
+                            use_dash_format: bool = USE_SLICED_VIDEOS == False
+                            
                             cmd = create_ffmpeg_encoding_command(
-                                f'{input_dir}/{video}', output_dir, rendition, preset, duration, codec, use_dash=USE_SLICED_VIDEOS == False, pretty_print=DRY_RUN)
+                                f'{input_dir}/{video}', 
+                                output_dir, rendition, preset, duration, codec, 
+                                use_dash=use_dash_format, 
+                                pretty_print=DRY_RUN,
+                                cuda_enabled=CLI_PARSER.is_cuda_enabled(),
+                                quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
+                                )
                             
                             if not DRY_RUN:
                                 execute_ffmpeg_encoding(
@@ -175,7 +183,6 @@ if __name__ == '__main__':
         file_path) for file_path in ENCODING_CONFIG_PATHS]
     timing_metadata: dict[int, dict] = dict()
 
-    # this line has only be executed as long as new segment input is added
     if USE_SLICED_VIDEOS:
         prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
