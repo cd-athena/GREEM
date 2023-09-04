@@ -97,7 +97,6 @@ class EncodingConfig():
     def get_all_result_directories(self, video_names: list[str]) -> list[str]:
         '''Returns a list of all possible result directories'''
         return [
-            # f'{codec}/{duration}s/{video}/{preset}/{rendition.dir_representation()}'
             get_output_directory(codec, video, duration, preset, rendition)
             for rendition in self.renditions
             for preset in self.presets

@@ -145,12 +145,13 @@ def create_multi_video_ffmpeg_command(
             f'-c:v {codec}', '-q:v 1',
             f'-seg_duration {segment_seconds}',
             
+            # TODO probably add resolution etc here.
+            
             '-f dash',
             f'{output_directories}/manifest.mpd'
-            
         ]
         
-    #TODO
+    #TODO add resolutions etc. to the encoding
         
     
     join_string: str = ' \n' if pretty_print else ' '
@@ -166,9 +167,6 @@ def get_slice_video_command(
 )-> str:
     '''https://unix.stackexchange.com/questions/1670/how-can-i-use-ffmpeg-to-split-mpeg-video-into-10-minute-chunks'''
     duration: str = f'{segment_duration}' if segment_duration > 9 else f'0{segment_duration}'
-    
-    video_info = VideoInfo(input_video_path)
-    
     
     cmd: list[str] = [
         'ffmpeg -n',
