@@ -173,8 +173,6 @@ def execute_encoding_benchmark():
     for encoding_config in encoding_configs:
 
         input_files = get_filtered_sliced_videos(encoding_config, input_dir)
-        
-
 
         for duration in encoding_config.segment_duration:
             duration_input_files = [file for file in input_files if f'_{duration}s_' in file]
@@ -230,15 +228,15 @@ if __name__ == '__main__':
               ''')
     Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
-    # intel_rapl_workaround()
+    intel_rapl_workaround()
     IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)  
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
         file_path) for file_path in ENCODING_CONFIG_PATHS]
     timing_metadata: dict[int, dict] = dict()
 
-    # if USE_SLICED_VIDEOS:
-    #     prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
+    if USE_SLICED_VIDEOS:
+        prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
     gpu_monitoring = None
     if USE_CUDA:
