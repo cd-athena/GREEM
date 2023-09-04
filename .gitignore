@@ -16,3 +16,6 @@ data/*
 # Ignore gifs created in tests
 *.gif
 gaia.egg-info/*
+
+# dirty macos file
+*.DS_Store
