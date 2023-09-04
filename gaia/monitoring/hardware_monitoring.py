@@ -86,7 +86,16 @@ class GpuMonitoring(BaseMonitoring):
         self.file_stream.flush()
 
 class HardwareMonitoring(BaseMonitoring):
-    pass
+    
+    def __init__(self):
+        pass
+        
+    
+    def start(self) -> None:
+        pass
+    
+    def stop(self) -> None:
+        pass
 
 if __name__ == '__main__':
     REPETITIONS: int = 3
