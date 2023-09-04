@@ -170,15 +170,17 @@ def execute_encoding_benchmark():
     global gpu_monitoring
     input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
 
-    for encoding_config in encoding_configs:
+    for en_idx, encoding_config in enumerate(encoding_configs):
+        
+        send_ntfy('encoding', f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
 
         input_files = get_filtered_sliced_videos(encoding_config, input_dir)
 
-        for duration in encoding_config.segment_duration:
+        for idx, duration in enumerate(encoding_config.segment_duration):
             duration_input_files = [file for file in input_files if f'_{duration}s_' in file]
             prepare_data_directories(encoding_config, video_names=duration_input_files)
             
-            send_ntfy('encoding', f'start duration {duration}s with {len(duration_input_files)} videos')
+            send_ntfy('encoding', f'start duration {duration}s - ({idx + 1}/{len(encoding_config.segment_duration)})')
 
             for video in duration_input_files:
                 for codec in encoding_config.codecs:
