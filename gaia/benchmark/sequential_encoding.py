@@ -225,32 +225,37 @@ def execute_encoding_benchmark():
     
     write_encoding_results_to_csv(timing_metadata)
     
-    send_ntfy('encoding', 'finished benchmark')
+    
 
 
 if __name__ == '__main__':
-    send_ntfy('encoding', 
+    try:
+        send_ntfy('encoding', 
               f'''start benchmark 
               - CUDA: {USE_CUDA} 
               - SLICE: {USE_SLICED_VIDEOS}
               - DRY_RUN: {DRY_RUN}
               ''')
-    Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+        Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
-    intel_rapl_workaround()
-    IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)  
+        intel_rapl_workaround()
+        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)  
 
-    encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
-        file_path) for file_path in ENCODING_CONFIG_PATHS]
-    timing_metadata: dict[int, dict] = dict()
+        encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
+            file_path) for file_path in ENCODING_CONFIG_PATHS]
+        timing_metadata: dict[int, dict] = dict()
 
-    if USE_SLICED_VIDEOS:
-        prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
+        if USE_SLICED_VIDEOS:
+            prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
-    gpu_monitoring = None
-    if USE_CUDA:
-        gpu_monitoring = GpuMonitoring(RESULT_ROOT)
+        gpu_monitoring = None
+        if USE_CUDA:
+            gpu_monitoring = GpuMonitoring(RESULT_ROOT, 0.5)
 
-    execute_encoding_benchmark()
+        execute_encoding_benchmark()
+    except Exception as err:
+        send_ntfy('encoding', f'Something went wrong during the benchmark, Exception: {err}')
 
+    finally:
+        send_ntfy('encoding', 'finished benchmark')
 
