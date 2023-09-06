@@ -43,10 +43,7 @@ def merge_benchmark_and_monitoring_dataframes(
             (monitoring_df['bitrate'] == encoding_row['bitrate'])
             ]
         
-        monitored_value_count: int = len(temp_df)
-        
-        df_value_dict[enc_row_idx].update({'value.count': monitored_value_count})
-        df_value_dict[enc_row_idx].update({'value.idle': monitored_value_count})
+        df_value_dict[enc_row_idx].update({'value.count': len(temp_df)})
         
         describe_df = temp_df[df_colums].describe()
         for df_col in df_colums:
