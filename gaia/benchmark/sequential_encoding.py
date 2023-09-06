@@ -7,7 +7,11 @@ from codecarbon import track_emissions
 from gaia.utils.ffmpeg import create_ffmpeg_encoding_command, prepare_sliced_videos
 from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
 from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
-from gaia.utils.dataframe import get_dataframe_from_csv, merge_benchmark_dataframes
+from gaia.utils.dataframe import(
+    get_dataframe_from_csv, 
+    merge_benchmark_dataframes, 
+    merge_benchmark_and_monitoring_dataframes
+    )
 from gaia.utils.ntfy import send_ntfy
 
 from gaia.hardware.intel import intel_rapl_workaround
@@ -128,11 +132,17 @@ def write_encoding_results_to_csv(timing_metadata: dict[int, dict]):
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
     if INCLUDE_CODE_CARBON:
         emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
-        merged_df = merge_benchmark_dataframes(emission_df, timing_df)
-
+        # merge codecarbon and timing_df results
+        encoding_results_df = merge_benchmark_dataframes(emission_df, timing_df)
+        
+        # merge encoding results with hardware monitoring and idle dataframes
+        monitoring_df = pd.read_csv(f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
+        idle_df = pd.read_csv(f'{RESULT_ROOT}/encoding_idle_time.csv', index_col=0)
+        merged_df = merge_benchmark_and_monitoring_dataframes(encoding_results_df, monitoring_df, idle_df)
+        
+        # save to disk
         merged_df.to_csv(result_path)
         os.system(f'rm {RESULT_ROOT}/emissions.csv')
-
     else:
         timing_df.to_csv(result_path)
 
@@ -163,7 +173,6 @@ def stop_hardware_monitoring():
     global gpu_monitoring
     if USE_CUDA:
         gpu_monitoring.stop()
-
 
 
 def execute_encoding_benchmark():
@@ -208,7 +217,6 @@ def execute_encoding_benchmark():
                                 
                                 stop_hardware_monitoring()
 
-
                             else:
                                 print(cmd)
                                 execute_ffmpeg_encoding(
@@ -218,7 +226,6 @@ def execute_encoding_benchmark():
     write_encoding_results_to_csv(timing_metadata)
     
     send_ntfy('encoding', 'finished benchmark')
-
 
 
 if __name__ == '__main__':
