@@ -176,7 +176,9 @@ def stop_hardware_monitoring():
 
 
 def execute_encoding_benchmark():
-    global gpu_monitoring
+    global gpu_monitoring, timing_metadata
+    
+    send_ntfy('encoding', 'start sequential encoding process')
     input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
 
     for en_idx, encoding_config in enumerate(encoding_configs):
@@ -185,12 +187,14 @@ def execute_encoding_benchmark():
 
         input_files = get_filtered_sliced_videos(encoding_config, input_dir)
 
+        # encode for each duration defined in the config file
         for idx, duration in enumerate(encoding_config.segment_duration):
-            duration_input_files = [file for file in input_files if f'_{duration}s_' in file]
+            duration_input_files = [file for file in input_files if f'_{duration}s_' in file] if USE_SLICED_VIDEOS else input_files
             prepare_data_directories(encoding_config, video_names=duration_input_files)
             
             send_ntfy('encoding', f'start duration {duration}s - ({idx + 1}/{len(encoding_config.segment_duration)})')
 
+            # encode each video found in the input files corresponding to the duration
             for video in duration_input_files:
                 for codec in encoding_config.codecs:
                     for preset in encoding_config.presets:
@@ -246,6 +250,7 @@ if __name__ == '__main__':
         timing_metadata: dict[int, dict] = dict()
 
         if USE_SLICED_VIDEOS:
+            send_ntfy('encoding', 'Slicing Videos')
             prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
         gpu_monitoring = None
