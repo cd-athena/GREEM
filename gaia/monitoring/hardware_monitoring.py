@@ -34,7 +34,7 @@ class CpuMonitoring(BaseMonitoring):
 
 class GpuMonitoring(BaseMonitoring):
 
-    def __init__(self, monitoring_file_path: str, monitoring_interval_in_secs: int) -> None:
+    def __init__(self, monitoring_file_path: str, monitoring_interval_in_secs: float) -> None:
         super().__init__(monitoring_file_path, monitoring_interval_in_secs)
 
         self.gpu_metadata_handler = nvidia_smi_dataclasses.NvidiaMetadataHandler.from_smi()
