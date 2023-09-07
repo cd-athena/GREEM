@@ -118,7 +118,7 @@ class NvidiaGPUMetadata():
     board_id: str
     gpu_operation_mode: GpuOperationMode
     pci: dict = field(repr=False)
-    fan_speed: int
+    fan_speed: int | str
     fan_speed_unit: str
     performance_state: str
     clocks_throttle: dict = field(repr=False)
