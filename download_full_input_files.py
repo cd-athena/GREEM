@@ -58,7 +58,7 @@ def rename_videos(dir_path: str = '.'):
         
         
 if __name__ == '__main__':
-    # download_parallel(list(all_video_urls.values()))
+    download_parallel(list(all_video_urls.values()))
     convert_webm_to_mp4()
     rename_videos()
     
