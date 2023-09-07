@@ -10,3 +10,4 @@ dependencies:
   - codecarbon
   - ipython
   - jupyter
+  - yt-dlp
