@@ -12,6 +12,7 @@ dependencies:
   - jupyter
   - numpy
   - pandas
+  - pip
  
   - pip:
     - opencv-python
