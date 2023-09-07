@@ -109,7 +109,6 @@ def execute_ffmpeg_encoding(
         duration: int,
         timing_metadata: dict[int, dict]
 ) -> None:
-
     global gpu_monitoring, emission_tracker
 
     if USE_CUDA:
