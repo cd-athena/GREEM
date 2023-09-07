@@ -10,4 +10,10 @@ dependencies:
   - codecarbon
   - ipython
   - jupyter
-  - yt-dlp
+  - numpy
+  - pandas
+ 
+  - pip:
+    - opencv-python
+    - yt-dlp
+
