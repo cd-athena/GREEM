@@ -135,13 +135,16 @@ def write_encoding_results_to_csv(timing_metadata: dict[int, dict]):
         # merge codecarbon and timing_df results
         encoding_results_df = merge_benchmark_dataframes(emission_df, timing_df)
         
-        # merge encoding results with hardware monitoring and idle dataframes
-        monitoring_df = pd.read_csv(f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
-        idle_df = pd.read_csv(f'{RESULT_ROOT}/encoding_idle_time.csv', index_col=0)
-        merged_df = merge_benchmark_and_monitoring_dataframes(encoding_results_df, monitoring_df, idle_df)
-        
-        # save to disk
-        merged_df.to_csv(result_path)
+        if USE_CUDA:
+            # merge encoding results with hardware monitoring and idle dataframes
+            monitoring_df = pd.read_csv(f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
+            idle_df = pd.read_csv(f'{RESULT_ROOT}/encoding_idle_time.csv', index_col=0)
+            merged_df = merge_benchmark_and_monitoring_dataframes(encoding_results_df, monitoring_df, idle_df)
+            
+            # save to disk
+            merged_df.to_csv(result_path)
+        else:
+            encoding_results_df.to_csv(result_path)
         os.system(f'rm {RESULT_ROOT}/emissions.csv')
     else:
         timing_df.to_csv(result_path)
