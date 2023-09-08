@@ -38,6 +38,8 @@ for j in range(len(all_segments)):
     for file_pattern, idx_start, idx_end in [all_segments[j]]:
         for i in range(idx_start, idx_end + 1):
             in_file_full: str = ''
+            if i > 1:
+                continue
             if i <= 9:
                 in_file_full = "https://ftp.itec.aau.at/datasets/video-complexity/1-ref/" + file_pattern.format(
                     "0{}".format(i)) + ".265"
