@@ -20,6 +20,8 @@ from gaia.utils.benchmark import BenchmarkParser
 
 CLI_PARSER = BenchmarkParser()
 
+NTFY_TOPIC: str = 'aws_encoding'
+
 
 ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
@@ -94,8 +96,8 @@ def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> li
     return input_files
 
 @track_emissions(
-    offline=True,
-    country_iso_code='AUT',
+    # offline=True,
+    # country_iso_code='AUT',
     measure_power_secs=1,
     output_dir=RESULT_ROOT,
     save_to_file=True,
@@ -180,12 +182,12 @@ def stop_hardware_monitoring():
 def execute_encoding_benchmark():
     global gpu_monitoring, timing_metadata
     
-    send_ntfy('encoding', 'start sequential encoding process')
+    send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
     input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
 
     for en_idx, encoding_config in enumerate(encoding_configs):
         
-        send_ntfy('encoding', f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
+        send_ntfy(NTFY_TOPIC, f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
 
         input_files = get_filtered_sliced_videos(encoding_config, input_dir)
 
@@ -194,7 +196,7 @@ def execute_encoding_benchmark():
             duration_input_files = [file for file in input_files if f'_{duration}s_' in file] if USE_SLICED_VIDEOS else input_files
             prepare_data_directories(encoding_config, video_names=duration_input_files)
             
-            send_ntfy('encoding', f'start duration {duration}s - ({idx + 1}/{len(encoding_config.segment_duration)})')
+            send_ntfy(NTFY_TOPIC, f'start duration {duration}s - ({idx + 1}/{len(encoding_config.segment_duration)})')
 
             # encode each video found in the input files corresponding to the duration
             for video in duration_input_files:
@@ -236,11 +238,12 @@ def execute_encoding_benchmark():
 
 if __name__ == '__main__':
     try:
-        send_ntfy('encoding', 
+        send_ntfy(NTFY_TOPIC, 
               f'''start benchmark 
               - CUDA: {USE_CUDA} 
               - SLICE: {USE_SLICED_VIDEOS}
               - DRY_RUN: {DRY_RUN}
+              - saving results in {RESULT_ROOT}
               ''')
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
@@ -252,8 +255,9 @@ if __name__ == '__main__':
         timing_metadata: dict[int, dict] = dict()
 
         if USE_SLICED_VIDEOS:
-            send_ntfy('encoding', 'Slicing Videos')
+            send_ntfy(NTFY_TOPIC, f'slicing videos')
             prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
+            send_ntfy(NTFY_TOPIC, f'finished slicing videos')
 
         gpu_monitoring = None
         if USE_CUDA:
@@ -261,8 +265,8 @@ if __name__ == '__main__':
 
         execute_encoding_benchmark()
     except Exception as err:
-        send_ntfy('encoding', f'Something went wrong during the benchmark, Exception: {err}')
+        send_ntfy(NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}')
 
     finally:
-        send_ntfy('encoding', 'finished benchmark')
+        send_ntfy(NTFY_TOPIC, 'finished benchmark')
 
