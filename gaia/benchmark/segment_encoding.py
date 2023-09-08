@@ -27,7 +27,7 @@ ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
     # 'config_files/encoding_test_2.yaml',
     # 'config_files/default_encoding_config.yaml',
-    'config_files/test_encoding_config.yaml',
+    'config_files/segment_encoding.yaml',
     # 'config_files/encoding_config_h264.yaml',
     # 'config_files/encoding_config_h265.yaml'
 ]
@@ -187,8 +187,8 @@ def execute_encoding_benchmark():
         send_ntfy(
             NTFY_TOPIC, f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
 
-        input_files = [file for file in os.listdir(
-            INPUT_FILE_DIR) if file.endswith('.265')]
+        input_files = sorted([file for file in os.listdir(
+            INPUT_FILE_DIR) if file.endswith('.265')])
 
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=input_files)
@@ -239,8 +239,8 @@ if __name__ == '__main__':
               ''')
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
-        # intel_rapl_workaround()
-        # IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
+        intel_rapl_workaround()
+        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
