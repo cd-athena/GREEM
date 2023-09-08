@@ -19,20 +19,6 @@ all_segments = [("AncientThought_s0{}", 0, 36), ("Basketball_s0{}", 0, 1), ("Bea
                 ("TrafficAndBuilding_s0{}", 0, 1), ("TrafficFlow_s0{}", 0, 1), ("TreeShade_s0{}", 0, 1),
                 ("Unspoken_Friend_s0{}", 0, 50), ("Wood_s0{}", 0, 1), ("YachtRide_s0{}", 0, 0)]
 
-# all_segments = [
-#     ("AncientThought_s0{}", 0, 36),
-#     ("Busy_City_s0{}", 0, 24),
-#     ("Childs_Play_s0{}", 0, 18),
-#     ("Eldorado_s0{}", 0, 35),
-#     ("Fun_on_the_river_s0{}", 0, 28),
-#     ("Indoor_Soccer_s0{}", 0, 49),
-#     ("Lifting_Off_s0{}", 0, 39),
-#     ("Nature_in_the_city_s0{}", 0, 28),
-#     ("Secounds_That_Count_s0{}", 0, 63),
-#     ("Skateboarding_s0{}", 0, 54),
-#     ("Unspoken_Friend_s0{}", 0, 50)
-# ]
-
 video_path_list: list[str] = list()
 for j in range(len(all_segments)):
     for file_pattern, idx_start, idx_end in [all_segments[j]]:
