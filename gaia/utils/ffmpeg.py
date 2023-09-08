@@ -19,12 +19,18 @@ def get_lib_codec(codec: str) -> str:
         raise ValueError('Provided codec value not supported')
 
 
-def get_representation_ffmpeg_flags(renditions: list[Rendition], preset: str, codec: str) -> list[str]:
+def get_representation_ffmpeg_flags(
+    renditions: list[Rendition], 
+    preset: str, 
+    codec: str,
+    is_multi_video: bool = False
+    ) -> list[str]:
     '''Returns the ffmpeg flags for the renditions'''
     representations: list[str] = list()
-    maps: list[str] = ['-map 0:v:0'] * len(renditions)
-    representations.extend(maps)
-    representations.append('-map 0:a:0')
+    if not is_multi_video:
+        maps: list[str] = ['-map 0:v:0'] * len(renditions)
+        representations.extend(maps)
+        representations.append('-map 0:a:0')
 
     for idx, rendition in enumerate(renditions):
         bitrate = rendition.bitrate
@@ -146,10 +152,17 @@ def create_multi_video_ffmpeg_command(
             f'-seg_duration {segment_seconds}',
             
             # TODO probably add resolution etc here.
-            
-            '-f dash',
-            f'{output_directories}/manifest.mpd'
+            # get_representation_ffmpeg_flags(renditions, preset, codec),
         ]
+        
+        cmd.extend(map_cmd)
+        
+        cmd.extend(get_representation_ffmpeg_flags(renditions, preset, codec, is_multi_video=False))
+        
+        cmd.extend([
+            '-f dash',
+            f'{output_directories[idx]}/manifest.mpd'
+            ])
         
     #TODO add resolutions etc. to the encoding
         
