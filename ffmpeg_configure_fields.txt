@@ -1,0 +1,12 @@
+./configure --enable-nonfree --enable-cuda-nvcc --enable-libnpp --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 --enable-gpl \
+--enable-gnutls \
+--enable-libaom \
+--enable-libass \
+--enable-libfdk-aac \
+--enable-libfreetype \
+--enable-libopus \
+--enable-libvorbis \
+--enable-libvpx \
+--enable-libx264 \
+--enable-libx265 \
+--enable-nonfree
