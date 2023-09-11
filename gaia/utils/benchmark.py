@@ -55,6 +55,12 @@ class BenchmarkParser():
             default=True,
             help='Enable/Disable energy monitoring done by code carbon'
         )
+        self.parser.add_argument(
+            '--ntfy',
+            action=argparse.BooleanOptionalAction,
+            default=False,
+            help='Enable/Disable sending notifications via NTFY'
+        )
 
     def is_cuda_enabled(self) -> bool:
         """Cuda Enabled is used to add the flag for GPU hardware acceleration.
@@ -102,6 +108,9 @@ class BenchmarkParser():
     
     def is_code_carbon_enabled(self) -> bool:
         return self.arguments.code_carbon
+    
+    def is_ntfy_enabled(self) -> bool:
+        return self.arguments.ntfy
 
     def get_ffmpeg_cuda_flag(self) -> str:
         return CUDA_FLAG if self.is_cuda_enabled() else ''
@@ -109,6 +118,7 @@ class BenchmarkParser():
     def get_ffmpeg_quiet_flag(self) -> str:
         return QUIET_FLAG if self.is_quiet_ffmpeg() else ''
 
+CLI_PARSER = BenchmarkParser()
 
 if __name__ == '__main__':
     parser = BenchmarkParser()
