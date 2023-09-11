@@ -184,9 +184,6 @@ def execute_encoding_benchmark():
 
     for en_idx, encoding_config in enumerate(encoding_configs):
 
-        send_ntfy(
-            NTFY_TOPIC, f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
-
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
 
@@ -195,10 +192,20 @@ def execute_encoding_benchmark():
 
         duration = 4
         # encode each video found in the input files corresponding to the duration
-        for video in input_files:
-            for codec in encoding_config.codecs:
-                for preset in encoding_config.presets:
-                    for rendition in encoding_config.renditions:
+        for video_idx, video in enumerate(input_files):
+            for codec_idx, codec in enumerate(encoding_config.codecs):
+                for preset_idx, preset in enumerate(encoding_config.presets):
+                    for rendition_idx, rendition in enumerate(encoding_config.renditions):
+                        
+                        send_ntfy(
+                            NTFY_TOPIC, 
+                            f'''
+                            - video sequence {video} - ({video_idx + 1}/({len(input_files)}))
+                            - used codec {codec} - ({codec_idx + 1}/{len(encoding_config.codecs)})
+                            - used preset {preset} - ({preset_idx + 1}/{len(encoding_config.presets)})
+                            - used rendition {rendition} - ({rendition_idx + 1}/{len(encoding_config.renditions)})
+                            - encoding config - ({en_idx + 1}/{len(encoding_configs)})
+                            ''')
 
                         output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video, duration, preset, rendition)}'
 
@@ -235,12 +242,11 @@ if __name__ == '__main__':
               - CUDA: {USE_CUDA} 
               - SLICE: {USE_SLICED_VIDEOS}
               - DRY_RUN: {DRY_RUN}
-              - saving results in {RESULT_ROOT}
               ''')
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
         intel_rapl_workaround()
-        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
+        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=10)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
