@@ -190,7 +190,7 @@ def execute_encoding_benchmark():
                         send_ntfy(
                             NTFY_TOPIC, 
                             f'''
-                            - video sequence {video} - ({video_idx + 1}/({len(input_files)}))
+                            - video sequence {video} - ({video_idx + 1}/{len(input_files)})
                             - used codec {codec} - ({codec_idx + 1}/{len(encoding_config.codecs)})
                             - used preset {preset} - ({preset_idx + 1}/{len(encoding_config.presets)})
                             - used rendition {rendition} - ({rendition_idx + 1}/{len(encoding_config.renditions)})
