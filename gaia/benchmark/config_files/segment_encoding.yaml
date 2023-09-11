@@ -4,13 +4,13 @@ codecs:
 presets:
 #   - ultrafast
 #  - superfast
-  - veryfast
+  # - veryfast
 #   - faster
   # - fast
   - medium
   # - slow
 #   - slower
-  - veryslow
+  # - veryslow
 #   - placebo
 
 renditions:
@@ -34,11 +34,7 @@ renditions:
     width: 3840
 
 segment_duration:
-  - 1
-  - 2
   - 4
-  - 8
-  - 16
 
 encode_all_videos: True
 
