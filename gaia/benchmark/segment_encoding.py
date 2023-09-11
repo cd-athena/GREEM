@@ -16,9 +16,7 @@ from gaia.utils.ntfy import send_ntfy
 
 from gaia.hardware.intel import intel_rapl_workaround
 
-from gaia.utils.benchmark import BenchmarkParser
-
-CLI_PARSER = BenchmarkParser()
+from gaia.utils.benchmark import CLI_PARSER
 
 NTFY_TOPIC: str = 'aws_encoding'
 
@@ -62,14 +60,6 @@ def prepare_data_directories(
         list[str]: returns a list of all directories that were created
     '''
     data_directories = encoding_config.get_all_result_directories(video_names)
-
-    tmp: list[str] = list()
-    for duration in encoding_config.segment_duration:
-        for directory in data_directories:
-            if directory.count(f'{duration}s') == 2:
-                tmp.append(directory)
-
-    data_directories = tmp
 
     for directory in data_directories:
         directory_path: str = f'{result_root}/{directory}'
@@ -188,14 +178,14 @@ def execute_encoding_benchmark():
             INPUT_FILE_DIR) if file.endswith('.265')])
 
         # encode for each duration defined in the config file
-        prepare_data_directories(encoding_config, video_names=input_files)
+        prepare_data_directories(encoding_config, video_names=[file.removesuffix('.265') for file in input_files])
 
         duration = 4
         # encode each video found in the input files corresponding to the duration
-        for video_idx, video in enumerate(input_files):
+        for video_idx, video in enumerate(input_files[:2]):
             for codec_idx, codec in enumerate(encoding_config.codecs):
                 for preset_idx, preset in enumerate(encoding_config.presets):
-                    for rendition_idx, rendition in enumerate(encoding_config.renditions):
+                    for rendition_idx, rendition in enumerate(encoding_config.renditions[:2]):
                         
                         send_ntfy(
                             NTFY_TOPIC, 
@@ -207,7 +197,7 @@ def execute_encoding_benchmark():
                             - encoding config - ({en_idx + 1}/{len(encoding_configs)})
                             ''')
 
-                        output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video, duration, preset, rendition)}'
+                        output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video.removesuffix(".265"), duration, preset, rendition)}'
 
                         cmd = create_ffmpeg_encoding_command(
                             f'{input_dir}/{video}',
@@ -245,8 +235,8 @@ if __name__ == '__main__':
               ''')
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
-        intel_rapl_workaround()
-        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=10)
+        # intel_rapl_workaround()
+        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
