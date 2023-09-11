@@ -29,8 +29,8 @@ def get_representation_ffmpeg_flags(
     representations: list[str] = list()
     if not is_multi_video:
         maps: list[str] = ['-map 0:v:0'] * len(renditions)
-        representations.extend(maps)
-        representations.append('-map 0:a:0')
+        # representations.extend(maps)
+        # representations.append('-map 0:a:0')
 
     for idx, rendition in enumerate(renditions):
         bitrate = rendition.bitrate
