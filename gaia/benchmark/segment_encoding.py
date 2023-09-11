@@ -182,10 +182,10 @@ def execute_encoding_benchmark():
 
         duration = 4
         # encode each video found in the input files corresponding to the duration
-        for video_idx, video in enumerate(input_files[:2]):
+        for video_idx, video in enumerate(input_files):
             for codec_idx, codec in enumerate(encoding_config.codecs):
                 for preset_idx, preset in enumerate(encoding_config.presets):
-                    for rendition_idx, rendition in enumerate(encoding_config.renditions[:2]):
+                    for rendition_idx, rendition in enumerate(encoding_config.renditions):
                         
                         send_ntfy(
                             NTFY_TOPIC, 
