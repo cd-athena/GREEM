@@ -12,7 +12,9 @@ dependencies:
   - jupyter
   - numpy
   - pandas
+  - watchdog
   - pip
+
  
   - pip:
     - opencv-python
