@@ -62,6 +62,23 @@ class GpuMonitoring(BaseMonitoring):
     def stop(self):
         self.last_measured_time = pd.Timestamp('now')
         self.scheduler.stop()
+        
+    def get_utilisation(self, refresh: bool = False) -> tuple[float, float]:
+        if refresh:
+            self.gpu_metadata_handler.get_update_metadata()
+        
+        gpu_util: list[float] = list()
+        mem_util: list[float] = list()
+        
+        for gpu in self.gpu_metadata_handler.gpu:
+            gpu_util.append(gpu.utilization.gpu_util)
+            mem_util.append(gpu.utilization.memory_util)
+            
+        gpu_avg = sum(gpu_util) / len(gpu_util)
+        mem_avg = sum(mem_util) / len(mem_util)
+        
+        return gpu_avg, mem_avg
+        
 
     def monitor_gpu(self):
         last_measurement_time_delta = pd.Timestamp(
