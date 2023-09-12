@@ -33,6 +33,7 @@ class CpuMonitoring(BaseMonitoring):
 
 
 class GpuMonitoring(BaseMonitoring):
+    # https://stackoverflow.com/questions/8223811/a-top-like-utility-for-monitoring-cuda-activity-on-a-gpu
 
     def __init__(self, monitoring_file_path: str, monitoring_interval_in_secs: float) -> None:
         super().__init__(monitoring_file_path, monitoring_interval_in_secs)
@@ -49,6 +50,7 @@ class GpuMonitoring(BaseMonitoring):
         self.current_video: str = ''
         self.rendition = Rendition.get_batch_rendition()
         self.__write_to_file('start', use_header=True)
+        self.gpu_metadata_handler.get_update_metadata()
 
 
     @suppress(Exception)
@@ -63,21 +65,21 @@ class GpuMonitoring(BaseMonitoring):
         self.last_measured_time = pd.Timestamp('now')
         self.scheduler.stop()
         
-    def get_utilisation(self, refresh: bool = False) -> tuple[float, float]:
-        if refresh:
-            self.gpu_metadata_handler.get_update_metadata()
+    def get_utilisation(self) -> tuple[float, float]:
+    
+        # metadata = self.gpu_metadata_handler.get_update_metadata()['gpu']
         
         gpu_util: list[float] = list()
         mem_util: list[float] = list()
         
         for gpu in self.gpu_metadata_handler.gpu:
-            gpu_util.append(gpu.utilization.gpu_util)
-            mem_util.append(gpu.utilization.memory_util)
+            print(gpu)
             
-        gpu_avg = sum(gpu_util) / len(gpu_util)
-        mem_avg = sum(mem_util) / len(mem_util)
+        # gpu_avg = sum(gpu_util) / len(gpu_util)
+        # mem_avg = sum(mem_util) / len(mem_util)
         
-        return gpu_avg, mem_avg
+        return 0, 0
+        # return gpu_avg, mem_avg
         
 
     def monitor_gpu(self):
