@@ -191,10 +191,10 @@ def execute_encoding_benchmark():
                             NTFY_TOPIC, 
                             f'''
                             - video sequence {video} - ({video_idx + 1}/{len(input_files)})
-                            - used codec {codec} - ({codec_idx + 1}/{len(encoding_config.codecs)})
-                            - used preset {preset} - ({preset_idx + 1}/{len(encoding_config.presets)})
-                            - used rendition {rendition} - ({rendition_idx + 1}/{len(encoding_config.renditions)})
-                            - encoding config - ({en_idx + 1}/{len(encoding_configs)})
+                            --- used codec {codec} - ({codec_idx + 1}/{len(encoding_config.codecs)})
+                            --- used preset {preset} - ({preset_idx + 1}/{len(encoding_config.presets)})
+                            --- used {rendition} - ({rendition_idx + 1}/{len(encoding_config.renditions)})
+                            --- encoding config - ({en_idx + 1}/{len(encoding_configs)})
                             ''')
 
                         output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video.removesuffix(".265"), duration, preset, rendition)}'
