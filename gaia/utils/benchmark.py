@@ -1,5 +1,5 @@
 import argparse
-from gaia.utils.ffmpeg import QUIET_FLAG, CUDA_FLAG
+from gaia.utils.ffmpeg import QUIET_FLAG, CUDA_ENC_FLAG
 
 
 class BenchmarkParser():
@@ -113,7 +113,7 @@ class BenchmarkParser():
         return self.arguments.ntfy
 
     def get_ffmpeg_cuda_flag(self) -> str:
-        return CUDA_FLAG if self.is_cuda_enabled() else ''
+        return CUDA_ENC_FLAG if self.is_cuda_enabled() else ''
 
     def get_ffmpeg_quiet_flag(self) -> str:
         return QUIET_FLAG if self.is_quiet_ffmpeg() else ''
