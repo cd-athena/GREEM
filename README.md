@@ -12,7 +12,14 @@ A repository that contains different tools related to energy monitoring extracte
 
 ## Troubleshoot
 
+
 This section contains information about some issues encountered during creation and execution of this library.
+
+### CUDA Hardware Acceleration not Working Properly
+
+In order to fully utilise a CUDA GPU, it is necessary that not only the `-hwaccel cuda` flag is set, but also all other operations need to be specified to use CUDA instead of a CPU, see [StackOverflow](https://stackoverflow.com/questions/44510765/gpu-accelerated-video-processing-with-ffmpeg).
+
+How to fully use CUDA, please refer to the [NVIDIA documentation](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html).
 
 ### ffmpeg - cuda encode - OpenEncodeSessionEx failed: out of memory
 
