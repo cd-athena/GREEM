@@ -13,6 +13,7 @@ dependencies:
   - numpy
   - pandas
   - watchdog
+  - nvitop
   - pip
 
  
