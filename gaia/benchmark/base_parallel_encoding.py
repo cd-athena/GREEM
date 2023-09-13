@@ -190,10 +190,10 @@ def execute_encoding_benchmark():
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=output_files)
         
-        rendition = encoding_config.renditions[0]
+        rendition = encoding_config.renditions[-1]
         
-        for slice_size in range(2, len(input_files)):
-            slice_size = 5
+        for slice_size in range(1, 5):
+            # slice_size = 
             input_slice = [f'{input_dir}/{slice}' for slice in input_files[:slice_size]]
             
             
@@ -214,22 +214,18 @@ def execute_encoding_benchmark():
                         [rendition],
                         preset,
                         codec,
+                        cuda_mode=CLI_PARSER.is_cuda_enabled(),
                         quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
                         pretty_print=False
-                    )
-                    
-                    
-                    if USE_CUDA:
-                        print('before', gpu_monitoring.get_utilisation())
+                    )                 
+
                     os.system(cmd)
-                    if USE_CUDA:
-                        print('after', gpu_monitoring.get_utilisation())
                         
                     for out in output_dirs:
                         os.system(f'rm {out}/output.mp4')
 
             
-            break
+
 
 def __init_file_observer():
     global observer
