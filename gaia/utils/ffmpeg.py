@@ -6,15 +6,16 @@ from gaia.utils.config import Rendition, EncodingConfig
 
 import os
 
-QUIET_FLAG: str = '-v quiet'
-CUDA_FLAG: str = '-hwaccel cuda'
+QUIET_FLAG: str = '-hide_banner -loglevel error'
+CUDA_ENC_FLAG: str = '-hwaccel cuda'
+CUDA_DEC_FLAG: str = '-hwaccel cuvid'
 
-def get_lib_codec(codec: str) -> str:
+def get_lib_codec(codec: str, cuda_mode: bool = False) -> str:
     '''Returns the codec for the ffmpeg command'''
-    if codec == 'h264':
-        return 'libx264'
+    if codec == 'h264':   
+        return 'h264_nvenc' if cuda_mode else 'libx264'
     elif codec == 'h265':
-        return 'libx265'
+        return 'hevc_nvenc' if cuda_mode else 'libx265'
     else:
         raise ValueError('Provided codec value not supported')
 
@@ -62,7 +63,7 @@ def create_ffmpeg_encoding_command(
     '''Creates the ffmpeg command for encoding a video file'''
     cmd: list[str] = ['ffmpeg -y']
     if cuda_enabled:
-        cmd.append(CUDA_FLAG)
+        cmd.append(CUDA_ENC_FLAG)
     if quiet_mode:
         cmd.append(QUIET_FLAG)
 
@@ -133,14 +134,20 @@ def create_simple_multi_video_ffmpeg_command(
     preset: str,
     codec: str,
     segment_seconds: int = 4,
+    cuda_mode: bool = False,
     quiet_mode: bool = False,
     pretty_print: bool = False
 ) -> str:
     cmd: list[str] = [
         'ffmpeg', '-y', 
     ]
+    
+    if cuda_mode:
+        cmd.append(CUDA_ENC_FLAG)
+    
     if quiet_mode:
         cmd.append(QUIET_FLAG)
+    
     # add all input videos
     cmd.extend([f'-i {video}' for video in video_input_file_paths])
     
@@ -149,7 +156,7 @@ def create_simple_multi_video_ffmpeg_command(
         # cmd.append(map_cmd)
         map_cmd: list[str] = [
             f'-map {idx}',
-            f'-c:v {get_lib_codec(codec)}', 
+            f'-c:v {get_lib_codec(codec, cuda_mode=cuda_mode)}', 
             '-q:v 1',
             # f'-seg_duration {segment_seconds}',
             
