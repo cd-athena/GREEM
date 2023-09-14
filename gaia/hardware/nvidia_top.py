@@ -56,6 +56,15 @@ class NvidiaTop():
         metric_dict = self.get_resource_metrics_as_dict(cmd=cmd)
         
         return pd.DataFrame.from_dict(metric_dict, orient='index').transpose()
+    
+    @staticmethod
+    def merge_dataframe_results(metric_results: list[pd.DataFrame], exclude_timestamps: bool = False) -> pd.DataFrame:
+        concat_df = pd.concat(metric_results, ignore_index=True)
+        
+        if exclude_timestamps:
+            concat_df.drop(['timestamp', 'last_timestamp'], axis=1)
+        
+        return concat_df
 
 
 if __name__ == '__main__':
