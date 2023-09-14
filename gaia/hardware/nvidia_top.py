@@ -11,12 +11,24 @@ class NvidiaTop():
         self.cuda_available: bool = True
         self.device: Device | None = Device.all() if self.cuda_available else None
         self.resource_metric_collector: ResourceMetricCollector | None = ResourceMetricCollector() if self.cuda_available else None
+        
 
     def get_resource_metrics_as_dict(self, cmd: str) -> dict[str, float]:
+        """Measures the resource hardware CPU, GPU and MEM while executing the provided `cmd`.
+
+        Parameters
+        ----------
+        cmd : str
+            The command to be executed on the system that should be measured.
+
+        Returns
+        -------
+        dict[str, float]
+            Returns a dictionary with the resource metrics provided by `nvitop.ResourceMetricCollector`
+        """
         metric_dict: [str, float] = dict()
 
         def cleanup_key(key: str) -> str:
-
             return key.removeprefix('<tag>/').replace(' ', '').replace('(%)', '').replace('(C)', '').replace('(W)', '').replace('(', '.').replace(')', '').replace('/', '.')
 
         with self.resource_metric_collector(tag='<tag>') as collector:
@@ -27,8 +39,20 @@ class NvidiaTop():
 
         return metric_dict
     
+    
     def get_resource_metric_as_dataframe(self, cmd: str) -> pd.DataFrame:
-        
+        """Measures the resource hardware CPU, GPU and MEM while executing the provided `cmd`.
+
+        Parameters
+        ----------
+        cmd : str
+            The command to be executed on the system that should be measured.
+
+        Returns
+        -------
+        pandas Dataframe
+            Returns a dataframe with the resource metrics provided by `nvitop.ResourceMetricCollector`
+        """
         metric_dict = self.get_resource_metrics_as_dict(cmd=cmd)
         
         return pd.DataFrame.from_dict(metric_dict, orient='index').transpose()
