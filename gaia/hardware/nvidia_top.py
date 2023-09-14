@@ -58,7 +58,21 @@ class NvidiaTop():
         return pd.DataFrame.from_dict(metric_dict, orient='index').transpose()
     
     @staticmethod
-    def merge_dataframe_results(metric_results: list[pd.DataFrame], exclude_timestamps: bool = False) -> pd.DataFrame:
+    def merge_resource_metric_dfs(metric_results: list[pd.DataFrame], exclude_timestamps: bool = False) -> pd.DataFrame:
+        """Merges resource metrics collected via this nvidia top class
+
+        Parameters
+        ----------
+        metric_results : list[pd.DataFrame]
+            A list of pandas dataframe elements that were collected via this class
+        exclude_timestamps : bool, optional
+            if `True` drops columns related to timestamps in order to omit duplicate data when using other monitoring tools, by default False
+
+        Returns
+        -------
+        pd.DataFrame
+            returns a Dataframe that consists of all resource metrics
+        """
         concat_df = pd.concat(metric_results, ignore_index=True)
         
         if exclude_timestamps:
