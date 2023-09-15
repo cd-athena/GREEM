@@ -164,7 +164,7 @@ def execute_encoding_benchmark():
         
         rendition = encoding_config.renditions[-1]
         
-        for slice_size in range(1, 3):
+        for slice_size in range(1, 6):
             # slice_size = 
             input_slice = [f'{input_dir}/{slice}' for slice in input_files[:slice_size]]
             
@@ -247,8 +247,6 @@ def write_encoding_results_to_csv() -> None:
             # monitoring_df = pd.read_csv(
             #     f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
             monitoring_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
-            idle_df = pd.read_csv(
-                f'{RESULT_ROOT}/encoding_idle_time.csv', index_col=0)
             # merged_df = merge_benchmark_and_monitoring_dataframes(
             #     encoding_results_df, monitoring_df, idle_df)
             merged_df = pd.concat([emission_df, monitoring_df], axis=1)
@@ -282,8 +280,6 @@ if __name__ == '__main__':
         observer = Observer()
         __init_file_observer()
         
-        
-
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
         intel_rapl_workaround()
