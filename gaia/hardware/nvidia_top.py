@@ -1,6 +1,5 @@
 from nvitop import Device, ResourceMetricCollector
 import pandas as pd
-from time import sleep
 
 import os
 
@@ -79,25 +78,3 @@ class NvidiaTop():
             concat_df.drop(['timestamp', 'last_timestamp'], axis=1)
         
         return concat_df
-
-
-if __name__ == '__main__':
-
-    nvi_top = NvidiaTop()
-
-    # collect_dict = nvi_top.get_resource_metrics_as_dict()
-
-    # print('\n'.join([f'{k}: {collect_dict[k]}' for k in collect_dict.keys()]))
-    
-    metrics: list[pd.DataFrame] = list()
-    for i in range(3):
-        
-        metrics.append(nvi_top.get_resource_metric_as_dataframe(cmd='sleep 2'))
-        
-        
-    concat = pd.concat(metrics, ignore_index=True)
-    
-    print(concat)
-    concat.to_csv('test.csv')
-
- 
