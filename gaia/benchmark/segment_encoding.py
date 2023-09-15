@@ -26,9 +26,8 @@ ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
     # 'config_files/encoding_test_2.yaml',
     # 'config_files/default_encoding_config.yaml',
-    'config_files/segment_encoding.yaml',
-    # 'config_files/encoding_config_h264.yaml',
-    # 'config_files/encoding_config_h265.yaml'
+    'config_files/segment_encoding_h264.yaml',
+    'config_files/segment_encoding_h265.yaml',
 ]
 
 INPUT_FILE_DIR: str = 'dataset/ref_265'
