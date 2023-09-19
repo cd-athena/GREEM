@@ -20,9 +20,6 @@ NTFY_TOPIC: str = 'aws_encoding'
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    # 'config_files/encoding_test_1.yaml',
-    # 'config_files/encoding_test_2.yaml',
-    # 'config_files/default_encoding_config.yaml',
     'config_files/segment_encoding_h264.yaml',
     'config_files/segment_encoding_h265.yaml',
 ]
@@ -36,9 +33,6 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
-
-if USE_CUDA:
-    from gaia.monitoring.hardware_monitoring import GpuMonitoring
 
 
 def prepare_data_directories(
@@ -104,7 +98,6 @@ def stop_hardware_monitoring():
 
 
 def execute_encoding_benchmark():
-    global nvidia_top, metric_results
 
     send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
     input_dir = INPUT_FILE_DIR
@@ -215,7 +208,7 @@ if __name__ == '__main__':
             nvidia_top = NvidiaTop()
             metric_results: list[pd.DataFrame] = list()
             
-        # intel_rapl_workaround()
+        intel_rapl_workaround()
         IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
