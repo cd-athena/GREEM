@@ -4,7 +4,7 @@
 import yaml
 from dacite import from_dict as fd
 from dataclasses import dataclass, asdict
-from typing import Type
+from typing import Type, Optional
 from enum import Enum
 
 class EncodingVariant(Enum):
@@ -80,8 +80,9 @@ class EncodingConfig():
     presets: list[str]
     renditions: list[Rendition]
     segment_duration: list[int]
+    framerate: list[int]
     encode_all_videos: bool
-    videos_to_encode: list[str]
+    videos_to_encode: Optional[list[str]]
 
     @classmethod
     def from_dict(cls: Type['EncodingConfig'], data: dict):
