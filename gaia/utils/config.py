@@ -80,7 +80,7 @@ class EncodingConfig():
     presets: list[str]
     renditions: list[Rendition]
     segment_duration: list[int]
-    framerate: list[int]
+    framerate: Optional[list[int]]
     encode_all_videos: bool
     videos_to_encode: Optional[list[str]]
 
@@ -97,7 +97,7 @@ class EncodingConfig():
 
     def get_all_result_directories(self, video_names: list[str]) -> list[str]:
         '''Returns a list of all possible result directories'''
-        return [
+        directory_list: list[str] = [
             get_output_directory(codec, video, duration, preset, rendition)
             for rendition in self.renditions
             for preset in self.presets
@@ -105,6 +105,12 @@ class EncodingConfig():
             for duration in self.segment_duration
             for codec in self.codecs
         ]
+        
+        
+        if self.framerate is not None and len(self.framerate) > 0:
+            directory_list = [f'{l}/{fr}' for l in directory_list for fr in self.framerate]
+        
+        return directory_list
 
     # TODO find a way to store the metadata in a file
 
@@ -147,9 +153,10 @@ class DecodingConfig():
 
 if __name__ == '__main__':
     ec = EncodingConfig.from_file(
-        '../config_files/default_encoding_config.yaml')
+        '../benchmark/config_files/segment_encoding_h264.yaml')
     print(ec)
+    print(ec.get_all_result_directories(['test']))
 
-    config = read_yaml('../config_files/default_decoding_config.yaml')
-    dc = DecodingConfig.from_dict(config)
-    print(dc)
+    # config = read_yaml('../config_files/default_decoding_config.yaml')
+    # dc = DecodingConfig.from_dict(config)
+    # print(dc)
