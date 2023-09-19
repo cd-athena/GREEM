@@ -4,14 +4,11 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from gaia.utils.ffmpeg import create_ffmpeg_encoding_command, prepare_sliced_videos
+from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
 from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
-from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
-from gaia.utils.dataframe import(
-    get_dataframe_from_csv,
-    merge_benchmark_dataframes,
-    merge_benchmark_and_monitoring_dataframes
-)
+from gaia.utils.timing import IdleTimeEnergyMeasurement
+from gaia.utils.dataframe import get_dataframe_from_csv
+
 from gaia.utils.ntfy import send_ntfy
 
 from gaia.hardware.intel import intel_rapl_workaround
@@ -208,7 +205,6 @@ if __name__ == '__main__':
         send_ntfy(NTFY_TOPIC,
                   f'''start benchmark 
               - CUDA: {USE_CUDA} 
-              - SLICE: {USE_SLICED_VIDEOS}
               - DRY_RUN: {DRY_RUN}
               ''')
             
