@@ -1,5 +1,4 @@
 codecs:
-  - h264
   - h265
 presets:
   # - ultrafast
