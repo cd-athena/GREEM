@@ -6,17 +6,26 @@ from codecarbon import track_emissions
 
 from gaia.utils.ffmpeg import create_ffmpeg_encoding_command, prepare_sliced_videos
 from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
-from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
+
+from gaia.utils.timing import (
+    TimingMetadata, 
+    measure_time_of_system_cmd, 
+    IdleTimeEnergyMeasurement
+    )
+
 from gaia.utils.dataframe import(
     get_dataframe_from_csv, 
     merge_benchmark_dataframes, 
     merge_benchmark_and_monitoring_dataframes
     )
+
 from gaia.utils.ntfy import send_ntfy
 
 from gaia.hardware.intel import intel_rapl_workaround
 
 from gaia.utils.benchmark import BenchmarkParser
+
+from gaia.hardware.nvidia_top import NvidiaTop
 
 CLI_PARSER = BenchmarkParser()
 
@@ -41,9 +50,6 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()  # if True, no encoding will be executed
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
-
-if USE_CUDA:
-    from gaia.monitoring.hardware_monitoring import GpuMonitoring
 
 def prepare_data_directories(
     encoding_config: EncodingConfig, 
@@ -108,47 +114,64 @@ def execute_ffmpeg_encoding(
         codec: str,
         preset: str,
         rendition: Rendition,
-        duration: int,
-        timing_metadata: dict[int, dict]
+        duration: int
 ) -> None:
-    global gpu_monitoring, emission_tracker
+    global nvidia_top, metric_results
 
     if USE_CUDA:
-        gpu_monitoring.current_video = video_name
-        gpu_monitoring.rendition = rendition
+        # executes the cmd with nvidia monitoring
+        result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
+        
+        result_df[['preset', 'codec', 'duration']] = preset, codec, duration
+        result_df[['bitrate', 'width', 'height']] = rendition.bitrate, rendition.width, rendition.height
+        result_df['video_name'] = video_name
+        
+        metric_results.append(result_df)
+        
+    elif DRY_RUN:
+        print(cmd)
+    else:
+        os.system(cmd)
 
-    start_time, end_time, elapsed_time = measure_time_of_system_cmd(
-        cmd)
-
-    metadata = TimingMetadata(
-        start_time, end_time, elapsed_time, video_name, codec, preset, rendition, duration)
-    timing_metadata[len(
-        timing_metadata)] = metadata.to_dict()
-
-
-def write_encoding_results_to_csv(timing_metadata: dict[int, dict]):
-    timing_df: pd.DataFrame = pd.DataFrame.from_dict(
-        timing_metadata, orient='index')
+def write_encoding_results_to_csv():
+    global nvidia_top, metric_results
+    
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
     if INCLUDE_CODE_CARBON:
         emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
         # merge codecarbon and timing_df results
-        encoding_results_df = merge_benchmark_dataframes(emission_df, timing_df)
-        
+
         if USE_CUDA:
-            # merge encoding results with hardware monitoring and idle dataframes
-            monitoring_df = pd.read_csv(f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
-            idle_df = pd.read_csv(f'{RESULT_ROOT}/encoding_idle_time.csv', index_col=0)
-            merged_df = merge_benchmark_and_monitoring_dataframes(encoding_results_df, monitoring_df, idle_df)
-            
+            nvitop_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
+            merged_df = pd.concat([emission_df, nvitop_df], axis=1)
             # save to disk
             merged_df.to_csv(result_path)
-        else:
-            encoding_results_df.to_csv(result_path)
-        os.system(f'rm {RESULT_ROOT}/emissions.csv')
-    else:
-        timing_df.to_csv(result_path)
+            os.system(f'rm {RESULT_ROOT}/emissions.csv')
+
+# def write_encoding_results_to_csv(timing_metadata: dict[int, dict]):
+#     timing_df: pd.DataFrame = pd.DataFrame.from_dict(
+#         timing_metadata, orient='index')
+#     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+#     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
+#     if INCLUDE_CODE_CARBON:
+#         emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
+#         # merge codecarbon and timing_df results
+#         encoding_results_df = merge_benchmark_dataframes(emission_df, timing_df)
+        
+#         if USE_CUDA:
+#             # merge encoding results with hardware monitoring and idle dataframes
+#             monitoring_df = pd.read_csv(f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
+#             idle_df = pd.read_csv(f'{RESULT_ROOT}/encoding_idle_time.csv', index_col=0)
+#             merged_df = merge_benchmark_and_monitoring_dataframes(encoding_results_df, monitoring_df, idle_df)
+            
+#             # save to disk
+#             merged_df.to_csv(result_path)
+#         else:
+#             encoding_results_df.to_csv(result_path)
+#         os.system(f'rm {RESULT_ROOT}/emissions.csv')
+#     else:
+#         timing_df.to_csv(result_path)
 
 
 def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) -> list[str]:
@@ -167,20 +190,7 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
     return sorted(ret_input_files)
 
-def start_hardware_monitoring():
-    global gpu_monitoring
-    if USE_CUDA:
-        gpu_monitoring.start()
-    
-
-def stop_hardware_monitoring():
-    global gpu_monitoring
-    if USE_CUDA:
-        gpu_monitoring.stop()
-
-
 def execute_encoding_benchmark():
-    global gpu_monitoring, timing_metadata
     
     send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
     input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
@@ -189,7 +199,8 @@ def execute_encoding_benchmark():
         
         send_ntfy(NTFY_TOPIC, f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
 
-        input_files = get_filtered_sliced_videos(encoding_config, input_dir)
+        input_files = get_filtered_sliced_videos(encoding_config, input_dir)[:2]
+        print(input_files)
 
         # encode for each duration defined in the config file
         for idx, duration in enumerate(encoding_config.segment_duration):
@@ -214,24 +225,12 @@ def execute_encoding_benchmark():
                                 pretty_print=DRY_RUN,
                                 cuda_enabled=USE_CUDA,
                                 quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
-                                )
+                                ) if not DRY_RUN else 'sleep 0.1'
                             
-                            if not DRY_RUN:
+                            execute_ffmpeg_encoding(
+                                    cmd, video, codec, preset, rendition, duration)
                                 
-                                start_hardware_monitoring()
-
-                                execute_ffmpeg_encoding(
-                                    cmd, video, codec, preset, rendition, duration, timing_metadata)
-                                
-                                stop_hardware_monitoring()
-
-                            else:
-                                print(cmd)
-                                execute_ffmpeg_encoding(
-                                    'sleep 0.01', video, codec, preset, rendition, duration, timing_metadata)
-
-    
-    write_encoding_results_to_csv(timing_metadata)
+    write_encoding_results_to_csv()
     
     
 
@@ -252,16 +251,15 @@ if __name__ == '__main__':
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
-        timing_metadata: dict[int, dict] = dict()
 
         if USE_SLICED_VIDEOS:
             send_ntfy(NTFY_TOPIC, f'slicing videos')
             prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
             send_ntfy(NTFY_TOPIC, f'finished slicing videos')
 
-        gpu_monitoring = None
         if USE_CUDA:
-            gpu_monitoring = GpuMonitoring(RESULT_ROOT, 0.5)
+            nvidia_top = NvidiaTop()
+            metric_results: list[pd.DataFrame] = list()
 
         execute_encoding_benchmark()
     except Exception as err:
