@@ -72,6 +72,14 @@ class Rendition(Resolution):
     def to_dict(self) -> dict:
         return {k: str(v) for k, v in asdict(self).items()}
 
+@dataclass
+class EncodingConfigDTO():
+    codec: str
+    preset: str
+    rendition: Rendition
+    segment_duration: int
+    framerate: int | None
+    
 
 @dataclass
 class EncodingConfig():
@@ -80,7 +88,7 @@ class EncodingConfig():
     presets: list[str]
     renditions: list[Rendition]
     segment_duration: list[int]
-    framerate: Optional[list[int]]
+    framerate: list[int] | None
     encode_all_videos: bool
     videos_to_encode: Optional[list[str]]
 
