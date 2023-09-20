@@ -55,7 +55,8 @@ def create_ffmpeg_encoding_command(
     preset: str,
     segment_duration: int,
     codec: str,
-    use_dash: bool,
+    framerate: int = 0,
+    use_dash: bool = False,    
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
     pretty_print: bool = False
@@ -69,8 +70,12 @@ def create_ffmpeg_encoding_command(
 
     cmd.append(f'-re -i {input_file_path}')
 
+    if framerate > 0:
+        cmd.append(f'-filter:v fps={framerate}')
+    
     cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec))
-    fps: int = ceil(VideoInfo(input_file_path).get_fps())
+    
+    fps: int = ceil(VideoInfo(input_file_path).get_fps()) if framerate == 0 else framerate
     keyframe: int = fps * segment_duration
 
     cmd.extend([
