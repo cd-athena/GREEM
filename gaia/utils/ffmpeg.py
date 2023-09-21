@@ -75,7 +75,7 @@ def create_ffmpeg_encoding_command(
     
     cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec))
     
-    fps: int = ceil(VideoInfo(input_file_path).get_fps()) if framerate == 0 else framerate
+    fps: int = ceil(VideoInfo(input_file_path).get_fps()) if framerate is None or framerate == 0 else framerate
     keyframe: int = fps * segment_duration
 
     cmd.extend([
