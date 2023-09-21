@@ -10,6 +10,7 @@ class NvidiaTop():
         self.cuda_available: bool = True
         self.device: Device | None = Device.all() if self.cuda_available else None
         self.resource_metric_collector: ResourceMetricCollector | None = ResourceMetricCollector() if self.cuda_available else None
+
         
 
     def get_resource_metrics_as_dict(self, cmd: str) -> dict[str, float]:
@@ -30,11 +31,14 @@ class NvidiaTop():
         def cleanup_key(key: str) -> str:
             return key.removeprefix('<tag>/').replace(' ', '').replace('(%)', '').replace('(C)', '').replace('(W)', '').replace('(', '.').replace(')', '').replace('/', '.')
 
-        with self.resource_metric_collector(tag='<tag>') as collector:
+        with self.resource_metric_collector.context(tag='<tag>') as collector:
             os.system(cmd)
             collect_dict = collector.collect()
 
             metric_dict = {cleanup_key(k): v for k, v in collect_dict.items()}
+            
+        # TODO find a better way to properly reset the collector
+        self.resource_metric_collector = ResourceMetricCollector() if self.cuda_available else None
 
         return metric_dict
     
