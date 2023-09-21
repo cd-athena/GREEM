@@ -79,7 +79,7 @@ class EncodingConfigDTO():
     preset: str
     rendition: Rendition
     segment_duration: int
-    framerate: int | None
+    framerate: int = 0
     
     def get_output_directory(
         self, 
@@ -88,9 +88,13 @@ class EncodingConfigDTO():
         '''Returns the output directory for the encoded video'''
         if any([x in video_name for x in ['.webm', '.mp4']]):
             video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
-        return f'{self.codec}/{video_name}/{self.segment_duration}s/{self.preset}/{self.rendition.dir_representation()}'
-    
+        output_dir: str = f'{self.codec}/{video_name}/{self.segment_duration}s/{self.preset}/{self.rendition.dir_representation()}'
+        if self.framerate is not None and self.framerate > 0:
+            output_dir = f'{output_dir}/{self.framerate}fps'
 
+        return output_dir
+    
+    
 @dataclass
 class EncodingConfig():
     '''Represents the configuration for the video encoding'''
@@ -135,12 +139,13 @@ class EncodingConfig():
     def get_encoding_dtos(self) -> list[EncodingConfigDTO]:
         encoding_dtos: list[EncodingConfigDTO] = list()
         
-        for rend, pres, dur, cod, fr in itertools.product(
-            self.renditions, self.presets, self.segment_duration, self.codecs, self.framerate):
-            dto = EncodingConfigDTO(cod, pres, rend, dur, fr)
+        for duration, preset, rendition, codec, fr in itertools.product(
+            self.segment_duration, 
+            self.presets, self.renditions, self.codecs, 
+            self.framerate if self.framerate is not None and len(self.framerate) > 0 else []):
+            dto = EncodingConfigDTO(codec, preset, rendition, duration, fr)
             encoding_dtos.append(dto)
             
-        
         return encoding_dtos
 
 def get_output_directory(

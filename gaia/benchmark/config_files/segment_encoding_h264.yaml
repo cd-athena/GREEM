@@ -36,9 +36,9 @@ segment_duration:
   - 4
 
 framerate:
-  # - 15
-  - 24
-  # - 30
+  - 15
+  # - 24
+  - 30
 
 encode_all_videos: True
 

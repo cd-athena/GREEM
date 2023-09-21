@@ -2,6 +2,7 @@ codecs:
   - h264
 presets:
   - ultrafast
+  - fast
 
 renditions:
   - bitrate: 145
@@ -29,6 +30,11 @@ segment_duration:
   - 4
   - 8
   - 16
+
+framerate:
+  - 15
+  - 24
+  - 30
 
 encode_all_videos: False
 
