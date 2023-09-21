@@ -5,7 +5,11 @@ from datetime import datetime
 from codecarbon import track_emissions
 
 from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
-from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
+from gaia.utils.config import (
+    EncodingConfig, 
+    EncodingConfigDTO, 
+)
+
 from gaia.utils.timing import IdleTimeEnergyMeasurement
 from gaia.utils.dataframe import get_dataframe_from_csv
 
@@ -50,11 +54,17 @@ def prepare_data_directories(
     Returns:
         list[str]: returns a list of all directories that were created
     '''
-    data_directories = encoding_config.get_all_result_directories(video_names)
+    # data_directories = encoding_config.get_all_result_directories(video_names)
+    data_directories = [
+        dto.get_output_directory(video) 
+        for dto in encoding_config.get_encoding_dtos() 
+        for video in video_names
+        ]
 
     for directory in data_directories:
         directory_path: str = f'{result_root}/{directory}'
         Path(directory_path).mkdir(parents=True, exist_ok=True)
+        
     return data_directories
 
 
@@ -109,42 +119,39 @@ def execute_encoding_benchmark():
 
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=[file.removesuffix('.265') for file in input_files])
-
+        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
         duration = 4
         # encode each video found in the input files corresponding to the duration
-        for video_idx, video_name in enumerate(input_files):
-            for codec_idx, codec in enumerate(encoding_config.codecs):
-                for preset_idx, preset in enumerate(encoding_config.presets):
-                    for rendition_idx, rendition in enumerate(encoding_config.renditions):
-                        
-                        send_ntfy(
-                            NTFY_TOPIC, 
-                            f'''
-                            - video sequence {video_name} - ({video_idx + 1}/{len(input_files)})
-                            --- used codec {codec} - ({codec_idx + 1}/{len(encoding_config.codecs)})
-                            --- used preset {preset} - ({preset_idx + 1}/{len(encoding_config.presets)})
-                            --- used {rendition} - ({rendition_idx + 1}/{len(encoding_config.renditions)})
-                            --- encoding config - ({en_idx + 1}/{len(encoding_configs)})
-                            ''')
+        for video_idx, video_name in enumerate(input_files[:1]):
+            for dto_idx, dto in enumerate(encoding_dtos):
+                
+                output_dir = f'{RESULT_ROOT}/{dto.get_output_directory(video_name.removesuffix(".265"))}'
 
-                        output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video_name.removesuffix(".265"), duration, preset, rendition)}'
-
-                        cmd = create_ffmpeg_encoding_command(
+                send_ntfy(
+                    NTFY_TOPIC, 
+                    f'''
+                    - video sequence {video_name} - ({video_idx + 1}/{len(input_files)})
+                    --- config - ({en_idx + 1}/{len(encoding_configs)})
+                    --- dto {dto} - ({dto_idx + 1}/{len(encoding_dtos)})
+                    ''')
+                cmd = create_ffmpeg_encoding_command(
                             f'{input_dir}/{video_name}',
-                            output_dir, rendition, preset, duration, codec,
+                            output_dir, 
+                            dto.rendition, dto.preset, duration, dto.codec,
+                            framerate=dto.framerate,
                             use_dash=False,
                             pretty_print=DRY_RUN,
                             cuda_enabled=USE_CUDA,
                             quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
                         ) if not DRY_RUN else 'sleep 0.1'
-
-                        execute_encoding_cmd(cmd, preset, codec, duration, rendition, video_name)     
+            
+                execute_encoding_cmd(cmd, dto, video_name)     
 
     write_encoding_results_to_csv()
 
 @track_emissions(
-    # offline=True,
-    # country_iso_code='AUT',
+    offline=True,
+    country_iso_code='AUT',
     log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
     measure_power_secs=1,
     output_dir=RESULT_ROOT,
@@ -152,10 +159,7 @@ def execute_encoding_benchmark():
 )
 def execute_encoding_cmd(
     cmd: str,
-    preset: str,
-    codec: str,
-    duration: int,
-    rendition: Rendition,
+    encoding_dto: EncodingConfigDTO,
     video_name: str
 ) -> None:
     global metric_results, nvidia_top
@@ -164,9 +168,12 @@ def execute_encoding_cmd(
         # executes the cmd with nvidia monitoring
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
         
-        result_df[['preset', 'codec', 'duration']] = preset, codec, duration
+        rendition = encoding_dto.rendition
+        
+        result_df[['preset', 'codec', 'duration']] = encoding_dto.preset, encoding_dto.codec, encoding_dto.segment_duration
         result_df[['bitrate', 'width', 'height']] = rendition.bitrate, rendition.width, rendition.height
         result_df['video_name'] = video_name
+        result_df['output_path'] = encoding_dto.get_output_directory(video_name)
         
         metric_results.append(result_df)
         
