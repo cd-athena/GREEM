@@ -24,6 +24,7 @@ def get_representation_ffmpeg_flags(
     renditions: list[Rendition], 
     preset: str, 
     codec: str,
+    fps: str = '',
     is_multi_video: bool = False
     ) -> list[str]:
     '''Returns the ffmpeg flags for the renditions'''
@@ -32,6 +33,8 @@ def get_representation_ffmpeg_flags(
         maps: list[str] = ['-map 0:v:0'] * len(renditions)
         # representations.extend(maps)
         # representations.append('-map 0:a:0')
+        
+    fps_repr: str = '' if len(fps) == 0 else f',fps={fps}'
 
     for idx, rendition in enumerate(renditions):
         bitrate = rendition.bitrate
@@ -39,7 +42,7 @@ def get_representation_ffmpeg_flags(
         width = rendition.width
         representation: list[str] = [
             f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
-            f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx} "scale={width}:{height}"',
+            f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx} "scale={width}:{height} {fps_repr}"',
             f'-preset {preset}'
         ]
 
@@ -70,11 +73,13 @@ def create_ffmpeg_encoding_command(
 
     cmd.append(f'-re -i {input_file_path}')
 
+    fps = ''
     if framerate > 0:
-        cmd.append(f'-filter:v fps={framerate}')
+        fps = str(framerate)
     
-    cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec))
+    cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec, fps=fps))
     
+        
     fps: int = ceil(VideoInfo(input_file_path).get_fps()) if framerate is None or framerate == 0 else framerate
     keyframe: int = fps * segment_duration
 
