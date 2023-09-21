@@ -1,3 +1,4 @@
+import itertools
 # Sources:
 # * https://stackoverflow.com/questions/51286748/make-the-python-json-encoder-support-pythons-new-dataclasses
 
@@ -80,6 +81,15 @@ class EncodingConfigDTO():
     segment_duration: int
     framerate: int | None
     
+    def get_output_directory(
+        self, 
+        video_name: str
+    ) -> str:
+        '''Returns the output directory for the encoded video'''
+        if any([x in video_name for x in ['.webm', '.mp4']]):
+            video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
+        return f'{self.codec}/{video_name}/{self.segment_duration}s/{self.preset}/{self.rendition.dir_representation()}'
+    
 
 @dataclass
 class EncodingConfig():
@@ -122,6 +132,16 @@ class EncodingConfig():
 
     # TODO find a way to store the metadata in a file
 
+    def get_encoding_dtos(self) -> list[EncodingConfigDTO]:
+        encoding_dtos: list[EncodingConfigDTO] = list()
+        
+        for rend, pres, dur, cod, fr in itertools.product(
+            self.renditions, self.presets, self.segment_duration, self.codecs, self.framerate):
+            dto = EncodingConfigDTO(cod, pres, rend, dur, fr)
+            encoding_dtos.append(dto)
+            
+        
+        return encoding_dtos
 
 def get_output_directory(
     codec: str,
@@ -161,9 +181,10 @@ class DecodingConfig():
 
 if __name__ == '__main__':
     ec = EncodingConfig.from_file(
-        '../benchmark/config_files/segment_encoding_h264.yaml')
-    print(ec)
-    print(ec.get_all_result_directories(['test']))
+        '../benchmark/config_files/test_encoding_config.yaml')
+    
+    for dto in ec.get_encoding_dtos():
+        print(dto)
 
     # config = read_yaml('../config_files/default_decoding_config.yaml')
     # dc = DecodingConfig.from_dict(config)
