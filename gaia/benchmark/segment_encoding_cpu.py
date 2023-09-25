@@ -122,7 +122,7 @@ def execute_encoding_benchmark():
         encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
         duration = 4
         # encode each video found in the input files corresponding to the duration
-        for video_idx, video_name in enumerate(input_files[:1]):
+        for video_idx, video_name in enumerate(input_files):
             for dto_idx, dto in enumerate(encoding_dtos):
                 
                 output_dir = f'{RESULT_ROOT}/{dto.get_output_directory(video_name.removesuffix(".265"))}'
