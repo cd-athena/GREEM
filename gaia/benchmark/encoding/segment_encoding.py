@@ -24,8 +24,8 @@ NTFY_TOPIC: str = 'aws_encoding'
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    'config_files/segment_encoding_h264.yaml',
-    'config_files/segment_encoding_h265.yaml',
+    '../config_files/segment_encoding_h264.yaml',
+    '../config_files/segment_encoding_h265.yaml',
 ]
 
 INPUT_FILE_DIR: str = '../dataset/ref_265'
