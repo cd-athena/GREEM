@@ -166,6 +166,7 @@ class DecodingConfig():
     '''Represents the configuration for the video decoding'''
     scaling_enabled: bool
     scaling_resolutions: list[Resolution]
+    framerate: list[int] | None
     decoding_sleep: float
     decode_all_videos: bool
     encoding_codecs: list[str]
