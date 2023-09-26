@@ -17,25 +17,44 @@ from gaia.hardware.nvidia_top import NvidiaTop
 
 from gaia.utils.benchmark import CLI_PARSER
 
-ENCODING_CONFIG_PATHS: list[str] = [
+DECODING_CONFIG_PATHS: list[str] = [
     '../config_files/test_decoding_config.yaml',
 ]
 
 NTFY_TOPIC: str = 'decoding'
-INPUT_FILE_DIR: str = '../result'
+INPUT_FILE_DIR: str = '../encoding/results'
 RESULT_ROOT = 'decoding_results'
 
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
+def get_all_possible_video_files() -> list[str]:
+    def is_video(file_name: str) -> bool:
+        file_is_video: bool = file_name is not None and \
+            len(file_name) > 0 and \
+            not file_name.endswith('.csv') and \
+            not file_name.endswith('.txt')
 
-
-def get_input_files(decoding_config: DecodingConfig) -> list[str]:
-    input_files: list[str] = list()
-
-    # TODO
+        return file_is_video
     
+    input_files: list[str] = list()
+    
+    for root, _, files in os.walk(INPUT_FILE_DIR):
+        
+        for file_name in files:
+            file_path = os.path.join(root, file_name)
+            if is_video(file_path):
+                input_files.append(file_path) 
+            
+    return input_files
+
+
+def get_input_files(decoding_config: DecodingConfig, all_video_files: list[str]) -> list[str]:    
+    input_files: list[str] = all_video_files.copy()
+            
+    # TODO filter input files
+        
     return input_files
 
 
@@ -45,33 +64,40 @@ def execute_decoding_benchmark():
 
 
 if __name__ == '__main__':
-    try:
-        send_ntfy(NTFY_TOPIC,
-                  f'''start decoding benchmark 
-              - CUDA: {USE_CUDA} 
-              - DRY_RUN: {DRY_RUN}
-              ''')
+    decoding_configs: list[DecodingConfig] = [DecodingConfig.from_file(file_path) for file_path in DECODING_CONFIG_PATHS]
+    all_video_files = get_all_possible_video_files()
+    input_files = get_input_files(decoding_configs[0], all_video_files)
+    
+    print(input_files)
+    print(len(input_files))
         
-        Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+    # try:
+    #     send_ntfy(NTFY_TOPIC,
+    #               f'''start decoding benchmark 
+    #           - CUDA: {USE_CUDA} 
+    #           - DRY_RUN: {DRY_RUN}
+    #           ''')
         
-        gpu_monitoring = None
-        if USE_CUDA:
-            nvidia_top = NvidiaTop()
-            metric_results: list[pd.DataFrame] = list()
+    #     Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+        
+    #     gpu_monitoring = None
+    #     if USE_CUDA:
+    #         nvidia_top = NvidiaTop()
+    #         metric_results: list[pd.DataFrame] = list()
             
-        intel_rapl_workaround()
-        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/decoding_idle_time.csv', idle_time_in_seconds=1)
+    #     intel_rapl_workaround()
+    #     IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/decoding_idle_time.csv', idle_time_in_seconds=1)
 
-        decoding_configs: list[DecodingConfig] = [DecodingConfig.from_file(file_path) for file_path in DECODING_CONFIG_PATHS]
+    #     decoding_configs: list[DecodingConfig] = [DecodingConfig.from_file(file_path) for file_path in DECODING_CONFIG_PATHS]
         
-        execute_decoding_benchmark()
+    #     execute_decoding_benchmark()
 
 
-    except Exception as err:
-        print('err', err)
-        send_ntfy(
-            NTFY_TOPIC, f'Something went wrong during the decoding benchmark, Exception: {err}')
+    # except Exception as err:
+    #     print('err', err)
+    #     send_ntfy(
+    #         NTFY_TOPIC, f'Something went wrong during the decoding benchmark, Exception: {err}')
 
-    finally:
-        print('done')
-        send_ntfy(NTFY_TOPIC, 'finished decoding benchmark')
+    # finally:
+    #     print('done')
+    #     send_ntfy(NTFY_TOPIC, 'finished decoding benchmark')
