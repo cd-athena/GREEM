@@ -12,6 +12,8 @@ framerate:
 
 decoding_sleep: 0.1
 
+decode_all_videos: True
+
 encoding_codecs:
   - h264
   # - h265
