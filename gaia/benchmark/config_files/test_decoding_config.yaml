@@ -1,0 +1,25 @@
+
+scaling_enabled: True
+
+scaling_resolutions: 
+  - height: 540
+    width: 960
+
+framerate:
+  - 15
+  - 24
+  - 30
+
+decoding_sleep: 0.1
+
+encoding_codecs:
+  - h264
+  # - h265
+
+encoding_preset:
+  - medium
+
+encoding_renditions:
+  - bitrate: 145
+    height: 360
+    width: 640
