@@ -103,7 +103,6 @@ def execute_encoding_benchmark():
 
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
-        input_files = input_files[:3]
 
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=[file.removesuffix('.265') for file in input_files])
