@@ -59,7 +59,7 @@ def create_ffmpeg_encoding_command(
     segment_duration: int,
     codec: str,
     framerate: int = 0,
-    use_crf: bool = False,
+    constant_rate_factor: int = -1,
     use_dash: bool = False,    
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
@@ -74,8 +74,8 @@ def create_ffmpeg_encoding_command(
 
     cmd.append(f'-re -i {input_file_path}')
     
-    if use_crf: 
-        cmd.append('-crf 17')
+    if constant_rate_factor > -1: 
+        cmd.append(f'-crf {constant_rate_factor}')
 
     fps = ''
     if framerate > 0:
