@@ -8,6 +8,7 @@ from dataclasses import dataclass, asdict
 from typing import Type, Optional
 from enum import Enum
 
+
 class EncodingVariant(Enum):
     SEQUENTIAL = 1
     BATCH = 2
@@ -37,7 +38,7 @@ class Resolution:
 @dataclass
 class Rendition(Resolution):
     '''Represents a rendition of a video file
-    
+
     Example: 
     `Rendition(1080, 1920, 8100)` represents a rendition with a height of 1080, a width of 1920 and a bitrate of 8100KB
     '''
@@ -61,7 +62,7 @@ class Rendition(Resolution):
             int(height),
             int(width)
         )
-    
+
     @classmethod
     def get_batch_rendition(cls: Type['Rendition']):
         return cls(
@@ -69,9 +70,10 @@ class Rendition(Resolution):
             int(0),
             int(0)
         )
-    
+
     def to_dict(self) -> dict:
         return {k: str(v) for k, v in asdict(self).items()}
+
 
 @dataclass
 class EncodingConfigDTO():
@@ -80,9 +82,9 @@ class EncodingConfigDTO():
     rendition: Rendition
     segment_duration: int
     framerate: int = 0
-    
+
     def get_output_directory(
-        self, 
+        self,
         video_name: str
     ) -> str:
         '''Returns the output directory for the encoded video'''
@@ -93,8 +95,8 @@ class EncodingConfigDTO():
             output_dir = f'{output_dir}/{self.framerate}fps'
 
         return output_dir
-    
-    
+
+
 @dataclass
 class EncodingConfig():
     '''Represents the configuration for the video encoding'''
@@ -127,26 +129,25 @@ class EncodingConfig():
             for duration in self.segment_duration
             for codec in self.codecs
         ]
-        
-        
-        if self.framerate is not None and len(self.framerate) > 0:
-            directory_list = [f'{l}/{fr}' for l in directory_list for fr in self.framerate]
-        
-        return directory_list
 
-    # TODO find a way to store the metadata in a file
+        if self.framerate is not None and len(self.framerate) > 0:
+            directory_list = [
+                f'{l}/{fr}' for l in directory_list for fr in self.framerate]
+
+        return directory_list
 
     def get_encoding_dtos(self) -> list[EncodingConfigDTO]:
         encoding_dtos: list[EncodingConfigDTO] = list()
-        
+
         for duration, preset, rendition, codec, fr in itertools.product(
-            self.segment_duration, 
-            self.presets, self.renditions, self.codecs, 
-            self.framerate if self.framerate is not None and len(self.framerate) > 0 else []):
+                self.segment_duration,
+                self.presets, self.renditions, self.codecs,
+                self.framerate if self.framerate is not None and len(self.framerate) > 0 else []):
             dto = EncodingConfigDTO(codec, preset, rendition, duration, fr)
             encoding_dtos.append(dto)
-            
+
         return encoding_dtos
+
 
 def get_output_directory(
     codec: str,
@@ -159,6 +160,19 @@ def get_output_directory(
     if any([x in video_name for x in ['.webm', '.mp4']]):
         video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
     return f'{codec}/{video_name}/{duration}s/{preset}/{rendition.dir_representation()}'
+
+
+@dataclass
+class DecodingConfigDTO():
+    scaling_resolution: Resolution
+    framerate: int
+    encoding_codec: str
+    encoding_preset: str
+    encoding_rendition: Rendition
+
+    def get_output_dir(self, result_dir: str, video_name: str) -> str:
+        # TODO
+        pass
 
 
 @dataclass
@@ -184,11 +198,27 @@ class DecodingConfig():
         '''Creates a DecodingConfig object from a YAML file'''
         return cls.from_dict(read_yaml(file_path))
 
+    def get_decoding_dtos(self) -> list[DecodingConfigDTO]:
+        decoding_dtos: list[DecodingConfigDTO] = list()
+
+        for scale_resolution, framerate, encoding_codec, encoding_preset, encoding_rendition in itertools.product(
+                self.scaling_resolutions,
+                self.framerate,
+                self.encoding_codecs,
+                self.encoding_preset,
+                self.encoding_renditions
+        ):
+            dto = DecodingConfigDTO(
+                scale_resolution, framerate, encoding_codec, encoding_preset, encoding_rendition)
+            decoding_dtos.append(dto)
+
+        return decoding_dtos
+
 
 if __name__ == '__main__':
     ec = EncodingConfig.from_file(
         '../benchmark/config_files/test_encoding_config.yaml')
-    
+
     for dto in ec.get_encoding_dtos():
         print(dto)
 
