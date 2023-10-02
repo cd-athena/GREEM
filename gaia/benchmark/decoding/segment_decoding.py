@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from gaia.utils.config import DecodingConfig
+from gaia.utils.config import DecodingConfig, DecodingConfigDTO
 
 
 from gaia.utils.timing import IdleTimeEnergyMeasurement
@@ -50,10 +50,16 @@ def get_all_possible_video_files() -> list[str]:
     return input_files
 
 
-def get_input_files(decoding_config: DecodingConfig, all_video_files: list[str]) -> list[str]:    
-    input_files: list[str] = all_video_files.copy()
-            
-    # TODO filter input files
+def get_input_files(decoding_dto: DecodingConfigDTO, all_video_files: list[str]) -> list[str]:    
+    input_files: list[str] = list()
+    
+    for video_file in all_video_files:
+        if f'{decoding_dto.encoding_codec}' in video_file and \
+            f'{decoding_dto.encoding_preset}' in video_file and \
+            f'{decoding_dto.encoding_rendition.dir_representation()}' in video_file and \
+            f'{decoding_dto.framerate}fps' in video_file:
+                
+            input_files.append(video_file)         
         
     return input_files
 
@@ -66,10 +72,19 @@ def execute_decoding_benchmark():
 if __name__ == '__main__':
     decoding_configs: list[DecodingConfig] = [DecodingConfig.from_file(file_path) for file_path in DECODING_CONFIG_PATHS]
     all_video_files = get_all_possible_video_files()
-    input_files = get_input_files(decoding_configs[0], all_video_files)
+    config = decoding_configs[0]
     
-    print(input_files)
-    print(len(input_files))
+    dto = config.get_decoding_dtos()[0]
+    
+    print(all_video_files)
+    
+    for dto in config.get_decoding_dtos()[:2]:
+        print(dto.encoding_preset, dto.encoding_codec, dto.encoding_rendition, dto.framerate)
+        input_files = get_input_files(dto, all_video_files)
+        print(input_files)
+        print(len(input_files))
+        print()
+        
         
     # try:
     #     send_ntfy(NTFY_TOPIC,
