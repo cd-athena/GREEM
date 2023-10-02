@@ -6,7 +6,7 @@ scaling_resolutions:
     width: 960
 
 framerate:
-  - 15
+  # - 15
   - 24
   - 30
 
@@ -20,8 +20,12 @@ encoding_codecs:
 
 encoding_preset:
   - medium
+  # - slow
 
 encoding_renditions:
   - bitrate: 145
-    height: 360
-    width: 640
+    height: 234
+    width: 416
+  - bitrate: 1100
+    height: 432
+    width: 768
