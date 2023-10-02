@@ -65,7 +65,12 @@ def get_input_files(decoding_dto: DecodingConfigDTO, all_video_files: list[str])
 
 
 def execute_decoding_benchmark():
-    # TODO
+    decoding_configs: list[DecodingConfig] = [DecodingConfig.from_file(file_path) for file_path in DECODING_CONFIG_PATHS]
+    all_video_files = get_all_possible_video_files()
+    
+    for config in decoding_configs:
+        for dto in config.get_decoding_dtos():
+            pass
     pass
 
 
@@ -78,7 +83,7 @@ if __name__ == '__main__':
     
     print(all_video_files)
     
-    for dto in config.get_decoding_dtos()[:2]:
+    for dto in config.get_decoding_dtos():
         print(dto.encoding_preset, dto.encoding_codec, dto.encoding_rendition, dto.framerate)
         input_files = get_input_files(dto, all_video_files)
         print(input_files)
