@@ -311,7 +311,6 @@ def prepare_sliced_videos(
     dry_run: bool = False
 ) -> None:
     
-    
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         
