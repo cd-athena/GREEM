@@ -6,7 +6,7 @@ scaling_resolutions:
     width: 960
 
 framerate:
-  # - 15
+  - 15
   - 24
   - 30
 

@@ -17,51 +17,19 @@ from gaia.hardware.nvidia_top import NvidiaTop
 
 from gaia.utils.benchmark import CLI_PARSER
 
+from gaia.benchmark.decoding.decoding_utils import get_all_possible_video_files, get_input_files
+
 DECODING_CONFIG_PATHS: list[str] = [
     'config_files/test_decoding_config.yaml',
 ]
 
 NTFY_TOPIC: str = 'decoding'
-INPUT_FILE_DIR: str = '../encoding/results'
+# INPUT_FILE_DIR: str = '../encoding/results'
 RESULT_ROOT = 'decoding_results'
 
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
-
-def get_all_possible_video_files() -> list[str]:
-    def is_video(file_name: str) -> bool:
-        file_is_video: bool = file_name is not None and \
-            len(file_name) > 0 and \
-            not file_name.endswith('.csv') and \
-            not file_name.endswith('.txt')
-
-        return file_is_video
-    
-    input_files: list[str] = list()
-    
-    for root, _, files in os.walk(INPUT_FILE_DIR):
-        
-        for file_name in files:
-            file_path = os.path.join(root, file_name)
-            if is_video(file_path):
-                input_files.append(file_path) 
-            
-    return input_files
-
-
-def get_input_files(decoding_dto: DecodingConfigDTO, all_video_files: list[str]) -> list[str]:    
-    input_files: list[str] = list()
-    
-    for video_file in all_video_files:
-        if f'{decoding_dto.encoding_codec}' in video_file and \
-            f'{decoding_dto.encoding_preset}' in video_file and \
-            f'{decoding_dto.encoding_rendition.dir_representation()}' in video_file and \
-            f'{decoding_dto.framerate}fps' in video_file:
-                
-            input_files.append(video_file)         
-        
-    return input_files
 
 
 def execute_decoding_benchmark():
@@ -81,15 +49,16 @@ if __name__ == '__main__':
     
     dto = config.get_decoding_dtos()[0]
     
-    print(all_video_files)
+    # print(all_video_files)
     
     for dto in config.get_decoding_dtos():
-        print(dto.encoding_preset, dto.encoding_codec, dto.encoding_rendition, dto.framerate)
+        # print(dto.encoding_preset, dto.encoding_codec, dto.encoding_rendition, dto.framerate)
         input_files = get_input_files(dto, all_video_files)
-        print(input_files)
+        # print(input_files[:10])
+        print(input_files[0])
         print(len(input_files))
-        print()
         
+        # test
         
     # try:
     #     send_ntfy(NTFY_TOPIC,
