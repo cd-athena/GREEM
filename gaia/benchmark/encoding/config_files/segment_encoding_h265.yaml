@@ -1,0 +1,47 @@
+codecs:
+  - h265
+presets:
+  # - ultrafast
+  # - superfast
+  # - veryfast
+#   - faster
+  # - fast
+  - medium
+  # - slow
+#   - slower
+  # - veryslow
+#   - placebo
+
+renditions:
+  - bitrate: 145
+    height: 360
+    width: 640
+  - bitrate: 1600
+    height: 540
+    width: 960
+  - bitrate: 3400
+    height: 720
+    width: 1280
+  - bitrate: 5800
+    height: 1080
+    width: 1920
+  - bitrate: 8100
+    height: 1440
+    width: 2560
+  - bitrate: 16800
+    height: 2160
+    width: 3840
+
+segment_duration:
+  - 4
+
+framerate:
+  - 15
+  - 24
+  - 30
+
+encode_all_videos: True
+
+videos_to_encode:
+  - AncientThought
+  # - Eldorado
