@@ -18,7 +18,7 @@ from gaia.hardware.nvidia_top import NvidiaTop
 from gaia.utils.benchmark import CLI_PARSER
 
 DECODING_CONFIG_PATHS: list[str] = [
-    '../config_files/test_decoding_config.yaml',
+    'config_files/test_decoding_config.yaml',
 ]
 
 NTFY_TOPIC: str = 'decoding'
