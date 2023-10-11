@@ -21,3 +21,7 @@ gaia.egg-info/*
 *.DS_Store
 
 *.265
+*.yuv
+
+*.so
+*.o

@@ -33,6 +33,9 @@ class Resolution:
     '''
     height: int
     width: int
+    
+    def get_resolution_dir_representation(self) -> str:
+        return f'{self.width}x{self.height}'
 
 
 @dataclass
@@ -44,8 +47,8 @@ class Rendition(Resolution):
     '''
     bitrate: int
 
-    def dir_representation(self) -> str:
-        return f'{self.bitrate}k_{self.width}x{self.height}'
+    def get_rendition_dir_representation(self) -> str:
+        return f'{self.bitrate}k_{self.get_resolution_dir_representation()}'
 
     @classmethod
     def from_dir_representation(cls: Type['Rendition'], dir_repr: str):
@@ -90,7 +93,7 @@ class EncodingConfigDTO():
         '''Returns the output directory for the encoded video'''
         if any([x in video_name for x in ['.webm', '.mp4']]):
             video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
-        output_dir: str = f'{self.codec}/{video_name}/{self.segment_duration}s/{self.preset}/{self.rendition.dir_representation()}'
+        output_dir: str = f'{self.codec}/{video_name}/{self.segment_duration}s/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
         if self.framerate is not None and self.framerate > 0:
             output_dir = f'{output_dir}/{self.framerate}fps'
 
@@ -159,7 +162,7 @@ def get_output_directory(
     '''Returns the output directory for the encoded video'''
     if any([x in video_name for x in ['.webm', '.mp4']]):
         video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
-    return f'{codec}/{video_name}/{duration}s/{preset}/{rendition.dir_representation()}'
+    return f'{codec}/{video_name}/{duration}s/{preset}/{rendition.get_rendition_dir_representation()}'
 
 
 @dataclass
@@ -171,9 +174,38 @@ class DecodingConfigDTO():
     encoding_rendition: Rendition
 
     def get_output_dir(self, result_dir: str, video_name: str) -> str:
-        # TODO
-        pass
+        """Returns the output path of the DecodingConfigDTO
 
+        Parameters
+        ----------
+        result_dir : str
+            root folder the rest of the path should be inserted in
+        video_name : str
+            video name that corresponds to the video getting decoded
+
+        Returns
+        -------
+        str
+            directory path of decoded video file
+        """
+
+        def rs(data: str) -> str:
+            return data.removesuffix('/')
+        
+        output_sub_folders: list[str] = [
+            rs(result_dir),
+            self.encoding_codec,
+            self.encoding_preset,
+            self.encoding_rendition.get_rendition_dir_representation(),
+            f'{self.framerate}fps',
+            self.scaling_resolution.get_resolution_dir_representation(),
+            video_name,
+        ]
+        
+        output_dir_path: str = '/'.join(output_sub_folders)
+        
+        return output_dir_path
+ 
 
 @dataclass
 class DecodingConfig():
@@ -216,12 +248,17 @@ class DecodingConfig():
 
 
 if __name__ == '__main__':
-    ec = EncodingConfig.from_file(
-        '../benchmark/config_files/test_encoding_config.yaml')
+    # ec = EncodingConfig.from_file(
+    #     '../benchmark/config_files/test_encoding_config.yaml')
 
-    for dto in ec.get_encoding_dtos():
-        print(dto)
+    # for dto in ec.get_encoding_dtos():
+    #     print(dto.get_output_directory(video_name='test'))
 
-    # config = read_yaml('../config_files/default_decoding_config.yaml')
-    # dc = DecodingConfig.from_dict(config)
-    # print(dc)
+    config = read_yaml('../benchmark/config_files/test_decoding_config.yaml')
+    
+    dc = DecodingConfig.from_dict(config)
+    print(dc)
+    
+    for dto in dc.get_decoding_dtos():
+        print(dto.get_output_dir('RESULT', 'VIDEO_NAME'))
+        break
