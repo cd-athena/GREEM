@@ -1,5 +1,4 @@
 import os
-import cython
 
 from gaia.utils.config import DecodingConfigDTO
 
