@@ -14,11 +14,11 @@ from gaia.utils.dataframe import get_dataframe_from_csv
 
 from gaia.utils.ntfy import send_ntfy
 
-# from gaia.hardware.intel import intel_rapl_workaround
+from gaia.hardware.intel import intel_rapl_workaround
 
 from gaia.utils.benchmark import CLI_PARSER
 
-# from gaia.benchmark.decoding.decoding_utils_dup import get_all_possible_video_files, get_input_files
+# from gaia.benchmark.decoding.decoding_utils import get_all_possible_video_files, get_input_files
 from gaia.benchmark.decoding.decoding_utils_cython import get_all_possible_video_files, get_input_files
 
 DECODING_CONFIG_PATHS: list[str] = [
@@ -57,49 +57,106 @@ def get_video_name_from_path(video_path: str) -> str:
     # TODO find better way than to hardcode the video_name
     return path_elems[4]
 
+def execute_decoding_cmd(
+    cmd: str,
+    decoding_dto: DecodingConfigDTO,
+    input_file_path: str
+) -> None:
+    global metric_results, nvidia_top
 
-def start_demuxing(input_file_path: str, output_path: str) -> str:
+    if USE_CUDA:
+        # executes the cmd with nvidia monitoring
+        result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
+        video_name = get_video_name_from_path(input_file_path)
+
+        rendition = decoding_dto.encoding_rendition
+
+        result_df[['encoded_preset', 'encoded_codec', 'duration']
+                  ] = decoding_dto.encoding_preset, decoding_dto.encoding_codec, '4s'
+        result_df[['encoded_bitrate', 'encoded_width', 'encoded_height']
+                  ] = rendition.bitrate, rendition.width, rendition.height
+        result_df['video_name'] = video_name
+        result_df['decoding_scale'] = decoding_dto.scaling_resolution.get_resolution_dir_representation()
+        result_df['output_path'] = decoding_dto.get_output_dir(RESULT_ROOT, video_name)
+
+        metric_results.append(result_df)
+
+    elif DRY_RUN:
+        print(cmd)
+    else:
+        os.system(cmd)
+        
+def write_decoding_results_to_csv():
+    global nvidia_top, metric_results
+
+    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+    result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
+    if INCLUDE_CODE_CARBON:
+        emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
+        # merge codecarbon and timing_df results
+
+        if USE_CUDA:
+            nvitop_df = NvidiaTop.merge_resource_metric_dfs(
+                metric_results, exclude_timestamps=True)
+            merged_df = pd.concat([emission_df, nvitop_df], axis=1)
+            # save to disk
+            merged_df.to_csv(result_path)
+            os.system(f'rm {RESULT_ROOT}/emissions.csv')
+
+@track_emissions(
+    offline=True,
+    country_iso_code='AUT',
+    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+    measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
+    project_name='demuxing'
+)
+def start_demuxing(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     demuxed_output_path: str = f'{output_path}/demuxed.mp4'
     demuxing_cmd: str = f'ffmpeg -y -i {input_file_path} {demuxed_output_path}'
-    
-    print(demuxing_cmd)
-    if USE_CUDA:
-        pass
-    else:
-        os.system(demuxing_cmd)
+        
+    execute_decoding_cmd(demuxing_cmd, dto, input_file_path)
         
         
     return demuxed_output_path
         
-def start_decoding(input_file_path: str, output_path: str) -> str:
+@track_emissions(
+    offline=True,
+    country_iso_code='AUT',
+    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+    measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
+    project_name='decoding'
+)
+def start_decoding(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     decoding_output_path: str = f'{output_path}/decoding.yuv'
     decoding_cmd: str = f'ffmpeg -y -i {input_file_path} {decoding_output_path}'
-    
-    print(decoding_cmd)
-    
-    if USE_CUDA:
-        pass
-    else:
-        os.system(decoding_cmd)
+        
+    execute_decoding_cmd(decoding_cmd, dto, input_file_path)
         
     return decoding_output_path
         
-
-def start_scaling(output_path: str, dto: DecodingConfigDTO) -> str:
-    input_file_path: str = f'{output_path}/decoding.yuv'
+@track_emissions(
+    offline=True,
+    country_iso_code='AUT',
+    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+    measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
+    project_name='scaling'
+)
+def start_scaling(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
+    decoding_input_file_path: str = f'{output_path}/decoding.yuv'
     scaling_output_path: str = f'{output_path}/scaling.yuv'
     scaling_cmd: str = f'ffmpeg -f rawvideo -vcodec rawvideo -s ' \
                         f'{dto.encoding_rendition.get_resolution_dir_representation()} -r 23.98 ' \
-                        f'-pix_fmt yuv420p -i {input_file_path} ' \
+                        f'-pix_fmt yuv420p -i {decoding_input_file_path} ' \
                         f'-vf scale={dto.scaling_resolution.get_resolution_dir_representation()} ' \
                         f'-y {scaling_output_path}'
                         
-    print(scaling_cmd)
-    
-    if USE_CUDA:
-        pass
-    else:
-        os.system(scaling_cmd)    
+    execute_decoding_cmd(scaling_cmd, dto, input_file_path)
 
     return scaling_output_path
 
@@ -120,44 +177,49 @@ def execute_decoding_benchmark():
                 output_path: str = dto.get_output_dir(RESULT_ROOT, video_name)
                 Path(output_path).mkdir(parents=True, exist_ok=True)
                 
-                demux_output_path = start_demuxing(encoded_file_path, output_path)
-                decoding_output_path = start_decoding(encoded_file_path, output_path)
-                scaling_output_path = start_scaling(output_path, dto)
+                print(f'initial {encoded_file_path}')
+                demux_output_path = start_demuxing(encoded_file_path, output_path, dto)
+                print(f'demux {encoded_file_path}')
+                decoding_output_path = start_decoding(encoded_file_path, output_path, dto)
+                print(f'decode {encoded_file_path}')
+                scaling_output_path = start_scaling(encoded_file_path, output_path, dto)
+                print(f'scale {encoded_file_path}')
                 
                 if cleanup_after_decode:
                     os.system(f'rm {demux_output_path} {decoding_output_path} {scaling_output_path}')
     
-    # TODO store benchmark results
+    write_decoding_results_to_csv()
 
 
 if __name__ == '__main__':
-    cleanup_after_decode: bool = True
-    execute_decoding_benchmark()
-    # try:
-    #     send_ntfy(NTFY_TOPIC,
-    #               f'''start decoding benchmark 
-    #           - CUDA: {USE_CUDA} 
-    #           - DRY_RUN: {DRY_RUN}
-    #           ''')
+    cleanup_after_decode: bool = False
+    Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+
+    try:
+        send_ntfy(NTFY_TOPIC,
+                  f'''start decoding benchmark 
+              - CUDA: {USE_CUDA} 
+              - DRY_RUN: {DRY_RUN}
+              ''')
     
-    # # TODO add monitoring
-    #     if USE_CUDA:
-    #         nvidia_top = NvidiaTop()
-    #         metric_results: list[pd.DataFrame] = list()
+    # TODO add monitoring
+        if USE_CUDA:
+            nvidia_top = NvidiaTop()
+            metric_results: list[pd.DataFrame] = list()
             
-    # #     intel_rapl_workaround()
-    # #     IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/decoding_idle_time.csv', idle_time_in_seconds=1)
+        intel_rapl_workaround()
+        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/decoding_idle_time.csv', idle_time_in_seconds=1)
 
-    #     execute_decoding_benchmark()
+        execute_decoding_benchmark()
 
 
-    # except Exception as err:
-    #     print('err', err)
-    #     send_ntfy(
-    #         NTFY_TOPIC, 
-    #         f'Something went wrong during the decoding benchmark, Exception: {err}', 
-    #         print_message=True)
+    except Exception as err:
+        print('err', err)
+        send_ntfy(
+            NTFY_TOPIC, 
+            f'Something went wrong during the decoding benchmark, Exception: {err}', 
+            print_message=True)
 
-    # finally:
-    #     send_ntfy(NTFY_TOPIC, 'finished decoding benchmark', print_message=True)
+    finally:
+        send_ntfy(NTFY_TOPIC, 'finished decoding benchmark', print_message=True)
     
