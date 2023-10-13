@@ -33,9 +33,9 @@ def get_input_files(decoding_dto: DecodingConfigDTO, all_video_files: list[str])
     for video_file in all_video_files:
         if f'{decoding_dto.encoding_codec}' in video_file and \
             f'{decoding_dto.encoding_preset}' in video_file and \
+            f'{decoding_dto.encoding_rendition.dir_representation()}' in video_file and \
             f'{decoding_dto.framerate}fps' in video_file:
-            # f'{decoding_dto.encoding_rendition.dir_representation()}' in video_file and \
                 
             input_files.append(video_file)         
         
-    return input_files
+    return sorted(input_files)
