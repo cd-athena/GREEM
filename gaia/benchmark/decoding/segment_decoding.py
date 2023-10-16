@@ -6,6 +6,8 @@ from codecarbon import track_emissions
 
 from gaia.utils.config import DecodingConfig, DecodingConfigDTO
 
+from colorama import Fore
+
 from time import time
 
 
@@ -114,10 +116,10 @@ def write_decoding_results_to_csv():
 )
 def start_demuxing(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     demuxed_output_path: str = f'{output_path}/demuxed.mp4'
-    demuxing_cmd: str = f'ffmpeg -y -i {input_file_path} {demuxed_output_path}'
+    cuvid_codec: str = get_cuda_decoding_codec(dto)
+    demuxing_cmd: str = f'ffmpeg -y {cuvid_codec} -i {input_file_path} {demuxed_output_path}'
         
     execute_decoding_cmd(demuxing_cmd, dto, input_file_path)
-        
         
     return demuxed_output_path
         
@@ -132,10 +134,11 @@ def start_demuxing(input_file_path: str, output_path: str, dto: DecodingConfigDT
 )
 def start_decoding(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     decoding_output_path: str = f'{output_path}/decoding.yuv'
-    decoding_cmd: str = f'ffmpeg -y -i {input_file_path} {decoding_output_path}'
+    cuvid_codec: str = get_cuda_decoding_codec(dto)
+    decoding_cmd: str = f'ffmpeg -y {cuvid_codec} -i {input_file_path} {decoding_output_path}'
         
     execute_decoding_cmd(decoding_cmd, dto, input_file_path)
-        
+
     return decoding_output_path
         
 @track_emissions(
@@ -150,7 +153,9 @@ def start_decoding(input_file_path: str, output_path: str, dto: DecodingConfigDT
 def start_scaling(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     decoding_input_file_path: str = f'{output_path}/decoding.yuv'
     scaling_output_path: str = f'{output_path}/scaling.yuv'
-    scaling_cmd: str = f'ffmpeg -f rawvideo -vcodec rawvideo -s ' \
+
+    cuda_accel: str = '-hwaccel cuvid -hwaccel_output_format cuda' if USE_CUDA else ''
+    scaling_cmd: str = f'ffmpeg {cuda_accel} -f rawvideo -c:v rawvideo -s ' \
                         f'{dto.encoding_rendition.get_resolution_dir_representation()} -r 23.98 ' \
                         f'-pix_fmt yuv420p -i {decoding_input_file_path} ' \
                         f'-vf scale={dto.scaling_resolution.get_resolution_dir_representation()} ' \
@@ -159,6 +164,12 @@ def start_scaling(input_file_path: str, output_path: str, dto: DecodingConfigDTO
     execute_decoding_cmd(scaling_cmd, dto, input_file_path)
 
     return scaling_output_path
+
+def get_cuda_decoding_codec(dto: DecodingConfigDTO) -> str:
+    if not USE_CUDA:
+        return ''
+    codec = dto.encoding_codec
+    return f'-hwaccel cuda -c:v {codec}_cuvid'
 
 def execute_decoding_benchmark():
     global cleanup_after_decode
@@ -177,13 +188,9 @@ def execute_decoding_benchmark():
                 output_path: str = dto.get_output_dir(RESULT_ROOT, video_name)
                 Path(output_path).mkdir(parents=True, exist_ok=True)
                 
-                print(f'initial {encoded_file_path}')
-                demux_output_path = start_demuxing(encoded_file_path, output_path, dto)
-                print(f'demux {encoded_file_path}')
-                decoding_output_path = start_decoding(encoded_file_path, output_path, dto)
-                print(f'decode {encoded_file_path}')
-                scaling_output_path = start_scaling(encoded_file_path, output_path, dto)
-                print(f'scale {encoded_file_path}')
+                demux_output_path: str = start_demuxing(encoded_file_path, output_path, dto)
+                decoding_output_path: str = start_decoding(encoded_file_path, output_path, dto)
+                scaling_output_path: str = start_scaling(encoded_file_path, output_path, dto)
                 
                 if cleanup_after_decode:
                     os.system(f'rm {demux_output_path} {decoding_output_path} {scaling_output_path}')
@@ -192,6 +199,9 @@ def execute_decoding_benchmark():
 
 
 if __name__ == '__main__':
+    
+    # https://pytorch.org/audio/stable/build.ffmpeg.html
+    
     cleanup_after_decode: bool = False
     Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
@@ -202,7 +212,6 @@ if __name__ == '__main__':
               - DRY_RUN: {DRY_RUN}
               ''')
     
-    # TODO add monitoring
         if USE_CUDA:
             nvidia_top = NvidiaTop()
             metric_results: list[pd.DataFrame] = list()
