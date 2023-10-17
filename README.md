@@ -33,11 +33,16 @@ If you plan to use the encoding/decoding benchmarks inside the project, it is re
 
 This can be tested by executing the command: `ffmpeg -version`.
 
+
 TODO
 
 #### 3.2 Download and Add Videos to Benchmarks
 
 TODO
+
+### 4. Install CUDA for NVIDIA GPUs (optional)
+
+In order to be able to utilize NVIDIA GPUs for the benchmarks, it has to be ensured that CUDA drivers are installed on the system.
 
 ## Installing Prerequisites on AWS Instance
 
