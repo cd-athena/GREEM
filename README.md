@@ -2,6 +2,13 @@
 
 A repository that contains different tools related to energy monitoring extracted from GAIA projects.
 
+## Prerequisites
+
+
+
+## Installation
+
+The Python dependencies can be installed using `Anaconda` with help of the `environment.yml` file that is located at the root folder of this repository.
 
 ## Installing Prerequisites on AWS Instance
 
