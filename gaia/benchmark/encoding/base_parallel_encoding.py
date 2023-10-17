@@ -7,7 +7,6 @@ from codecarbon import track_emissions
 import sys
 import time
 import logging
-from watchdog.observers import Observer
 from watchdog.events import LoggingEventHandler
 
 from gaia.utils.ffmpeg import  create_multi_video_ffmpeg_command, create_simple_multi_video_ffmpeg_command
@@ -277,9 +276,6 @@ if __name__ == '__main__':
                 - DRY_RUN: {DRY_RUN}
                 ''')
         
-        # observer = Observer()
-        # __init_file_observer()
-        
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
         # intel_rapl_workaround()
@@ -300,11 +296,8 @@ if __name__ == '__main__':
         print('err', err)
         send_ntfy(
             NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}')
-        # observer.stop()
 
     finally:
         send_ntfy(NTFY_TOPIC, 'finished benchmark')
-        # observer.stop()
-        # observer.join()
         print('done')
  
