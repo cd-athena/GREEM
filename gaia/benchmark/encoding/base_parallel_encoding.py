@@ -29,12 +29,9 @@ NTFY_TOPIC: str = 'aws_encoding'
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    # 'config_files/encoding_test_1.yaml',
-    # 'config_files/encoding_test_2.yaml',
-    # 'config_files/default_encoding_config.yaml',
-    'config_files/segment_encoding.yaml',
-    # 'config_files/encoding_config_h264.yaml',
-    # 'config_files/encoding_config_h265.yaml'
+    'config_files/segment_encoding_h264.yaml',
+    # 'config_files/segment_encoding_h265.yaml',
+
 ]
 
 INPUT_FILE_DIR: str = '../dataset/ref_265'
@@ -46,9 +43,6 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
-
-if USE_CUDA:
-    from gaia.monitoring.hardware_monitoring import GpuMonitoring
 
 
 def prepare_data_directories(
@@ -168,6 +162,9 @@ def execute_encoding_benchmark():
             # slice_size = 
             input_slice = [f'{input_dir}/{slice}' for slice in input_files[:slice_size]]
             
+            print(input_slice)
+            # continue
+            
             
             for codec_idx, codec in enumerate(encoding_config.codecs):
                 for preset_idx, preset in enumerate(encoding_config.presets):
@@ -188,16 +185,19 @@ def execute_encoding_benchmark():
                         quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
                         pretty_print=False
                     )
-                    
+                    # print(cmd)
+                    # continue
+                    print
                     execute_encoding_cmd(cmd, preset, codec, rendition, input_slice)
 
                     # cleanup for next iteration
-                    for out in output_dirs:
-                        os.system(f'rm {out}/output.mp4')
+                    # for out in output_dirs:
+                    #     os.system(f'rm {out}/output.mp4')
 
         # metric_df = nvidia_top.merge_dataframe_results(metric_results)
         # metric_df.to_csv(f'{RESULT_ROOT}/test.csv')
-        write_encoding_results_to_csv()
+        
+        # write_encoding_results_to_csv()
             
 @track_emissions(
     offline=True,
@@ -277,13 +277,13 @@ if __name__ == '__main__':
                 - DRY_RUN: {DRY_RUN}
                 ''')
         
-        observer = Observer()
-        __init_file_observer()
+        # observer = Observer()
+        # __init_file_observer()
         
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
-        intel_rapl_workaround()
-        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
+        # intel_rapl_workaround()
+        # IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
@@ -293,7 +293,6 @@ if __name__ == '__main__':
         if USE_CUDA:
             nvidia_top = NvidiaTop()
             metric_results: list[pd.DataFrame] = list()
-            # gpu_monitoring = GpuMonitoring(RESULT_ROOT, 0.5)
 
         execute_encoding_benchmark()
         
@@ -301,11 +300,11 @@ if __name__ == '__main__':
         print('err', err)
         send_ntfy(
             NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}')
-        observer.stop()
+        # observer.stop()
 
     finally:
         send_ntfy(NTFY_TOPIC, 'finished benchmark')
-        observer.stop()
-        observer.join()
+        # observer.stop()
+        # observer.join()
         print('done')
  
