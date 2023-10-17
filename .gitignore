@@ -25,3 +25,4 @@ gaia.egg-info/*
 
 *.so
 *.o
+gaia/energy/*
