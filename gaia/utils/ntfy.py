@@ -1,17 +1,31 @@
 
 import os
 from gaia.utils.benchmark import CLI_PARSER
+from config import NtfyConfig
+
 
 USE_NTFY: bool = CLI_PARSER.is_ntfy_enabled()
 
-NTFY_BASE_URL: str = '3.76.6.7'
+ntfy_config: NtfyConfig = NtfyConfig.from_file('ntfy_config.yaml')
 
 def send_ntfy(topic: str, message: str, print_message: bool = False) -> str:
+    if not __valid_base_url():
+        return ''
     if USE_NTFY:
-        os.system(f'curl -d "{message}" {NTFY_BASE_URL}/{topic}')
+        print(f'curl -d "{message}" {ntfy_config.base_url}/{topic}')
+        os.system(f'curl -d "{message}" {ntfy_config.base_url}/{topic}')
     if print_message:
         print(message)
+        
+        
+def __valid_base_url() -> bool:
+    if ntfy_config.base_url == '<ip-address>':
+        print('NTFY base url is not defined')
+        return False
+    
+    return True
 
 
 if __name__ == '__main__':
+    print(ntfy_config)
     send_ntfy('encoding', 'hello from python')

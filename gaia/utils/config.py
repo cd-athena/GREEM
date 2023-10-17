@@ -245,6 +245,19 @@ class DecodingConfig():
             decoding_dtos.append(dto)
 
         return decoding_dtos
+    
+@dataclass
+class NtfyConfig():
+    base_url: str
+    
+    @classmethod
+    def from_dict(cls: Type['NtfyConfig'], data: dict):
+        nc: NtfyConfig = fd(data_class=NtfyConfig, data=data)
+        return nc
+        
+    @classmethod
+    def from_file(cls: Type['NtfyConfig'], file_path: str):
+        return cls.from_dict(read_yaml(file_path))
 
 
 if __name__ == '__main__':
