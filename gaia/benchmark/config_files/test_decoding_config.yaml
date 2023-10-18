@@ -7,8 +7,8 @@ scaling_resolutions:
 
 framerate:
   - 15
-  - 24
-  - 30
+  # - 24
+  # - 30
 
 decoding_sleep: 0.1
 
@@ -25,3 +25,6 @@ encoding_renditions:
   - bitrate: 145
     height: 360
     width: 640
+
+encoding_segment_duration:
+  - 2
