@@ -28,12 +28,13 @@ ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_test_1.yaml',
     # 'config_files/encoding_test_2.yaml',
     # 'config_files/default_encoding_config.yaml',
-    'config_files/test_encoding_config.yaml',
+    # 'config_files/test_encoding_config.yaml',
+    '../config_files/mmsys_encoding_h264.yaml',
     # 'config_files/encoding_config_h264.yaml',
     # 'config_files/encoding_config_h265.yaml'
 ]
 
-INPUT_FILE_DIR: str = 'data'
+INPUT_FILE_DIR: str = '../data'
 SLICE_FILE_DIR: str = 'slice'
 RESULT_ROOT: str = 'results'
 COUNTRY_ISO_CODE: str = 'AUT'
@@ -210,7 +211,7 @@ if __name__ == '__main__':
               - SLICE: {USE_SLICED_VIDEOS}
               - DRY_RUN: {DRY_RUN}
               - saving results in {RESULT_ROOT}
-              ''')
+              ''', print_message=True)
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
         intel_rapl_workaround()
@@ -218,9 +219,10 @@ if __name__ == '__main__':
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
-
+        print(len(encoding_configs))
         if USE_SLICED_VIDEOS:
             send_ntfy(NTFY_TOPIC, f'slicing videos')
+            print('aaaaaaa')
             prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
             send_ntfy(NTFY_TOPIC, f'finished slicing videos')
 
@@ -228,10 +230,10 @@ if __name__ == '__main__':
             nvidia_top = NvidiaTop()
             metric_results: list[pd.DataFrame] = list()
 
-        execute_encoding_benchmark()
+        # execute_encoding_benchmark()
     except Exception as err:
-        send_ntfy(NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}')
+        send_ntfy(NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}', print_message=True)
 
     finally:
-        send_ntfy(NTFY_TOPIC, 'finished benchmark')
+        send_ntfy(NTFY_TOPIC, 'finished benchmark', print_message=True)
 

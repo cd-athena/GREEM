@@ -4,11 +4,11 @@ presets:
   # - ultrafast
   # - superfast
   # - veryfast
-  - faster
-  - fast
+#   - faster
+  # - fast
   - medium
-  - slow
-  - slower
+  # - slow
+#   - slower
   # - veryslow
 #   - placebo
 

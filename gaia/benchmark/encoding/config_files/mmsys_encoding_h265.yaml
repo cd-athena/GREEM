@@ -1,15 +1,16 @@
+
 codecs:
   - h265
 presets:
-  # - ultrafast
-  # - superfast
-  # - veryfast
-  - faster
-  - fast
-  - medium
-  - slow
-  - slower
-  # - veryslow
+  - ultrafast
+  #  - superfast
+  #   - veryfast
+  #   - faster
+  # - fast
+  # - medium
+  # - slow
+#   - slower
+#   - veryslow
 #   - placebo
 
 renditions:
@@ -33,15 +34,16 @@ renditions:
     width: 3840
 
 segment_duration:
+  - 1
+  - 2
   - 4
-
-framerate:
-  - 15
-  - 24
-  - 30
+  - 6
+  - 8
+  - 10
 
 encode_all_videos: True
 
 videos_to_encode:
   - AncientThought
   # - Eldorado
+

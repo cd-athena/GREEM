@@ -1,36 +1,36 @@
 codecs:
-  - h265
+  - h264
 presets:
   # - ultrafast
   # - superfast
   # - veryfast
-  - faster
-  - fast
+#   - faster
+  # - fast
   - medium
-  - slow
-  - slower
+  # - slow
+#   - slower
   # - veryslow
 #   - placebo
 
 renditions:
   - bitrate: 145
+    height: 234
+    width: 416
+  - bitrate: 365
     height: 360
     width: 640
-  - bitrate: 1600
+  - bitrate: 1100
+    height: 432
+    width: 768
+  - bitrate: 2000
     height: 540
     width: 960
-  - bitrate: 3400
+  - bitrate: 4500
     height: 720
     width: 1280
-  - bitrate: 5800
+  - bitrate: 7800
     height: 1080
     width: 1920
-  - bitrate: 8100
-    height: 1440
-    width: 2560
-  - bitrate: 16800
-    height: 2160
-    width: 3840
 
 segment_duration:
   - 4

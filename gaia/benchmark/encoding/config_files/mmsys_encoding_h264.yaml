@@ -1,16 +1,18 @@
 codecs:
   - h264
+  
 presets:
-  # - ultrafast
-  # - superfast
-  # - veryfast
-  - faster
-  - fast
-  - medium
-  - slow
-  - slower
-  # - veryslow
+  - ultrafast
+  #  - superfast
+  #   - veryfast
+  #   - faster
+  #   - fast
+  # - medium
+  # - slow
+#   - slower
+#   - veryslow
 #   - placebo
+# example config
 
 renditions:
   - bitrate: 145
@@ -32,16 +34,18 @@ renditions:
     height: 1080
     width: 1920
 
-segment_duration:
-  - 4
 
-framerate:
-  - 15
-  - 24
-  - 30
+segment_duration:
+  - 1
+  - 2
+  - 4
+  - 6
+  - 8
+  - 10
 
 encode_all_videos: True
 
 videos_to_encode:
   - AncientThought
   # - Eldorado
+

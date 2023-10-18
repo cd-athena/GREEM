@@ -59,6 +59,7 @@ def create_ffmpeg_encoding_command(
     segment_duration: int,
     codec: str,
     framerate: int = 0,
+    constant_rate_factor: int = -1,
     use_dash: bool = False,    
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
@@ -72,6 +73,9 @@ def create_ffmpeg_encoding_command(
         cmd.append(QUIET_FLAG)
 
     cmd.append(f'-re -i {input_file_path}')
+    
+    if constant_rate_factor > -1: 
+        cmd.append(f'-crf {constant_rate_factor}')
 
     fps = ''
     if framerate > 0:
@@ -306,7 +310,6 @@ def prepare_sliced_videos(
     output_dir: str,
     dry_run: bool = False
 ) -> None:
-    
     
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)

@@ -6,8 +6,8 @@ from codecarbon import track_emissions
 
 from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
 from gaia.utils.config import (
-    EncodingConfig, 
-    EncodingConfigDTO, 
+    EncodingConfig,
+    EncodingConfigDTO,
 )
 
 from gaia.utils.timing import IdleTimeEnergyMeasurement
@@ -25,7 +25,7 @@ NTFY_TOPIC: str = 'aws_encoding'
 
 ENCODING_CONFIG_PATHS: list[str] = [
     '../config_files/segment_encoding_h264.yaml',
-    '../config_files/segment_encoding_h265.yaml',
+    # '../config_files/segment_encoding_h265.yaml',
 ]
 
 INPUT_FILE_DIR: str = '../dataset/ref_265'
@@ -56,15 +56,15 @@ def prepare_data_directories(
     '''
     # data_directories = encoding_config.get_all_result_directories(video_names)
     data_directories = [
-        dto.get_output_directory(video) 
-        for dto in encoding_config.get_encoding_dtos() 
+        dto.get_output_directory(video)
+        for dto in encoding_config.get_encoding_dtos()
         for video in video_names
-        ]
+    ]
 
     for directory in data_directories:
         directory_path: str = f'{result_root}/{directory}'
         Path(directory_path).mkdir(parents=True, exist_ok=True)
-        
+
     return data_directories
 
 
@@ -94,6 +94,7 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
     return sorted(input_files)
 
+
 def execute_encoding_benchmark():
 
     send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
@@ -103,38 +104,43 @@ def execute_encoding_benchmark():
 
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
+        input_files = input_files[:2]
 
         # encode for each duration defined in the config file
-        prepare_data_directories(encoding_config, video_names=[file.removesuffix('.265') for file in input_files])
-        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
+        prepare_data_directories(encoding_config, video_names=[
+                                 file.removesuffix('.265') for file in input_files])
+        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
+        )
         duration = 4
         # encode each video found in the input files corresponding to the duration
         for video_idx, video_name in enumerate(input_files):
             for dto_idx, dto in enumerate(encoding_dtos):
-                
+
                 output_dir = f'{RESULT_ROOT}/{dto.get_output_directory(video_name.removesuffix(".265"))}'
 
                 send_ntfy(
-                    NTFY_TOPIC, 
+                    NTFY_TOPIC,
                     f'''
                     - video sequence {video_name} - ({video_idx + 1}/{len(input_files)})
                     --- config - ({en_idx + 1}/{len(encoding_configs)})
                     --- {dto} - ({dto_idx + 1}/{len(encoding_dtos)})
                     ''')
                 cmd = create_ffmpeg_encoding_command(
-                            f'{input_dir}/{video_name}',
-                            output_dir, 
-                            dto.rendition, dto.preset, duration, dto.codec,
-                            framerate=dto.framerate,
-                            use_dash=False,
-                            pretty_print=DRY_RUN,
-                            cuda_enabled=USE_CUDA,
-                            quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
-                        ) if not DRY_RUN else 'sleep 0.1'
-            
-                execute_encoding_cmd(cmd, dto, video_name)     
+                    f'{input_dir}/{video_name}',
+                    output_dir,
+                    dto.rendition, dto.preset, duration, dto.codec,
+                    framerate=dto.framerate,
+                    constant_rate_factor=17,
+                    use_dash=False,
+                    pretty_print=DRY_RUN,
+                    cuda_enabled=USE_CUDA,
+                    quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
+                ) if not DRY_RUN else 'sleep 0.1'
+
+                execute_encoding_cmd(cmd, dto, video_name)
 
     write_encoding_results_to_csv()
+
 
 @track_emissions(
     offline=True,
@@ -150,29 +156,32 @@ def execute_encoding_cmd(
     video_name: str
 ) -> None:
     global metric_results, nvidia_top
-    
+
     if USE_CUDA:
         # executes the cmd with nvidia monitoring
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
-        
+
         rendition = encoding_dto.rendition
-        
-        result_df[['preset', 'codec', 'duration']] = encoding_dto.preset, encoding_dto.codec, encoding_dto.segment_duration
-        result_df[['bitrate', 'width', 'height']] = rendition.bitrate, rendition.width, rendition.height
+
+        result_df[['preset', 'codec', 'duration']
+                  ] = encoding_dto.preset, encoding_dto.codec, encoding_dto.segment_duration
+        result_df[['bitrate', 'width', 'height']
+                  ] = rendition.bitrate, rendition.width, rendition.height
         result_df['video_name'] = video_name
-        result_df['output_path'] = encoding_dto.get_output_directory(video_name)
-        
+        result_df['output_path'] = encoding_dto.get_output_directory(
+            video_name)
+
         metric_results.append(result_df)
-        
+
     elif DRY_RUN:
         print(cmd)
     else:
         os.system(cmd)
-        
-        
+
+
 def write_encoding_results_to_csv():
     global nvidia_top, metric_results
-    
+
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
     if INCLUDE_CODE_CARBON:
@@ -180,7 +189,8 @@ def write_encoding_results_to_csv():
         # merge codecarbon and timing_df results
 
         if USE_CUDA:
-            nvitop_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
+            nvitop_df = NvidiaTop.merge_resource_metric_dfs(
+                metric_results, exclude_timestamps=True)
             merged_df = pd.concat([emission_df, nvitop_df], axis=1)
             # save to disk
             merged_df.to_csv(result_path)
@@ -194,23 +204,24 @@ if __name__ == '__main__':
               - CUDA: {USE_CUDA} 
               - DRY_RUN: {DRY_RUN}
               ''')
-            
+
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
         gpu_monitoring = None
         if USE_CUDA:
             nvidia_top = NvidiaTop()
             metric_results: list[pd.DataFrame] = list()
-            
+
         intel_rapl_workaround()
-        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
+        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(
+            result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
         timing_metadata: dict[int, dict] = dict()
 
         execute_encoding_benchmark()
-        
+
     except Exception as err:
         print('err', err)
         send_ntfy(
