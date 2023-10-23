@@ -2,6 +2,24 @@
 
 A repository that contains different tools related to energy monitoring extracted from GAIA projects.
 
+- [GAIA-Tools](#gaia-tools)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+    - [1. Anaconda Environment](#1-anaconda-environment)
+    - [2. Environment Setup](#2-environment-setup)
+    - [3. Use Encoding/Decoding Benchmarks](#3-use-encodingdecoding-benchmarks)
+      - [3.1 Install FFMPEG for Encoding/Decoding](#31-install-ffmpeg-for-encodingdecoding)
+      - [3.2 Download and Add Videos to Benchmarks](#32-download-and-add-videos-to-benchmarks)
+      - [3.3 Install NVIDIA GPU Hardware Acceleration for FFMPEG](#33-install-nvidia-gpu-hardware-acceleration-for-ffmpeg)
+    - [4. Install CUDA for NVIDIA GPUs (optional)](#4-install-cuda-for-nvidia-gpus-optional)
+  - [Installing Prerequisites on AWS Instance](#installing-prerequisites-on-aws-instance)
+  - [Benchmarks](#benchmarks)
+    - [Encoding](#encoding)
+    - [Decoding](#decoding)
+  - [Troubleshoot](#troubleshoot)
+    - [CUDA Hardware Acceleration not Working Properly](#cuda-hardware-acceleration-not-working-properly)
+    - [ffmpeg - cuda encode - OpenEncodeSessionEx failed: out of memory](#ffmpeg---cuda-encode---openencodesessionex-failed-out-of-memory)
+
 ## Prerequisites
 
 - Python
@@ -27,18 +45,24 @@ After successfully installing the Anaconda environment, it is required to locall
 
 ### 3. Use Encoding/Decoding Benchmarks
 
+
 #### 3.1 Install FFMPEG for Encoding/Decoding
 
-If you plan to use the encoding/decoding benchmarks inside the project, it is required that FFMPEG is installed on the system.
+If you plan to use the encoding/decoding benchmarks of this project, it is required that FFMPEG is installed on the system.
 
-This can be tested by executing the command: `ffmpeg -version`.
+It is possible to test if FFMPEG is properly installed by executing the command: `ffmpeg -version`.
 
-
-TODO
 
 #### 3.2 Download and Add Videos to Benchmarks
 
 TODO
+
+#### 3.3 Install NVIDIA GPU Hardware Acceleration for FFMPEG
+
+*Note: Some encoding/decoding benchmarks require an NVIDIA GPU and CUDA installed at the moment.*
+
+To be able to use CUDA hardware acceleration for FFMPEG, if is necessary to install the required NVIDIA codec headers for FFMPEG.
+A guide how to do so can be found at [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html).
 
 ### 4. Install CUDA for NVIDIA GPUs (optional)
 
