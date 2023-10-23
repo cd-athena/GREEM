@@ -26,7 +26,6 @@ A repository that contains different tools related to energy monitoring extracte
 - Anaconda or Miniconda
 - FFMPEG
 
-
 ## Installation
 
 ### 1. Anaconda Environment
@@ -45,6 +44,7 @@ After successfully installing the Anaconda environment, it is required to locall
 
 ### 3. Use Encoding/Decoding Benchmarks
 
+In order to use the encoding/decoding benchmark Python scripts, it is required to follow the installation steps below.
 
 #### 3.1 Install FFMPEG for Encoding/Decoding
 
@@ -52,10 +52,13 @@ If you plan to use the encoding/decoding benchmarks of this project, it is requi
 
 It is possible to test if FFMPEG is properly installed by executing the command: `ffmpeg -version`.
 
-
 #### 3.2 Download and Add Videos to Benchmarks
 
-TODO
+Within the `benchmark` folder, two Python scripts can be found to download video files.
+
+The `download_full_input_files.py` script can be used to download input videos from Youtube.
+
+The `download_segments.py` script downloads 500 video segments with a length of 4 seconds each from the **Alpen-Adria University** servers.
 
 #### 3.3 Install NVIDIA GPU Hardware Acceleration for FFMPEG
 
@@ -72,7 +75,6 @@ In order to be able to utilize NVIDIA GPUs for the benchmarks, it has to be ensu
 
 [How to install FFMPEG with NVIDIA GPU Acceleration on Linux](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/)
 
-
 ## Benchmarks
 
 Inside the `benchmarks` folder, benchmarks are located to measure the energy impact in various scenarios.
@@ -82,7 +84,6 @@ Inside the `benchmarks` folder, benchmarks are located to measure the energy imp
 ### Decoding
 
 ## Troubleshoot
-
 
 This section contains information about some issues encountered during creation and execution of this library.
 
