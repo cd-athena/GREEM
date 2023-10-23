@@ -24,7 +24,6 @@ The [Installation README](INSTALL.md) contains the necessary steps to install al
 
 Inside the [benchmark](gaia/benchmark/README.md) folder, benchmarks are located to measure the energy impact in various scenarios.
 
-
 ## Troubleshoot
 
 This section contains information about some issues encountered during creation and execution of this library.
