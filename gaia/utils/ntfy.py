@@ -1,12 +1,12 @@
 
 import os
 from gaia.utils.benchmark import CLI_PARSER
-from config import NtfyConfig
+from gaia.utils.config import NtfyConfig
 
 
 USE_NTFY: bool = CLI_PARSER.is_ntfy_enabled()
 
-ntfy_config: NtfyConfig = NtfyConfig.from_file('ntfy_config.yaml')
+ntfy_config: NtfyConfig = NtfyConfig(base_url="<ip-address>")
 
 def send_ntfy(topic: str, message: str, print_message: bool = False) -> str:
     if not __valid_base_url():
