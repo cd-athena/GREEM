@@ -4,13 +4,8 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-import sys
-import time
-import logging
-from watchdog.events import LoggingEventHandler
-
 from gaia.utils.ffmpeg import  create_multi_video_ffmpeg_command, create_simple_multi_video_ffmpeg_command
-from gaia.utils.config import EncodingConfig, get_output_directory, Rendition
+from gaia.utils.config import EncodingConfig, EncodingConfigDTO, get_output_directory, Rendition
 from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
 from gaia.utils.dataframe import(
     get_dataframe_from_csv,
@@ -19,8 +14,6 @@ from gaia.utils.dataframe import(
 )
 from gaia.utils.ntfy import send_ntfy
 
-from gaia.hardware.intel import intel_rapl_workaround
-from gaia.hardware.nvidia_top import NvidiaTop
 
 from gaia.utils.benchmark import CLI_PARSER
 
@@ -43,6 +36,9 @@ DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
+from gaia.hardware.intel import intel_rapl_workaround
+if USE_CUDA:    
+    from gaia.hardware.nvidia_top import NvidiaTop
 
 def prepare_data_directories(
     encoding_config: EncodingConfig,
@@ -125,18 +121,6 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
     return sorted(input_files)
 
 
-def start_hardware_monitoring():
-    global gpu_monitoring
-    if USE_CUDA:
-        gpu_monitoring.start()
-
-
-def stop_hardware_monitoring():
-    global gpu_monitoring
-    if USE_CUDA:
-        gpu_monitoring.stop()
-
-
 def remove_media_extension(file_name: str) -> str:
     return file_name.removesuffix('.265').removesuffix('.webm').removesuffix('.mp4')
 
@@ -155,39 +139,41 @@ def execute_encoding_benchmark():
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=output_files)
         
+        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
+        
         rendition = encoding_config.renditions[-1]
         
-        for slice_size in range(1, 6):
-            # slice_size = 
-            input_slice = [f'{input_dir}/{slice}' for slice in input_files[:slice_size]]
-            
-            print(input_slice)
-            # continue
-            
-            
-            for codec_idx, codec in enumerate(encoding_config.codecs):
-                for preset_idx, preset in enumerate(encoding_config.presets):
-                    
-                    output_dirs: list[str] = [
-                        f'{RESULT_ROOT}/{get_output_directory(codec, output, 4, preset, rendition)}' 
-                        for output in output_files[:slice_size]
-                        ]
-                    # for rendition_idx, rendition in enumerate(encoding_config.renditions):
-                    
-                    cmd = create_simple_multi_video_ffmpeg_command(
-                        input_slice,
-                        output_dirs,
-                        [rendition],
-                        preset,
-                        codec,
-                        cuda_mode=CLI_PARSER.is_cuda_enabled(),
-                        quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
-                        pretty_print=False
-                    )
-                    # print(cmd)
-                    # continue
-                    print
-                    execute_encoding_cmd(cmd, preset, codec, rendition, input_slice)
+        for window_size in range(1, 6):
+            for idx_offset in range(len(input_files)):
+                window_idx: int = window_size + idx_offset
+                if window_idx > len(input_files):
+                    break
+
+                input_slice = [f'{input_dir}/{slice}' for slice in input_files[idx_offset:window_idx]]              
+                
+                for codec_idx, codec in enumerate(encoding_config.codecs):
+                    for preset_idx, preset in enumerate(encoding_config.presets):
+                        
+                        output_dirs: list[str] = [
+                            f'{RESULT_ROOT}/{get_output_directory(codec, output, 4, preset, rendition)}' 
+                            for output in output_files[:window_size]
+                            ]
+                        # for rendition_idx, rendition in enumerate(encoding_config.renditions):
+                        
+                        cmd = create_simple_multi_video_ffmpeg_command(
+                            input_slice,
+                            output_dirs,
+                            [rendition],
+                            preset,
+                            codec,
+                            cuda_mode=CLI_PARSER.is_cuda_enabled(),
+                            quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
+                            pretty_print=True
+                        )
+                        
+                        print(cmd)
+
+                        # execute_encoding_cmd(cmd, preset, codec, rendition, input_slice)
 
                     # cleanup for next iteration
                     # for out in output_dirs:
@@ -242,12 +228,7 @@ def write_encoding_results_to_csv() -> None:
             emission_df, timing_df)
 
         if USE_CUDA:
-            # merge encoding results with hardware monitoring and idle dataframes
-            # monitoring_df = pd.read_csv(
-            #     f'{RESULT_ROOT}/monitoring_stream.csv', index_col=0)
             monitoring_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
-            # merged_df = merge_benchmark_and_monitoring_dataframes(
-            #     encoding_results_df, monitoring_df, idle_df)
             merged_df = pd.concat([emission_df, monitoring_df], axis=1)
             # save to disk
             merged_df.to_csv(result_path)
@@ -256,15 +237,6 @@ def write_encoding_results_to_csv() -> None:
         os.system(f'rm {RESULT_ROOT}/emissions.csv')
     else:
         timing_df.to_csv(result_path)
-
-def __init_file_observer():
-    global observer
-    logging.basicConfig(level=logging.INFO,
-                        format='%(asctime)s - %(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S')
-    event_handler = LoggingEventHandler()
-    observer.schedule(event_handler, '.', recursive=True)
-    observer.start()
 
 if __name__ == '__main__':
 
