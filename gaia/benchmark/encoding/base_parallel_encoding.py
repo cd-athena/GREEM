@@ -166,21 +166,23 @@ def execute_encoding_benchmark():
                         dto,
                         cuda_mode=CLI_PARSER.is_cuda_enabled(),
                         quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
-                        pretty_print=True
+                        pretty_print=DRY_RUN
                     )
                     
-                    print(cmd)
-
-                        # execute_encoding_cmd(cmd, preset, codec, rendition, input_slice)
-
-                    # cleanup for next iteration
-                    # for out in output_dirs:
-                    #     os.system(f'rm {out}/output.mp4')
+                    if not DRY_RUN:
+                        execute_encoding_cmd(cmd, dto, input_slice)
+                    else: 
+                        print(cmd)
+                        
+                    # remove all encoded files on the go
+                    if cleanup:
+                        for out in output_dirs:
+                            os.system(f'rm {out}/output.mp4')
 
         # metric_df = nvidia_top.merge_dataframe_results(metric_results)
         # metric_df.to_csv(f'{RESULT_ROOT}/test.csv')
         
-        # write_encoding_results_to_csv()
+    write_encoding_results_to_csv()
             
 @track_emissions(
     offline=True,
@@ -191,12 +193,14 @@ def execute_encoding_benchmark():
 )
 def execute_encoding_cmd(
     cmd: str,
-    preset: str,
-    codec: str,
-    rendition: Rendition,
+    dto: EncodingConfigDTO,
     input_slice: list[str]
 ) -> None:
     global metric_results, nvidia_top
+    
+    preset = dto.preset
+    codec = dto.codec
+    rendition = dto.rendition
     
     if USE_CUDA:
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
@@ -237,6 +241,8 @@ def write_encoding_results_to_csv() -> None:
         timing_df.to_csv(result_path)
 
 if __name__ == '__main__':
+    
+    cleanup: bool = False
 
     try:
         send_ntfy(NTFY_TOPIC,
