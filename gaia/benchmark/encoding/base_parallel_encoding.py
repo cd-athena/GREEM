@@ -17,7 +17,7 @@ from gaia.utils.ntfy import send_ntfy
 
 from gaia.utils.benchmark import CLI_PARSER
 
-NTFY_TOPIC: str = 'aws_encoding'
+NTFY_TOPIC: str = 'encoding'
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
@@ -149,29 +149,27 @@ def execute_encoding_benchmark():
                 if window_idx > len(input_files):
                     break
 
-                input_slice = [f'{input_dir}/{slice}' for slice in input_files[idx_offset:window_idx]]              
+                input_slice = [f'{input_dir}/{slice}' for slice in input_files[idx_offset:window_idx]]        
                 
-                for codec_idx, codec in enumerate(encoding_config.codecs):
-                    for preset_idx, preset in enumerate(encoding_config.presets):
+                for dto in encoding_dtos:
+                          
                         
-                        output_dirs: list[str] = [
-                            f'{RESULT_ROOT}/{get_output_directory(codec, output, 4, preset, rendition)}' 
+                    output_dirs: list[str] = [
+                            f'{RESULT_ROOT}/{get_output_directory(dto.codec, output, 4, dto.preset, rendition)}' 
                             for output in output_files[:window_size]
                             ]
                         # for rendition_idx, rendition in enumerate(encoding_config.renditions):
                         
-                        cmd = create_simple_multi_video_ffmpeg_command(
-                            input_slice,
-                            output_dirs,
-                            [rendition],
-                            preset,
-                            codec,
-                            cuda_mode=CLI_PARSER.is_cuda_enabled(),
-                            quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
-                            pretty_print=True
-                        )
-                        
-                        print(cmd)
+                    cmd = create_multi_video_ffmpeg_command(
+                        input_slice,
+                        output_dirs,
+                        dto,
+                        cuda_mode=CLI_PARSER.is_cuda_enabled(),
+                        quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
+                        pretty_print=True
+                    )
+                    
+                    print(cmd)
 
                         # execute_encoding_cmd(cmd, preset, codec, rendition, input_slice)
 
