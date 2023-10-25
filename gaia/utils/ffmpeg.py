@@ -2,7 +2,7 @@ from math import ceil
 
 from gaia.video.video_info import VideoInfo
 
-from gaia.utils.config import Rendition, EncodingConfig
+from gaia.utils.config import Rendition, EncodingConfig, EncodingConfigDTO
 
 import os
 
@@ -193,46 +193,45 @@ def create_simple_multi_video_ffmpeg_command(
 def create_multi_video_ffmpeg_command(
     video_input_file_paths: list[str],
     output_directories: list[str],
-    renditions: list[Rendition],
-    preset: str,
-    codec: str,
+    dto: EncodingConfigDTO,
     segment_seconds: int = 4,
+    cuda_mode: bool = False,
+    quiet_mode: bool = False,
     pretty_print: bool = False
 ) -> str:
-    '''https://askubuntu.com/questions/853636/can-you-edit-multiple-videos-at-the-same-time-using-ffmpeg'''
-    
     cmd: list[str] = [
-        'ffmpeg -y'
+        'ffmpeg', '-y', 
     ]
+    
+    if cuda_mode:
+        cmd.append(CUDA_ENC_FLAG)
+    
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
+    
     # add all input videos
     cmd.extend([f'-i {video}' for video in video_input_file_paths])
     
+    bitrate = int(dto.rendition.bitrate)
+    fps_repr: str = '' if dto.framerate == 0 else f'fps={dto.framerate}'
+    
     for idx in range(len(video_input_file_paths)):
-        # map_cmd = f'-map {idx} -c:v mpeg4 -q:v 1 -seg_duration 4 -f dash {output_directories[idx]}/{idx}/video{idx}.mpd'
-        # cmd.append(map_cmd)
         map_cmd: list[str] = [
             f'-map {idx}',
-            f'-c:v {codec}', '-q:v 1',
-            f'-seg_duration {segment_seconds}',
+            f'-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}', 
+            f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*bitrate}k',
+            f'-vf scale={dto.rendition.get_resolution_dir_representation()}',
+            fps_repr,
             
-            # TODO probably add resolution etc here.
-            # get_representation_ffmpeg_flags(renditions, preset, codec),
+            # f'-seg_duration {segment_seconds}',
         ]
         
         cmd.extend(map_cmd)
-        
-        cmd.extend(get_representation_ffmpeg_flags(renditions, preset, codec, is_multi_video=False))
-        
         cmd.extend([
-            '-f dash',
-            f'{output_directories[idx]}/manifest.mpd'
+            f'{output_directories[idx]}/output.mp4'
             ])
         
-    #TODO add resolutions etc. to the encoding
-        
-    
     join_string: str = ' \n' if pretty_print else ' '
-    
     return join_string.join(cmd)
 
 
