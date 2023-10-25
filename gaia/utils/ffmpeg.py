@@ -197,7 +197,8 @@ def create_multi_video_ffmpeg_command(
     segment_seconds: int = 4,
     cuda_mode: bool = False,
     quiet_mode: bool = False,
-    pretty_print: bool = False
+    pretty_print: bool = False,
+    output_file_name: str = 'output.mp4'
 ) -> str:
     cmd: list[str] = [
         'ffmpeg', '-y', 
@@ -228,7 +229,7 @@ def create_multi_video_ffmpeg_command(
         
         cmd.extend(map_cmd)
         cmd.extend([
-            f'{output_directories[idx]}/output.mp4'
+            f'{output_directories[idx]}/{output_file_name}'
             ])
         
     join_string: str = ' \n' if pretty_print else ' '
