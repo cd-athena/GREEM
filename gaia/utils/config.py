@@ -248,7 +248,7 @@ class DecodingConfig():
     
 @dataclass
 class NtfyConfig():
-    base_url: str
+    base_url: str = "<ip-addess>"
     
     @classmethod
     def from_dict(cls: Type['NtfyConfig'], data: dict):

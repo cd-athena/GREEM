@@ -24,8 +24,8 @@ NTFY_TOPIC: str = 'aws_encoding'
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    '../config_files/segment_encoding_h264.yaml',
-    # '../config_files/segment_encoding_h265.yaml',
+    'config_files/segment_encoding_h264.yaml',
+    'config_files/segment_encoding_h265.yaml',
 ]
 
 INPUT_FILE_DIR: str = '../dataset/ref_265'
@@ -104,7 +104,7 @@ def execute_encoding_benchmark():
 
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
-        input_files = input_files[:2]
+        # input_files = input_files[:2]
 
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=[
@@ -130,7 +130,7 @@ def execute_encoding_benchmark():
                     output_dir,
                     dto.rendition, dto.preset, duration, dto.codec,
                     framerate=dto.framerate,
-                    constant_rate_factor=17,
+                    constant_rate_factor=-1,
                     use_dash=False,
                     pretty_print=DRY_RUN,
                     cuda_enabled=USE_CUDA,
