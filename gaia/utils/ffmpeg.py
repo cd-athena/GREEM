@@ -202,27 +202,29 @@ def create_multi_video_ffmpeg_command(
 ) -> str:
     cmd: list[str] = [
         'ffmpeg', '-y', 
+        '-hide_banner',
     ]
-    
-    if cuda_mode:
-        cmd.append(CUDA_ENC_FLAG)
     
     if quiet_mode:
         cmd.append(QUIET_FLAG)
     
     # add all input videos
-    cmd.extend([f'-i {video}' for video in video_input_file_paths])
+    if cuda_mode:
+        cmd.extend([f'{CUDA_ENC_FLAG} -i {video}' for video in video_input_file_paths])
+    else:
+        cmd.extend([f'-i {video}' for video in video_input_file_paths])
     
     bitrate = int(dto.rendition.bitrate)
-    fps_repr: str = '' if dto.framerate == 0 else f'fps={dto.framerate}'
+    # TODO take a look into how to integrate FPS to the encoding
+    # fps_repr: str = '' if dto.framerate == 0 else f'fps={dto.framerate}'
     
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
-            f'-map {idx}',
+            f'-map {idx}:0',
             f'-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}', 
-            f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*bitrate}k',
-            f'-vf scale={dto.rendition.get_resolution_dir_representation()}',
-            fps_repr,
+            f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
+            
+            f'-vf "scale={dto.rendition.get_resolution_dir_representation()}"',
             
             # f'-seg_duration {segment_seconds}',
         ]
