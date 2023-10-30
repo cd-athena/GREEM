@@ -4,26 +4,21 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from gaia.utils.ffmpeg import  create_multi_video_ffmpeg_command, create_simple_multi_video_ffmpeg_command
+from gaia.utils.ffmpeg import  create_multi_video_ffmpeg_command
 from gaia.utils.config import EncodingConfig, EncodingConfigDTO, get_output_directory, Rendition
-from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
-from gaia.utils.dataframe import(
-    get_dataframe_from_csv,
-    merge_benchmark_dataframes,
-    merge_benchmark_and_monitoring_dataframes
-)
+from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd
+from gaia.utils.dataframe import get_dataframe_from_csv
 from gaia.utils.ntfy import send_ntfy
 
 
 from gaia.utils.benchmark import CLI_PARSER
 
-NTFY_TOPIC: str = 'encoding'
+NTFY_TOPIC: str = 'gpu_encoding'
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    'config_files/segment_encoding_h264.yaml',
+    'config_files/parallel_encoding.yaml',
     # 'config_files/segment_encoding_h265.yaml',
-
 ]
 
 INPUT_FILE_DIR: str = '../dataset/ref_265'
@@ -143,8 +138,9 @@ def execute_encoding_benchmark():
         
         rendition = encoding_config.renditions[-1]
         
-        for window_size in range(1, 6):
-            for idx_offset in range(len(input_files)):
+        for window_size in range(2, 5):
+            for idx_offset in range(5):
+            # for idx_offset in range(len(input_files)):
                 window_idx: int = window_size + idx_offset
                 if window_idx > len(input_files):
                     break
@@ -153,7 +149,6 @@ def execute_encoding_benchmark():
                 
                 for dto in encoding_dtos:
                           
-                        
                     output_dirs: list[str] = [
                             f'{RESULT_ROOT}/{get_output_directory(dto.codec, output, 4, dto.preset, rendition)}' 
                             for output in output_files[:window_size]
@@ -164,7 +159,7 @@ def execute_encoding_benchmark():
                         input_slice,
                         output_dirs,
                         dto,
-                        cuda_mode=CLI_PARSER.is_cuda_enabled(),
+                        cuda_mode=USE_CUDA,
                         quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
                         pretty_print=DRY_RUN
                     )
@@ -178,9 +173,6 @@ def execute_encoding_benchmark():
                     if cleanup:
                         for out in output_dirs:
                             os.system(f'rm {out}/output.mp4')
-
-        # metric_df = nvidia_top.merge_dataframe_results(metric_results)
-        # metric_df.to_csv(f'{RESULT_ROOT}/test.csv')
         
     write_encoding_results_to_csv()
             
@@ -198,15 +190,14 @@ def execute_encoding_cmd(
 ) -> None:
     global metric_results, nvidia_top
     
-    preset = dto.preset
-    codec = dto.codec
-    rendition = dto.rendition
+    preset, codec, rendition = dto.preset, dto.preset, dto.rendition
+    bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
     
     if USE_CUDA:
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
         result_df['preset'] = preset
         result_df['codec'] = codec
-        result_df[['bitrate', 'width', 'height']] = rendition.bitrate, rendition.width, rendition.height
+        result_df[['bitrate', 'width', 'height']] = bitrate, width, height
         result_df['num_videos'] = len(input_slice)
         
         metric_results.append(result_df)
@@ -217,28 +208,21 @@ def execute_encoding_cmd(
         os.system(cmd)
         
 def write_encoding_results_to_csv() -> None:
-    global timing_metadata, metric_results
+    global nvidia_top, metric_results
     
-    timing_df: pd.DataFrame = pd.DataFrame.from_dict(
-        timing_metadata, orient='index')
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
-    if INCLUDE_CODE_CARBON:
-        emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
-        # merge codecarbon and timing_df results
-        encoding_results_df = merge_benchmark_dataframes(
-            emission_df, timing_df)
+    
 
-        if USE_CUDA:
-            monitoring_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
-            merged_df = pd.concat([emission_df, monitoring_df], axis=1)
-            # save to disk
-            merged_df.to_csv(result_path)
-        else:
-            encoding_results_df.to_csv(result_path)
+    if INCLUDE_CODE_CARBON and USE_CUDA:
+        emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
+        
+        nvitop_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
+        merged_df = pd.concat([emission_df, nvitop_df], axis=1)
+        # save to disk
+        merged_df.to_csv(result_path)
         os.system(f'rm {RESULT_ROOT}/emissions.csv')
-    else:
-        timing_df.to_csv(result_path)
+
 
 if __name__ == '__main__':
     
@@ -253,9 +237,6 @@ if __name__ == '__main__':
                 ''')
         
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
-
-        # intel_rapl_workaround()
-        # IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
