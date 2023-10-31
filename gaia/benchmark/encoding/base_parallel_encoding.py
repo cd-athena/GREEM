@@ -67,7 +67,7 @@ def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> li
         file = file_name.split('.')[0]
         if USE_SLICED_VIDEOS:
             file = file.split('_')[0]
-        return file in encoding_config.videos_to_encode
+        return encoding_config.videos_to_encode is not None and file in encoding_config.videos_to_encode
 
     input_files: list[str] = [file_name for file_name in os.listdir(
         video_dir) if is_file_in_config(file_name)]
@@ -79,8 +79,8 @@ def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> li
 
 
 @track_emissions(
-    # offline=True,
-    # country_iso_code='AUT',
+    offline=True,
+    country_iso_code='AUT',
     measure_power_secs=1,
     output_dir=RESULT_ROOT,
     save_to_file=True,
@@ -115,6 +115,21 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
     return sorted(input_files)
 
+def abbreviate_video_name(video_name: str) -> str:
+    
+    video_name_no_ext: str = video_name.replace('.265', '')
+    
+    upper_case: str = ''.join(
+        [
+            f'{c}{video_name_no_ext[video_name_no_ext.find(c)+1]}' 
+            for c in video_name_no_ext if c.isupper()
+            ])
+    numbers: str = ''.join([c for c in video_name_no_ext if c.isnumeric()])
+    abbreviate: str = f'{upper_case}_{numbers}'
+    
+    
+    return abbreviate
+
 
 def remove_media_extension(file_name: str) -> str:
     return file_name.removesuffix('.265').removesuffix('.webm').removesuffix('.mp4')
@@ -138,8 +153,8 @@ def execute_encoding_benchmark():
         
         rendition = encoding_config.renditions[-1]
         
-        for window_size in range(2, 5):
-            for idx_offset in range(5):
+        for window_size in range(3, 5):
+            for idx_offset in range(3):
             # for idx_offset in range(len(input_files)):
                 window_idx: int = window_size + idx_offset
                 if window_idx > len(input_files):
@@ -198,9 +213,15 @@ def execute_encoding_cmd(
         result_df['preset'] = preset
         result_df['codec'] = codec
         result_df[['bitrate', 'width', 'height']] = bitrate, width, height
+        result_df['video_name_abbr'] = ','.join(
+            [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
         result_df['num_videos'] = len(input_slice)
         
         metric_results.append(result_df)
+        
+        with open('asdf.txt', 'a') as f:
+            f.writelines(','.join(input_slice))
+            f.writelines(','.join([abbreviate_video_name(video) for video in input_slice]))
         
     elif DRY_RUN:
         print(cmd)
