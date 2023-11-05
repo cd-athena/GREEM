@@ -4,10 +4,14 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
+from math import ceil
+from gaia.video.video_info import VideoInfo
+
+from gaia.utils.ffmpeg import CUDA_ENC_FLAG, QUIET_FLAG
 from gaia.utils.config import (
     EncodingConfig,
     EncodingConfigDTO,
+    Rendition
 )
 
 from gaia.utils.timing import IdleTimeEnergyMeasurement
@@ -37,6 +41,101 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
+
+def create_ffmpeg_encoding_command(
+    input_file_path: str,
+    output_dir: str,
+    rendition: Rendition,
+    preset: str,
+    segment_duration: int,
+    codec: str,
+    framerate: int = 0,
+    constant_rate_factor: int = -1,
+    cuda_enabled: bool = False,
+    quiet_mode: bool = False,
+) -> str:
+    '''Creates the ffmpeg command for encoding a video file'''
+    cmd: list[str] = ['ffmpeg -y']
+    if cuda_enabled:
+        cmd.append(CUDA_ENC_FLAG)
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
+
+    cmd.append(f'-re -i {input_file_path}')
+    
+    if constant_rate_factor > -1: 
+        cmd.append(f'-crf {constant_rate_factor}')
+
+    fps_str: str = ''
+    if framerate > 0:
+        fps_str = str(framerate) # type: ignore
+    
+    cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec, fps=fps_str))
+        
+    fps: int = ceil(VideoInfo(input_file_path).get_fps()) if framerate is None or framerate == 0 else framerate
+    keyframe: int = fps * segment_duration
+
+    cmd.extend([
+        f'-keyint_min {keyframe}',
+        f'-g {keyframe}',
+    ])
+    
+    cmd.extend([
+            f'{output_dir}/output.mp4'
+        ])
+        
+    join_string: str = ' \n' if DRY_RUN else ' '
+
+    return join_string.join(cmd)
+
+def create_ffmpeg_scaling_command(
+    input_file_path: str,
+    output_dir: str,
+    rendition: Rendition,
+    preset: str,
+    segment_duration: int,
+    codec: str,
+    framerate: int = 0,
+    constant_rate_factor: int = -1,
+    use_dash: bool = False,    
+    cuda_enabled: bool = False,
+    quiet_mode: bool = False,
+    pretty_print: bool = False
+) -> str:
+    cmd: list[str] = ['ffmpeg -y']
+    
+    
+    
+    join_string: str = ' \n' if DRY_RUN else ' '
+
+    return join_string.join(cmd)
+
+def get_representation_ffmpeg_flags(
+    renditions: list[Rendition], 
+    preset: str, 
+    codec: str,
+    fps: str = '',
+    ) -> list[str]:
+    '''Returns the ffmpeg flags for the renditions'''
+    representations: list[str] = list()
+        
+    fps_repr: str = '' if len(fps) == 0 else f',fps={fps}'
+
+    for idx, rendition in enumerate(renditions):
+        bitrate = rendition.bitrate
+        height = rendition.height
+        width = rendition.width
+        representation: list[str] = [
+            f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
+            f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
+            f'"scale={width}:{height}',
+            f'{fps_repr}"',
+            f'-preset {preset}'
+        ]
+
+        representations.extend(representation)
+
+    return representations
 
 
 def prepare_data_directories(
@@ -77,7 +176,7 @@ def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> li
         file = file_name.split('.')[0]
         if USE_SLICED_VIDEOS:
             file = file.split('_')[0]
-        return file in encoding_config.videos_to_encode
+        return encoding_config.videos_to_encode is not None and file in encoding_config.videos_to_encode
 
     input_files: list[str] = [file_name for file_name in os.listdir(
         video_dir) if is_file_in_config(file_name)]
@@ -125,7 +224,13 @@ def execute_encoding_benchmark():
                     --- config - ({en_idx + 1}/{len(encoding_configs)})
                     --- {dto} - ({dto_idx + 1}/{len(encoding_dtos)})
                     ''')
-                cmd = create_ffmpeg_encoding_command(
+                
+                scaling_cmd: str = ''
+
+                # execute_encoding_cmd(cmd, dto, video_name)
+                execute_scaling_stage(scaling_cmd, dto, video_name)
+                
+                encoding_cmd = create_ffmpeg_encoding_command(
                     f'{input_dir}/{video_name}',
                     output_dir,
                     dto.rendition, dto.preset, duration, dto.codec,
@@ -136,10 +241,44 @@ def execute_encoding_benchmark():
                     cuda_enabled=USE_CUDA,
                     quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
                 ) if not DRY_RUN else 'sleep 0.1'
-
-                execute_encoding_cmd(cmd, dto, video_name)
+                
+                execute_encoding_stage(encoding_cmd, dto, video_name)
 
     write_encoding_results_to_csv()
+    
+    
+@track_emissions(
+    offline=True,
+    country_iso_code='AUT',
+    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+    measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
+    project_name='encoding_stage',
+)
+def execute_encoding_stage(
+    cmd: str,
+    encoding_dto: EncodingConfigDTO,
+    video_name: str
+) -> None:
+    execute_encoding_cmd(cmd, encoding_dto, video_name)
+    
+
+@track_emissions(
+    offline=True,
+    country_iso_code='AUT',
+    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+    measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
+    project_name='scaling_stage',
+)
+def execute_scaling_stage(
+    cmd: str,
+    encoding_dto: EncodingConfigDTO,
+    video_name: str
+) -> None:
+    execute_encoding_cmd(cmd, encoding_dto, video_name)
 
 
 @track_emissions(

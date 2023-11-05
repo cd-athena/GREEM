@@ -126,8 +126,8 @@ def execute_encoding_benchmark():
 
         rendition = encoding_config.renditions[-1]
 
-        for window_size in range(3, 5):
-            for idx_offset in range(3):
+        for window_size in range(2, 20):
+            for idx_offset in range(len(input_files)):
                 window_idx: int = window_size + idx_offset
                 if window_idx > len(input_files):
                     break
