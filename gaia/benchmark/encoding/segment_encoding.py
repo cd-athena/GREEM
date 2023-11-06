@@ -7,7 +7,7 @@ from codecarbon import track_emissions
 from math import ceil
 from gaia.video.video_info import VideoInfo
 
-from gaia.utils.ffmpeg import CUDA_ENC_FLAG, QUIET_FLAG
+from gaia.utils.ffmpeg import CUDA_ENC_FLAG, QUIET_FLAG, get_lib_codec
 from gaia.utils.config import (
     EncodingConfig,
     EncodingConfigDTO,
@@ -42,6 +42,33 @@ DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
+'''
+def encoding(input_ffmpeg: str,
+             output_file: str,
+             codec: str,
+             encoding_preset: str,
+             bitrate: str,
+             width: str,
+             height: str
+             ) -> str:
+    output_file_name: str = build_output_file_name(
+        output_file, codec, encoding_preset, bitrate, width, height)
+
+    result_file_path: str = f'{RESULT_PATH}/{codec}/enc/{output_file_name}.{codec}'
+
+    lib_params: str = ' -x264-params' if '264' in codec else ' -x265-params'
+
+    command = f'ffmpeg {FFMPEG_QUIET} -y {FFMPEG_CUDA} -i {input_ffmpeg}'\
+        f' -probesize 10M -vcodec {get_codec_lib(codec)}'\
+        f'{lib_params} "log-level=error --keyint {IFRAME_INTERVAL*FPS} --min-keyint {IFRAME_INTERVAL*FPS} --no-scenecut" -preset {encoding_preset}' \
+        f' -b:v {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k' \
+        f' {result_file_path}'
+
+    os.system(command)
+    return result_file_path
+
+'''
+
 def create_ffmpeg_encoding_command(
     input_file_path: str,
     output_dir: str,
@@ -54,7 +81,14 @@ def create_ffmpeg_encoding_command(
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
 ) -> str:
-    '''Creates the ffmpeg command for encoding a video file'''
+    '''Creates the ffmpeg command for encoding a video file
+    
+        command = f'ffmpeg {FFMPEG_QUIET} -y {FFMPEG_CUDA} -i {input_ffmpeg}'\
+        f' -probesize 10M -vcodec {get_codec_lib(codec)}'\
+        f'{lib_params} "log-level=error --keyint {IFRAME_INTERVAL*FPS} --min-keyint {IFRAME_INTERVAL*FPS} --no-scenecut" -preset {encoding_preset}' \
+        f' -b:v {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k' \
+        f' {result_file_path}'
+        '''
     cmd: list[str] = ['ffmpeg -y']
     if cuda_enabled:
         cmd.append(CUDA_ENC_FLAG)
@@ -85,29 +119,67 @@ def create_ffmpeg_encoding_command(
         ])
         
     join_string: str = ' \n' if DRY_RUN else ' '
+    
+    lib_params: str = ' -x264-params' if '264' in codec else ' -x265-params'
+    
+    command = f'ffmpeg {QUIET_FLAG} -y {CUDA_ENC_FLAG} -i {input_file_path}'\
+        f' -probesize 10M -vcodec {get_lib_codec(codec)}'\
+        f'{lib_params} "log-level=error --keyint {keyframe} --min-keyint {keyframe} --no-scenecut" -preset {preset}' \
+        f' -b:v {rendition.bitrate}k -minrate {rendition.bitrate}k -maxrate {rendition.bitrate}k -bufsize {3*int(rendition.bitrate)}k' \
+        f' {output_dir}/encoding_output.mp4'
 
-    return join_string.join(cmd)
+    return command
+    # return join_string.join(cmd)
+
+'''
+def scaling(
+        input_ffmpeg: str, 
+        output_file: str, 
+        codec: str, 
+        encoding_preset: str, 
+        bitrate: str,
+        width: str, 
+        height: str
+        ):
+    output_file_name = build_output_file_name(
+        output_file, codec, encoding_preset, bitrate, width, height)
+
+    result_file_path: str = f'{RESULT_PATH}/{codec}/enc/{output_file_name}_scaled.{codec}'
+
+    command = f'ffmpeg {FFMPEG_QUIET} -y {FFMPEG_CUDA} -i {input_ffmpeg} '\
+        f'-vf scale={width}:{height} ' \
+        f'{result_file_path}'
+
+    os.system(command)
+    return result_file_path'''
 
 def create_ffmpeg_scaling_command(
-    input_file_path: str,
     output_dir: str,
     rendition: Rendition,
-    preset: str,
-    segment_duration: int,
-    codec: str,
-    framerate: int = 0,
-    constant_rate_factor: int = -1,
-    use_dash: bool = False,    
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
-    pretty_print: bool = False
 ) -> str:
     cmd: list[str] = ['ffmpeg -y']
+    if cuda_enabled:
+        cmd.append(CUDA_ENC_FLAG)
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
+
+    cmd.append(f'-re -i {output_dir}/encoding_output.mp4')
     
+    cmd.extend([
+        f'-vf scale={rendition.get_resolution_dir_representation()}',
+        f'{output_dir}/scaling_output.mp4'
+    ])
+    
+    # command = f'ffmpeg {QUIET_FLAG} -y {CUDA_ENC_FLAG} -i {input_file_path} '\
+    #     f'-vf scale={rendition.width}:{rendition.height} ' \
+    #     f'{output_dir}/output.mp4'
     
     
     join_string: str = ' \n' if DRY_RUN else ' '
 
+    # return command
     return join_string.join(cmd)
 
 def get_representation_ffmpeg_flags(
@@ -225,10 +297,6 @@ def execute_encoding_benchmark():
                     --- {dto} - ({dto_idx + 1}/{len(encoding_dtos)})
                     ''')
                 
-                scaling_cmd: str = ''
-
-                # execute_encoding_cmd(cmd, dto, video_name)
-                execute_scaling_stage(scaling_cmd, dto, video_name)
                 
                 encoding_cmd = create_ffmpeg_encoding_command(
                     f'{input_dir}/{video_name}',
@@ -244,6 +312,13 @@ def execute_encoding_benchmark():
                 
                 execute_encoding_stage(encoding_cmd, dto, video_name)
 
+                scaling_cmd: str = create_ffmpeg_scaling_command(
+                    output_dir, 
+                    dto.rendition,
+                    cuda_enabled=USE_CUDA)
+
+                # execute_encoding_cmd(cmd, dto, video_name)
+                execute_scaling_stage(scaling_cmd, dto, video_name)
     write_encoding_results_to_csv()
     
     
@@ -278,7 +353,7 @@ def execute_scaling_stage(
     encoding_dto: EncodingConfigDTO,
     video_name: str
 ) -> None:
-    execute_encoding_cmd(cmd, encoding_dto, video_name)
+    execute_scaling_stage(cmd, encoding_dto, video_name)
 
 
 @track_emissions(
