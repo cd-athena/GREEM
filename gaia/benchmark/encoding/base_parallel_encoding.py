@@ -106,7 +106,7 @@ def remove_media_extension(file_name: str) -> str:
 
 
 def execute_encoding_benchmark():
-    global timing_metadata, nvidia_top, metric_results
+    global timing_metadata, nvidia_top, metric_results, is_batch_encoding
 
     send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
     input_dir = INPUT_FILE_DIR
@@ -127,7 +127,9 @@ def execute_encoding_benchmark():
         rendition = encoding_config.renditions[-1]
 
         for window_size in range(2, 20):
-            for idx_offset in range(len(input_files)):
+            step_size: int = window_size if is_batch_encoding else 1
+            
+            for idx_offset in range(0, len(input_files), step_size):
                 window_idx: int = window_size + idx_offset
                 if window_idx > len(input_files):
                     break
@@ -218,6 +220,8 @@ def write_encoding_results_to_csv() -> None:
 if __name__ == '__main__':
 
     cleanup: bool = False
+    
+    is_batch_encoding: bool = True
 
     try:
         send_ntfy(NTFY_TOPIC,
