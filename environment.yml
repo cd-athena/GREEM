@@ -4,7 +4,6 @@ channels:
   - conda-forge
 dependencies:
   - python=3.10
-  - anaconda
   - dacite
   # - pynvml
   - codecarbon
@@ -14,8 +13,6 @@ dependencies:
   - pandas
   # - watchdog
   - pip
-  - cython
-
  
   - pip:
     - opencv-python

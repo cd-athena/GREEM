@@ -16,6 +16,8 @@ def get_lib_codec(codec: str, cuda_mode: bool = False) -> str:
         return 'h264_nvenc' if cuda_mode else 'libx264'
     elif codec == 'h265':
         return 'hevc_nvenc' if cuda_mode else 'libx265'
+    elif codec == 'av1':
+        return 'libsvtav1'
     else:
         raise ValueError('Provided codec value not supported')
 
@@ -36,12 +38,15 @@ def get_representation_ffmpeg_flags(
         height = rendition.height
         width = rendition.width
         representation: list[str] = [
-            f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
+            f'-b:v:{idx} {bitrate}k',
+            # f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
             f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
-            f'"scale={width}:{height}',
-            f'{fps_repr}"',
+            f'"scale={width}:{height}"',
+            # f'{fps_repr}"',
             f'-preset {preset}'
         ]
+        
+        
 
         representations.extend(representation)
 
@@ -57,7 +62,7 @@ def create_ffmpeg_encoding_command(
     codec: str,
     framerate: int = 0,
     constant_rate_factor: int = -1,
-    use_dash: bool = False,    
+    use_dash: bool = False,
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
     pretty_print: bool = False
@@ -123,12 +128,12 @@ def create_ffmpeg_command_all_renditions(
     keyframe: int = fps * segment_seconds
 
     cmd.extend([
-        f'-keyint_min {keyframe}',
-        f'-g {keyframe}',
+        # f'-keyint_min {keyframe}',
+        # f'-g {keyframe}',
         f'-seg_duration {segment_seconds}',
-        # '-init_seg_name "\$RepresentationID\$/init.\$ext\$"',
-        # '-media_seg_name "\$RepresentationID\$/seg-\$Number%05d\$.\$ext\$"',
-        '-adaptation_sets "id=0,streams=v  id=1,streams=a"',
+        # f'-init_seg_name "{output_dir}/\$RepresentationID\$/init.\$ext\$"',
+        # f'-media_seg_name "{output_dir}/\$RepresentationID\$/seg-\$Number%05d\$.\$ext\$"',
+        # '-adaptation_sets "id=0,streams=v  id=1,streams=a"',
         f'-f dash {output_dir}/manifest.mpd'
     ])
 
