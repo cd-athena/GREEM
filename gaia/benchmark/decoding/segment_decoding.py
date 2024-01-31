@@ -105,15 +105,15 @@ def write_decoding_results_to_csv():
             merged_df.to_csv(result_path)
             os.system(f'rm {RESULT_ROOT}/emissions.csv')
 
-@track_emissions(
-    offline=True,
-    country_iso_code='AUT',
-    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
-    measure_power_secs=1,
-    output_dir=RESULT_ROOT,
-    save_to_file=True,
-    project_name='demuxing'
-)
+# @track_emissions(
+#     offline=True,
+#     country_iso_code='AUT',
+#     log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+#     measure_power_secs=1,
+#     output_dir=RESULT_ROOT,
+#     save_to_file=True,
+#     project_name='demuxing'
+# )
 def start_demuxing(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     demuxed_output_path: str = f'{output_path}/demuxed.mp4'
     cuvid_codec: str = get_cuda_decoding_codec(dto)
@@ -123,15 +123,15 @@ def start_demuxing(input_file_path: str, output_path: str, dto: DecodingConfigDT
         
     return demuxed_output_path
         
-@track_emissions(
-    offline=True,
-    country_iso_code='AUT',
-    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
-    measure_power_secs=1,
-    output_dir=RESULT_ROOT,
-    save_to_file=True,
-    project_name='decoding'
-)
+# @track_emissions(
+#     offline=True,
+#     country_iso_code='AUT',
+#     log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+#     measure_power_secs=1,
+#     output_dir=RESULT_ROOT,
+#     save_to_file=True,
+#     project_name='decoding'
+# )
 def start_decoding(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     decoding_output_path: str = f'{output_path}/decoding.yuv'
     cuvid_codec: str = get_cuda_decoding_codec(dto)
@@ -141,15 +141,15 @@ def start_decoding(input_file_path: str, output_path: str, dto: DecodingConfigDT
 
     return decoding_output_path
         
-@track_emissions(
-    offline=True,
-    country_iso_code='AUT',
-    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
-    measure_power_secs=1,
-    output_dir=RESULT_ROOT,
-    save_to_file=True,
-    project_name='scaling'
-)
+# @track_emissions(
+#     offline=True,
+#     country_iso_code='AUT',
+#     log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+#     measure_power_secs=1,
+#     output_dir=RESULT_ROOT,
+#     save_to_file=True,
+#     project_name='scaling'
+# )
 def start_scaling(input_file_path: str, output_path: str, dto: DecodingConfigDTO) -> str:
     decoding_input_file_path: str = f'{output_path}/decoding.yuv'
     scaling_output_path: str = f'{output_path}/scaling.yuv'
@@ -171,6 +171,15 @@ def get_cuda_decoding_codec(dto: DecodingConfigDTO) -> str:
     codec = dto.encoding_codec
     return f'-hwaccel cuda -c:v {codec}_cuvid'
 
+@track_emissions(
+    offline=True,
+    country_iso_code='AUT',
+    log_level='error' if CLI_PARSER.is_quiet_ffmpeg() else 'debug',
+    measure_power_secs=1,
+    output_dir=RESULT_ROOT,
+    save_to_file=True,
+    project_name='scaling'
+)
 def execute_decoding_benchmark():
     global cleanup_after_decode
     decoding_configs: list[DecodingConfig] = [DecodingConfig.from_file(file_path) for file_path in DECODING_CONFIG_PATHS]
@@ -182,7 +191,7 @@ def execute_decoding_benchmark():
             encoded_input_files: list[str] = get_input_files(dto, all_video_files)
             encoded_input_files = [file for file in encoded_input_files if file.endswith('output.mp4')]
             
-            for encoded_file_path in encoded_input_files:
+            for encoded_file_path in encoded_input_files[:1]:
                 
                 video_name = get_video_name_from_path(encoded_file_path)
                 output_path: str = dto.get_output_dir(RESULT_ROOT, video_name)
