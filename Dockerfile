@@ -42,9 +42,9 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update -y && apt-get upgrade -y
 
 # Install Nvidia and CUDA libraries and drivers
-RUN apt-get -y install cuda-toolkit-12-3
-RUN apt-get install -y nvidia-kernel-open-545
-RUN apt-get install -y cuda-drivers-545
+# RUN apt-get -y install cuda-toolkit-12-3
+# RUN apt-get install -y nvidia-kernel-open-545
+# RUN apt-get install -y cuda-drivers-545
 
 
 # install miniconda
@@ -60,6 +60,8 @@ COPY . .
 # Leverage a cache mount to /root/.cache/conda to speed up subsequent builds.
 # Leverage a bind mount to environment.yml to avoid having to copy them into
 # into this layer.
+# https://stackoverflow.com/a/62674910/13334047
+# https://stackoverflow.com/a/69878344/13334047
 RUN --mount=type=cache,target=/root/.cache/conda \
     --mount=type=bind,source=environment.yml,target=environment.yml \
     conda init bash \
@@ -69,6 +71,33 @@ RUN --mount=type=cache,target=/root/.cache/conda \
 
 # Finish setup of GREEM project
 RUN pip install -e .
+
+# Start with FFmpeg Installation
+RUN apt-get -y update && apt-get install -y wget nano git build-essential yasm pkg-config
+
+RUN apt-get install -y autoconf automake cmake git-core libass-dev libfreetype6-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev pkg-config texinfo wget zlib1g-dev nasm yasm libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libx264-dev
+
+# Compile and install ffmpeg from source
+# https://stackoverflow.com/a/46005194/13334047
+RUN git clone https://github.com/FFmpeg/FFmpeg /root/ffmpeg && \
+    cd /root/ffmpeg && \
+    ./configure \
+    --enable-nonfree \
+    # --enable-cuda-nvcc \
+    # --enable-libnpp \
+    # --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 \ 
+    --enable-gpl \
+    # --enable-gnutls \
+    # --enable-libaom \
+    --enable-libass \
+    # --enable-libfdk-aac \
+    --enable-libfreetype \
+    --enable-libopus \
+    --enable-libvorbis \
+    # --enable-libvpx \
+    --enable-libx264 \
+    --enable-libx265 && \
+    make -j8 && make install -j8
 
 # Run the application.
 # CMD [ "pip install -e ." ]
