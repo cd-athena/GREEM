@@ -6,6 +6,7 @@ data/*
 
 # Ignore media files
 *.mp4
+*.webm
 
 # Ignore manifests
 *.mpd
@@ -26,3 +27,9 @@ gaia.egg-info/*
 *.so
 *.o
 gaia/energy/*
+
+# Analysis files
+*.png
+*.pdf
+
+**/course/*
