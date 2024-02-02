@@ -6,6 +6,8 @@ ARG OS_TYPE=x86_64
 ARG PYTHON_VERSION=3.10.13
 
 FROM nvidia/cuda:11.6.2-base-ubuntu"${UBUNTU_VER}"
+# ARG basetag="450-signed-ubuntu22.04"  # Ubuntu only
+# FROM nvcr.io/nvidia/driver:"${basetag}"
 
 ENV NVIDIA_DISABLE_REQUIRE=true
 ENV DEBIAN_FRONTEND=noninteractive
@@ -18,18 +20,15 @@ RUN . /etc/os-release && [ "${NAME}" = "Ubuntu" ] && \
 
 # Install Python 3
 RUN apt-get update && \
-  apt-get install --quiet --yes --no-install-recommends python3-dev locales && \
+  apt-get install --quiet --yes python3 locales && \
   rm -rf /var/lib/apt/lists/*
 
 # Setup locale
 ENV LC_ALL=C.UTF-8
 RUN update-locale LC_ALL="C.UTF-8"
 
-RUN apt-get update && apt-get install -yq curl wget jq
+RUN apt-get update && apt-get install -yq curl wget jq nano git build-essential yasm pkg-config nasm autoconf automake cmake git-core
 
-RUN apt-get update \
-    && apt-get install -y wget \
-    && wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -42,12 +41,13 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update -y && apt-get upgrade -y
 
 # Install Nvidia and CUDA libraries and drivers
-# RUN apt-get -y install cuda-toolkit-12-3
-# RUN apt-get install -y nvidia-kernel-open-545
-# RUN apt-get install -y cuda-drivers-545
+RUN apt-get -y install cuda-toolkit-12-3
+RUN apt-get install -y nvidia-kernel-open-545
+RUN apt-get install -y cuda-drivers-545
 
 
 # install miniconda
+RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
 ENV PATH="/root/miniconda3/bin:$PATH"
 RUN mkdir /root/.conda && bash Miniconda3-latest-Linux-x86_64.sh -b
 
@@ -73,31 +73,54 @@ RUN --mount=type=cache,target=/root/.cache/conda \
 RUN pip install -e .
 
 # Start with FFmpeg Installation
-RUN apt-get -y update && apt-get install -y wget nano git build-essential yasm pkg-config
 
-RUN apt-get install -y autoconf automake cmake git-core libass-dev libfreetype6-dev libsdl2-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev pkg-config texinfo wget zlib1g-dev nasm yasm libx265-dev libnuma-dev libvpx-dev libmp3lame-dev libopus-dev libx264-dev
+RUN git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && \
+    cd nv-codec-headers && make && make install && cd ..
 
+ARG CUDA_HOME=/usr/local/cuda
+ENV PATH=${CUDA_HOME}/bin:${PATH}
+
+RUN export PATH=/usr/local/cuda/bin:${PATH}
+RUN apt-get -y --force-yes install autoconf automake cmake git build-essential libass-dev libfreetype6-dev libgpac-dev \
+  libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev \
+  libxcb-xfixes0-dev pkg-config wget yasm texi2html zlib1g-dev nasm libx264-dev libx265-dev libnuma-dev \
+  libvpx-dev libmp3lame-dev libunistring-dev libaom-dev libopus-dev
+
+RUN apt-get install -y libfreetype6-dev libva-dev libxcb1-dev libc6-dev libc6 libass-dev build-essential libnuma1 libsdl2-dev libvorbis-dev libopus-dev cmake texinfo libvdpau-dev pkg-config libvpx-dev libx265-dev wget libmp3lame-dev libnuma-dev unzip libxcb-shm0-dev zlib1g-dev libtool libx264-dev
 # Compile and install ffmpeg from source
 # https://stackoverflow.com/a/46005194/13334047
 RUN git clone https://github.com/FFmpeg/FFmpeg /root/ffmpeg && \
     cd /root/ffmpeg && \
     ./configure \
-    --enable-nonfree \
+    --libdir=/usr/lib/x86_64-linux-gnu \
+    --incdir=/usr/include/x86_64-linux-gnu \
+    --disable-filter=resample \
+    --extra-libs="-lpthread -lm" \
+    --bindir="/bin" \
+    # --bindir="$HOME/bin" \
     # --enable-cuda-nvcc \
+    # --enable-cuda \
+    # --enable-cuvid \
     # --enable-libnpp \
-    # --extra-cflags=-I/usr/local/cuda/include --extra-ldflags=-L/usr/local/cuda/lib64 \ 
+    # --extra-cflags="-I/${CUDA_HOME}/include/" \
+    # --extra-ldflags=-L/${CUDA_HOME}/lib64/ \
     --enable-gpl \
-    # --enable-gnutls \
-    # --enable-libaom \
     --enable-libass \
-    # --enable-libfdk-aac \
+    --enable-vaapi \
     --enable-libfreetype \
+    --enable-libmp3lame \
     --enable-libopus \
-    --enable-libvorbis \
+    --enable-libtheora \
+    # --enable-libvorbis \
+    # --enable-libsvtav1 \
+    # --enable-libvorbis \
     # --enable-libvpx \
     --enable-libx264 \
-    --enable-libx265 && \
-    make -j8 && make install -j8
+    --enable-libx265 \
+    --enable-nonfree \
+    --enable-nvenc && \
+    PATH="$HOME/bin:$PATH" make -j$(nproc) && \
+    make -j$(nproc) install
 
 # Run the application.
 # CMD [ "pip install -e ." ]
