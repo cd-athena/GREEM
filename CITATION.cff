@@ -7,8 +7,11 @@ authors:
 - family-names: "Afzal"
   given-names: "Samira"
   orcid: "https://orcid.org/0000-0003-4779-3936"
-title: "GAIATools"
+- family-names: "Linder"
+  given-names: "Sandro"
+  orcid: "https://orcid.org/0009-0003-8283-0007"
+title: "GREEM"
 version: 0.0.1
 doi: 10.5281/zenodo.1234
-date-released: 2023-11-27
-url: "https://github.com/cd-athena/GAIATools"
+date-released: 2024-02-02
+url: "https://github.com/cd-athena/GREEM"
