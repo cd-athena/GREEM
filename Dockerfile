@@ -67,10 +67,8 @@ RUN --mount=type=cache,target=/root/.cache/conda \
     conda init bash \
     && . ~/.bashrc \
     && conda env create -f environment.yml \
-    && conda activate gaia-tools
+    && conda activate gaia-tools && pip install -e .
 
-# Finish setup of GREEM project
-RUN pip install -e .
 
 # Start with FFmpeg Installation
 
@@ -81,7 +79,7 @@ ARG CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
 
 RUN export PATH=/usr/local/cuda/bin:${PATH}
-RUN apt-get -y --force-yes install autoconf automake cmake git build-essential libass-dev libfreetype6-dev libgpac-dev \
+RUN apt-get -y --force-yes install autoconf automake cmake libass-dev libfreetype6-dev libgpac-dev \
   libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev \
   libxcb-xfixes0-dev pkg-config wget yasm texi2html zlib1g-dev nasm libx264-dev libx265-dev libnuma-dev \
   libvpx-dev libmp3lame-dev libunistring-dev libaom-dev libopus-dev
@@ -89,44 +87,54 @@ RUN apt-get -y --force-yes install autoconf automake cmake git build-essential l
 RUN apt-get install -y libfreetype6-dev libva-dev libxcb1-dev libc6-dev libc6 libass-dev build-essential libnuma1 libsdl2-dev libvorbis-dev libopus-dev cmake texinfo libvdpau-dev pkg-config libvpx-dev libx265-dev wget libmp3lame-dev libnuma-dev unzip libxcb-shm0-dev zlib1g-dev libtool libx264-dev
 # Compile and install ffmpeg from source
 # https://stackoverflow.com/a/46005194/13334047
-RUN git clone https://github.com/FFmpeg/FFmpeg /root/ffmpeg && \
-    cd /root/ffmpeg && \
-    ./configure \
-    --libdir=/usr/lib/x86_64-linux-gnu \
-    --incdir=/usr/include/x86_64-linux-gnu \
-    --disable-filter=resample \
-    --extra-libs="-lpthread -lm" \
-    --bindir="/bin" \
-    # --bindir="$HOME/bin" \
-    # --enable-cuda-nvcc \
-    # --enable-cuda \
-    # --enable-cuvid \
-    # --enable-libnpp \
-    # --extra-cflags="-I/${CUDA_HOME}/include/" \
-    # --extra-ldflags=-L/${CUDA_HOME}/lib64/ \
-    --enable-gpl \
-    --enable-libass \
-    --enable-vaapi \
-    --enable-libfreetype \
-    --enable-libmp3lame \
-    --enable-libopus \
-    --enable-libtheora \
-    # --enable-libvorbis \
-    # --enable-libsvtav1 \
-    # --enable-libvorbis \
-    # --enable-libvpx \
-    --enable-libx264 \
-    --enable-libx265 \
-    --enable-nonfree \
-    --enable-nvenc && \
-    PATH="$HOME/bin:$PATH" make -j$(nproc) && \
-    make -j$(nproc) install
+# RUN git clone https://github.com/FFmpeg/FFmpeg /root/ffmpeg && \
+#     cd /root/ffmpeg && \
+#     ./configure \
+#     --libdir=/usr/lib/x86_64-linux-gnu \
+#     --incdir=/usr/include/x86_64-linux-gnu \
+#     --disable-filter=resample \
+#     --extra-libs="-lpthread -lm" \
+#     --bindir="/bin" \
+#     # --bindir="$HOME/bin" \
+#     # --enable-cuda-nvcc \
+#     # --enable-cuda \
+#     # --enable-cuvid \
+#     # --enable-libnpp \
+#     # --extra-cflags="-I/${CUDA_HOME}/include/" \
+#     # --extra-ldflags=-L/${CUDA_HOME}/lib64/ \
+#     --enable-gpl \
+#     --enable-libass \
+#     --enable-vaapi \
+#     --enable-libfreetype \
+#     --enable-libmp3lame \
+#     --enable-libopus \
+#     --enable-libtheora \
+#     # --enable-libvorbis \
+#     # --enable-libsvtav1 \
+#     # --enable-libvorbis \
+#     # --enable-libvpx \
+#     --enable-libx264 \
+#     --enable-libx265 \
+#     --enable-nonfree \
+#     --enable-nvenc && \
+#     PATH="$HOME/bin:$PATH" make -j$(nproc) && \
+#     make -j$(nproc) install
+RUN apt-get install ffmpeg -y
+
+# WORKDIR /app/gaia
+
+# Finish setup of GREEM project
+# RUN conda init bash \
+#     && . ~/.bashrc \ && conda activate gaia-tools && pip install -e .
 
 # Run the application.
 # CMD [ "pip install -e ." ]
 # ENTRYPOINT [ "python3", "-m", "nvitop" ]
 
 # RUN python3 -m nvitop
+
+RUN echo "conda activate gaia-tools" >> ~/.bashrc
+RUN echo "pip install -e ." >> ~/.bashrc
 
 
 
