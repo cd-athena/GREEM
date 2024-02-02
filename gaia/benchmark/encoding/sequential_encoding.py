@@ -205,13 +205,13 @@ def execute_encoding_benchmark():
 
 if __name__ == '__main__':
     try:
-        send_ntfy(NTFY_TOPIC, 
-              f'''start benchmark 
-              - CUDA: {USE_CUDA} 
-              - SLICE: {USE_SLICED_VIDEOS}
-              - DRY_RUN: {DRY_RUN}
-              - saving results in {RESULT_ROOT}
-              ''', print_message=True)
+        # send_ntfy(NTFY_TOPIC, 
+        #       f'''start benchmark 
+        #       - CUDA: {USE_CUDA} 
+        #       - SLICE: {USE_SLICED_VIDEOS}
+        #       - DRY_RUN: {DRY_RUN}
+        #       - saving results in {RESULT_ROOT}
+        #       ''', print_message=True)
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
         intel_rapl_workaround()
@@ -221,10 +221,9 @@ if __name__ == '__main__':
             file_path) for file_path in ENCODING_CONFIG_PATHS]
         print(len(encoding_configs))
         if USE_SLICED_VIDEOS:
-            send_ntfy(NTFY_TOPIC, f'slicing videos')
-            print('aaaaaaa')
+            # send_ntfy(NTFY_TOPIC, f'slicing videos')
             prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
-            send_ntfy(NTFY_TOPIC, f'finished slicing videos')
+            # send_ntfy(NTFY_TOPIC, f'finished slicing videos')
 
         if USE_CUDA:
             nvidia_top = NvidiaTop()
@@ -232,8 +231,10 @@ if __name__ == '__main__':
 
         # execute_encoding_benchmark()
     except Exception as err:
-        send_ntfy(NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}', print_message=True)
+        print(f'Something went wrong during the benchmark, Exception: {err}', print_message=True)
+        # send_ntfy(NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}', print_message=True)
 
     finally:
-        send_ntfy(NTFY_TOPIC, 'finished benchmark', print_message=True)
+        # send_ntfy(NTFY_TOPIC, 'finished benchmark', print_message=True)
+        print('finished benchmark')
 
