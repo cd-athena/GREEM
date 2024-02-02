@@ -34,7 +34,7 @@ ENCODING_CONFIG_PATHS: list[str] = [
     # 'config_files/encoding_config_h265.yaml'
 ]
 
-INPUT_FILE_DIR: str = '../data'
+INPUT_FILE_DIR: str = '../dataset/ref_265'
 SLICE_FILE_DIR: str = 'slice'
 RESULT_ROOT: str = 'results'
 COUNTRY_ISO_CODE: str = 'AUT'
@@ -137,6 +137,8 @@ def write_encoding_results_to_csv():
 
         if USE_CUDA:
             nvitop_df = NvidiaTop.merge_resource_metric_dfs(metric_results, exclude_timestamps=True)
+            emission_df = emission_df.dropna(axis=1, how='all')
+            nvidia_top = nvidia_top.dropna(axis=1, how='all')
             merged_df = pd.concat([emission_df, nvitop_df], axis=1)
             # save to disk
             merged_df.to_csv(result_path)
@@ -160,12 +162,12 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
 def execute_encoding_benchmark():
     
-    send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
+    # send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
     input_dir = SLICE_FILE_DIR if USE_SLICED_VIDEOS else INPUT_FILE_DIR
 
     for en_idx, encoding_config in enumerate(encoding_configs):
         
-        send_ntfy(NTFY_TOPIC, f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
+        # send_ntfy(NTFY_TOPIC, f'start encoding_config - ({en_idx + 1}/{len(encoding_configs)})')
 
         input_files = get_filtered_sliced_videos(encoding_config, input_dir)[:2]
         print(input_files)
@@ -175,7 +177,7 @@ def execute_encoding_benchmark():
             duration_input_files = [file for file in input_files if f'_{duration}s_' in file] if USE_SLICED_VIDEOS else input_files
             prepare_data_directories(encoding_config, video_names=duration_input_files)
             
-            send_ntfy(NTFY_TOPIC, f'start duration {duration}s - ({idx + 1}/{len(encoding_config.segment_duration)})')
+            # send_ntfy(NTFY_TOPIC, f'start duration {duration}s - ({idx + 1}/{len(encoding_config.segment_duration)})')
 
             # encode each video found in the input files corresponding to the duration
             for video in duration_input_files:
@@ -229,7 +231,7 @@ if __name__ == '__main__':
             nvidia_top = NvidiaTop()
             metric_results: list[pd.DataFrame] = list()
 
-        # execute_encoding_benchmark()
+        execute_encoding_benchmark()
     except Exception as err:
         print(f'Something went wrong during the benchmark, Exception: {err}', print_message=True)
         # send_ntfy(NTFY_TOPIC, f'Something went wrong during the benchmark, Exception: {err}', print_message=True)
