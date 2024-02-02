@@ -87,38 +87,8 @@ RUN apt-get -y --force-yes install autoconf automake cmake libass-dev libfreetyp
 RUN apt-get install -y libfreetype6-dev libva-dev libxcb1-dev libc6-dev libc6 libass-dev build-essential libnuma1 libsdl2-dev libvorbis-dev libopus-dev cmake texinfo libvdpau-dev pkg-config libvpx-dev libx265-dev wget libmp3lame-dev libnuma-dev unzip libxcb-shm0-dev zlib1g-dev libtool libx264-dev
 # Compile and install ffmpeg from source
 # https://stackoverflow.com/a/46005194/13334047
-# RUN git clone https://github.com/FFmpeg/FFmpeg /root/ffmpeg && \
-#     cd /root/ffmpeg && \
-#     ./configure \
-#     --libdir=/usr/lib/x86_64-linux-gnu \
-#     --incdir=/usr/include/x86_64-linux-gnu \
-#     --disable-filter=resample \
-#     --extra-libs="-lpthread -lm" \
-#     --bindir="/bin" \
-#     # --bindir="$HOME/bin" \
-#     # --enable-cuda-nvcc \
-#     # --enable-cuda \
-#     # --enable-cuvid \
-#     # --enable-libnpp \
-#     # --extra-cflags="-I/${CUDA_HOME}/include/" \
-#     # --extra-ldflags=-L/${CUDA_HOME}/lib64/ \
-#     --enable-gpl \
-#     --enable-libass \
-#     --enable-vaapi \
-#     --enable-libfreetype \
-#     --enable-libmp3lame \
-#     --enable-libopus \
-#     --enable-libtheora \
-#     # --enable-libvorbis \
-#     # --enable-libsvtav1 \
-#     # --enable-libvorbis \
-#     # --enable-libvpx \
-#     --enable-libx264 \
-#     --enable-libx265 \
-#     --enable-nonfree \
-#     --enable-nvenc && \
-#     PATH="$HOME/bin:$PATH" make -j$(nproc) && \
-#     make -j$(nproc) install
+
+
 RUN apt-get install ffmpeg -y
 
 # WORKDIR /app/gaia
