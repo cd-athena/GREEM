@@ -1,10 +1,10 @@
-# GAIA-Tools
+# GREEM
 
-A repository that contains different tools related to energy monitoring extracted from GAIA projects.
+A repository that contains different tools related to energy monitoring extracted from Athena projects.
 
 <!-- Explain the advantages of using this tool -->
 
-- [GAIA-Tools](#gaia-tools)
+- [GREEM](#greem)
   - [Prerequisites](#prerequisites)
 - [Installation](#installation)
   - [Quick Setup](#quick-setup)
@@ -19,10 +19,11 @@ A repository that contains different tools related to energy monitoring extracte
 - Python
 - Anaconda or Miniconda
 - FFMPEG
+- NVIDIA & CUDA
 
 # Installation
 
-The [Installation README](INSTALL.md) contains the necessary steps to install all dependencies in order to run `GAIATools`.
+The [Installation README](INSTALL.md) contains the necessary steps to install all dependencies in order to run `GREEM`.
 
 ## Quick Setup
 
