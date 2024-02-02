@@ -46,3 +46,7 @@ In order to be able to utilize NVIDIA GPUs for the benchmarks, it has to be ensu
 ## 5. Installing Prerequisites on AWS Instance
 
 [How to install FFMPEG with NVIDIA GPU Acceleration on Linux](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/)
+
+## 5. Docker
+
+In order to use the Dockerfile and NVIDIA GPU, the `NVIDIA Container Toolkit` has to be installed.
