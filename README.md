@@ -2,13 +2,17 @@
 
 A repository that contains different tools related to energy monitoring extracted from GAIA projects.
 
+<!-- Explain the advantages of using this tool -->
+
 - [GAIA-Tools](#gaia-tools)
   - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+  - [Quick Setup](#quick-setup)
 - [Benchmarks](#benchmarks)
 - [Troubleshoot](#troubleshoot)
   - [CUDA Hardware Acceleration not Working Properly](#cuda-hardware-acceleration-not-working-properly)
   - [ffmpeg - cuda encode - OpenEncodeSessionEx failed: out of memory](#ffmpeg---cuda-encode---openencodesessionex-failed-out-of-memory)
+  - [Docker - Could not select device driver "nvidia"](#docker---could-not-select-device-driver-nvidia)
 
 ## Prerequisites
 
@@ -19,6 +23,14 @@ A repository that contains different tools related to energy monitoring extracte
 # Installation
 
 The [Installation README](INSTALL.md) contains the necessary steps to install all dependencies in order to run `GAIATools`.
+
+## Quick Setup
+
+```bash
+conda env create -f environment.yml
+conda activate gaia-tools
+pip install -e .
+```
 
 # Benchmarks
 
@@ -42,3 +54,12 @@ The error states that the used GPU is 'non-qualified' and only supports a fixed 
 The number of videos that can be encoded/decoded at once can be looked up at: [GPU Support Matrix](https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new#Encoder) with the *Max \# of concurrent sessions* column corresponding to the GPU.
 
 There exists a [repository](https://github.com/keylase/nvidia-patch) to *fix* this restriction, but we did not test its functionality.
+
+
+## Docker - Could not select device driver "nvidia"
+
+If the following error is encountered:
+
+`Error response from daemon: could not select device driver "nvidia" with capabilities: [[gpu]]`
+
+the **NVIDIA Container Toolkit** needs to be installed (see [Installation README](INSTALL.md), section Docker).
