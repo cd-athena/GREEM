@@ -276,30 +276,38 @@ def execute_encoding_benchmark():
 
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
-        # input_files = input_files[:2]
 
         # encode for each duration defined in the config file
-        for idx, duration in enumerate(encoding_config.segment_duration):
-            duration_input_files = [file for file in input_files if f'_{duration}s_' in file] if USE_SLICED_VIDEOS else input_files
-            prepare_data_directories(encoding_config, video_names=duration_input_files)
+        prepare_data_directories(encoding_config, video_names=[
+                                 file.removesuffix('.265') for file in input_files])
+        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
+        )
+        duration = 4
+        # encode each video found in the input files corresponding to the duration
+        for video_name in input_files:
+            for dto in encoding_dtos:
 
                 output_dir = f'{RESULT_ROOT}/{dto.get_output_directory(video_name.removesuffix(".265"))}'
+               
+                encoding_cmd = create_ffmpeg_encoding_command(
+                    f'{input_dir}/{video_name}',
+                    output_dir,
+                    dto.rendition, dto.preset, duration, dto.codec,
+                    framerate=dto.framerate,
+                    constant_rate_factor=-1,
+                    cuda_enabled=USE_CUDA,
+                    quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
+                ) if not DRY_RUN else 'sleep 0.1'
+                
+                execute_encoding_stage(encoding_cmd, dto, video_name)
 
-                            output_dir: str = f'{RESULT_ROOT}/{get_output_directory(codec, video, duration, preset, rendition)}'
-                            use_dash_format: bool = not USE_SLICED_VIDEOS
-                            
-                            cmd = create_ffmpeg_encoding_command(
-                                f'{input_dir}/{video}', 
-                                output_dir, rendition, preset, duration, codec, 
-                                use_dash=use_dash_format, 
-                                pretty_print=DRY_RUN,
-                                cuda_enabled=USE_CUDA,
-                                quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
-                                ) if not DRY_RUN else 'sleep 0.1'
-                            
-                            execute_ffmpeg_encoding(
-                                    cmd, video, codec, preset, rendition, duration)
-                                
+                scaling_cmd: str = create_ffmpeg_scaling_command(
+                    output_dir, 
+                    dto.rendition,
+                    cuda_enabled=USE_CUDA)
+
+                # execute_encoding_cmd(cmd, dto, video_name)
+                execute_scaling_stage(scaling_cmd, dto, video_name)
     write_encoding_results_to_csv()
     
     
@@ -376,17 +384,18 @@ def execute_encoding_cmd(
 
 def write_encoding_results_to_csv():
     global nvidia_top, metric_results
-
+    
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
     if INCLUDE_CODE_CARBON:
         emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv').dropna(axis=1, how='all')
-        # merge codecarbon and timing_df results
 
+        # merge codecarbon and timing_df results
         if USE_CUDA:
             nvitop_df = NvidiaTop.merge_resource_metric_dfs(
                 metric_results, exclude_timestamps=True).dropna(axis=1, how='all')
             merged_df = pd.concat([emission_df, nvitop_df], axis=1)
+            
             # save to disk
             merged_df.to_csv(result_path)
             os.system(f'rm {RESULT_ROOT}/emissions.csv')
@@ -395,18 +404,6 @@ def write_encoding_results_to_csv():
 if __name__ == '__main__':
     try:
         Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
-
-        intel_rapl_workaround()
-        IdleTimeEnergyMeasurement.measure_idle_energy_consumption(result_path=f'{RESULT_ROOT}/encoding_idle_time.csv', idle_time_in_seconds=1)  
-
-        encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
-            file_path) for file_path in ENCODING_CONFIG_PATHS]
-        
-        if len(encoding_configs) is 0:
-            raise MissingValueError('No encoding configuration files found, will abort execution')
-        
-        if USE_SLICED_VIDEOS:
-            prepare_sliced_videos(encoding_configs, INPUT_FILE_DIR, SLICE_FILE_DIR, DRY_RUN)
 
         if USE_CUDA:
             nvidia_top = NvidiaTop()
@@ -418,14 +415,16 @@ if __name__ == '__main__':
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
+        
+        if len(encoding_configs) is 0:
+            raise MissingValueError('No encoding configuration files provided')
+        
         timing_metadata: dict[int, dict] = dict()
 
         execute_encoding_benchmark()
-    except MissingValueError as err:
-        print(f'Stopping now because of encountered error: {err}')
-        
+
     except Exception as err:
-        print(f'Something went wrong during the benchmark, Exception: {err}')
+        print('err', err)
 
     finally:
-        print('finished benchmark')
+        print('done')
