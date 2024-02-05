@@ -71,7 +71,7 @@ RUN --mount=type=cache,target=/root/.cache/conda \
 
 
 # Start with FFmpeg Installation
-
+# https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html
 RUN git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && \
     cd nv-codec-headers && make && make install && cd ..
 
