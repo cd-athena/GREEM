@@ -6,8 +6,6 @@ ARG OS_TYPE=x86_64
 ARG PYTHON_VERSION=3.10.13
 
 FROM nvidia/cuda:11.6.2-base-ubuntu"${UBUNTU_VER}"
-# ARG basetag="450-signed-ubuntu22.04"  # Ubuntu only
-# FROM nvcr.io/nvidia/driver:"${basetag}"
 
 ENV NVIDIA_DISABLE_REQUIRE=true
 ENV DEBIAN_FRONTEND=noninteractive
@@ -27,8 +25,12 @@ RUN apt-get update && \
 ENV LC_ALL=C.UTF-8
 RUN update-locale LC_ALL="C.UTF-8"
 
-RUN apt-get update && apt-get install -yq curl wget jq nano git build-essential yasm pkg-config nasm autoconf automake cmake git-core
-
+# install all dependencies
+RUN apt-get update && apt-get install -yq pkg-config libc6 wget curl automake nano cmake \
+      libnuma-dev libass-dev unzip libxcb-xfixes0-dev libva-dev git-core libc6-dev libnuma1 libvorbis-dev libx265-dev \
+      libsdl2-dev libtool libfreetype6-dev libx264-dev zlib1g-dev libopus-dev libtheora-dev libxcb1-dev \
+      texinfo nasm libvdpau-dev libaom-dev git libgpac-dev yasm jq build-essential autoconf libunistring-dev \
+      libxcb-shm0-dev libvpx-dev libmp3lame-dev texi2html libsdl1.2-dev
 
 # Prevents Python from writing pyc files.
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -39,12 +41,6 @@ ENV PYTHONUNBUFFERED=1
 
 # Update and upgrade aptitude
 RUN apt-get update -y && apt-get upgrade -y
-
-# Install Nvidia and CUDA libraries and drivers
-RUN apt-get -y install cuda-toolkit-12-3
-RUN apt-get install -y nvidia-kernel-open-545
-RUN apt-get install -y cuda-drivers-545
-
 
 # install miniconda
 RUN wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
@@ -71,38 +67,18 @@ RUN --mount=type=cache,target=/root/.cache/conda \
 
 
 # Start with FFmpeg Installation
+
+# adding nvidia headers for FFmpeg
 # https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html
 RUN git clone https://git.videolan.org/git/ffmpeg/nv-codec-headers.git && \
     cd nv-codec-headers && make && make install && cd ..
 
 ARG CUDA_HOME=/usr/local/cuda
 ENV PATH=${CUDA_HOME}/bin:${PATH}
-
 RUN export PATH=/usr/local/cuda/bin:${PATH}
-RUN apt-get -y --force-yes install autoconf automake cmake libass-dev libfreetype6-dev libgpac-dev \
-  libsdl1.2-dev libtheora-dev libtool libva-dev libvdpau-dev libvorbis-dev libxcb1-dev libxcb-shm0-dev \
-  libxcb-xfixes0-dev pkg-config wget yasm texi2html zlib1g-dev nasm libx264-dev libx265-dev libnuma-dev \
-  libvpx-dev libmp3lame-dev libunistring-dev libaom-dev libopus-dev
-
-RUN apt-get install -y libfreetype6-dev libva-dev libxcb1-dev libc6-dev libc6 libass-dev build-essential libnuma1 libsdl2-dev libvorbis-dev libopus-dev cmake texinfo libvdpau-dev pkg-config libvpx-dev libx265-dev wget libmp3lame-dev libnuma-dev unzip libxcb-shm0-dev zlib1g-dev libtool libx264-dev
-# Compile and install ffmpeg from source
-# https://stackoverflow.com/a/46005194/13334047
-
-
 RUN apt-get install ffmpeg -y
 
-# WORKDIR /app/gaia
-
-# Finish setup of GREEM project
-# RUN conda init bash \
-#     && . ~/.bashrc \ && conda activate gaia-tools && pip install -e .
-
-# Run the application.
-# CMD [ "pip install -e ." ]
-# ENTRYPOINT [ "python3", "-m", "nvitop" ]
-
-# RUN python3 -m nvitop
-
+# Add strings to bashrc to ensure they get executed when starting the image
 RUN echo "conda activate gaia-tools" >> ~/.bashrc
 RUN echo "pip install -e ." >> ~/.bashrc
 
