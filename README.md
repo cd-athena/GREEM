@@ -18,7 +18,7 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
 
 - Python
 - Anaconda or Miniconda
-- FFMPEG
+- FFmpeg
 - NVIDIA & CUDA
 
 # Installation
