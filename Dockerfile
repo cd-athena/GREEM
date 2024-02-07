@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1
+# docker run --rm --runtime=nvidia -it gaiatools-greem bash
 
 ARG UBUNTU_VER=20.04
 ARG CONDA_VER=latest
