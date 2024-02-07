@@ -1,4 +1,4 @@
-name: gaia-tools
+name: greem
 channels:
   - defaults
   - conda-forge
