@@ -122,7 +122,7 @@ This should output something similar to:
 Finally, to run the Docker container, execute the following command:
 
 ```bash
-docker run --rm --runtime=nvidia -it test bash
+docker run --rm --runtime=nvidia -it gaiatools-greem bash
 ```
 
 This will start the container with the entry point of it being the root of GREEM.
