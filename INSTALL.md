@@ -73,18 +73,24 @@ This section has the necessary instructions to create a Docker container with al
 
 - Docker
 - Docker Compose
-- NVIDIA Container Toolkit
+- NVIDIA Container Toolkit (or Runtime)
 
-In order to use the Docker container with NVIDIA GPU support, the `NVIDIA Container Toolkit` has to be installed.
+In order to use the Docker container with NVIDIA GPU support, the `NVIDIA Container Toolkit/Runtime` has to be installed.
 This toolkit installs drivers that enable the access of NVIDIA GPUs within Docker containers.
 *Note: When running a Docker container, it is required to set the container runtime to nvidia*.
 
 [Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.14.4/install-guide.html) is the official guide by NVIDIA to install the required packages.
 
+If you prefer to install [NVIDIA Container Runtime](https://docs.docker.com/config/containers/resource_constraints/#gpu) you need to provide the flag `--gpus` instead of `--runtime=nvidia` to the `docker run <cmd>`.
+
 To test if NVIDIA Container Tookkit is properly installed, use this sample container:
 
  ```bash
- sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
+# NVIDIA Container Toolkit  
+sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
+
+#  NVIDIA Container Runtime
+sudo docker run --rm --gpus all ubuntu nvidia-smi
  ```
 
 This should output something similar to:
