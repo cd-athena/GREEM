@@ -10,9 +10,6 @@
       - [3.3 Install NVIDIA GPU Hardware Acceleration for FFMPEG](#33-install-nvidia-gpu-hardware-acceleration-for-ffmpeg)
     - [4. Install CUDA for NVIDIA GPUs (optional)](#4-install-cuda-for-nvidia-gpus-optional)
     - [5. Installing Prerequisites on AWS Instance](#5-installing-prerequisites-on-aws-instance)
-  - [Docker](#docker)
-    - [Prerequisites](#prerequisites)
-    - [Run the Docker Container](#run-the-docker-container)
 
 ## On System Installation
 
@@ -64,65 +61,3 @@ In order to be able to utilize NVIDIA GPUs for the benchmarks, it has to be ensu
 ### 5. Installing Prerequisites on AWS Instance
 
 [How to install FFMPEG with NVIDIA GPU Acceleration on Linux](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/)
-
-## Docker
-
-This section has the necessary instructions to create a Docker container with all necessary dependencies to execute benchmarks within GREEM.
-
-### Prerequisites
-
-- Docker
-- Docker Compose
-- NVIDIA Container Toolkit (or Runtime)
-
-In order to use the Docker container with NVIDIA GPU support, the `NVIDIA Container Toolkit/Runtime` has to be installed.
-This toolkit installs drivers that enable the access of NVIDIA GPUs within Docker containers.
-*Note: When running a Docker container, it is required to set the container runtime to nvidia*.
-
-[Installing the NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/1.14.4/install-guide.html) is the official guide by NVIDIA to install the required packages.
-
-If you prefer to install [NVIDIA Container Runtime](https://docs.docker.com/config/containers/resource_constraints/#gpu) you need to provide the flag `--gpus` instead of `--runtime=nvidia` to the `docker run <cmd>`.
-
-To test if NVIDIA Container Tookkit is properly installed, use this sample container:
-
- ```bash
-# NVIDIA Container Toolkit  
-sudo docker run --rm --runtime=nvidia --gpus all ubuntu nvidia-smi
-
-#  NVIDIA Container Runtime
-sudo docker run --rm --gpus all ubuntu nvidia-smi
- ```
-
-This should output something similar to:
-
-```bash
-+-----------------------------------------------------------------------------+
-| NVIDIA-SMI 535.86.10    Driver Version: 535.86.10    CUDA Version: 12.2     |
-|-------------------------------+----------------------+----------------------+
-| GPU  Name        Persistence-M| Bus-Id        Disp.A | Volatile Uncorr. ECC |
-| Fan  Temp  Perf  Pwr:Usage/Cap|         Memory-Usage | GPU-Util  Compute M. |
-|                               |                      |               MIG M. |
-|===============================+======================+======================|
-|   0  Tesla T4            On   | 00000000:00:1E.0 Off |                    0 |
-| N/A   34C    P8     9W /  70W |      0MiB / 15109MiB |      0%      Default |
-|                               |                      |                  N/A |
-+-------------------------------+----------------------+----------------------+
-
-+-----------------------------------------------------------------------------+
-| Processes:                                                                  |
-|  GPU   GI   CI        PID   Type   Process name                  GPU Memory |
-|        ID   ID                                                   Usage      |
-|=============================================================================|
-|  No running processes found                                                 |
-+-----------------------------------------------------------------------------+
-```
-
-### Run the Docker Container
-
-Finally, to run the Docker container, execute the following command:
-
-```bash
-docker run --rm --runtime=nvidia -it gaiatools-greem bash
-```
-
-This will start the container with the entry point of it being the root of GREEM.

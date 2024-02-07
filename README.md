@@ -11,6 +11,8 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
   - [Prerequisites](#prerequisites)
 - [Installation](#installation)
   - [Quick Setup](#quick-setup)
+  - [On System Installation](#on-system-installation)
+  - [Docker Installation](#docker-installation)
 - [Benchmarks](#benchmarks)
 - [Troubleshoot](#troubleshoot)
   - [CUDA Hardware Acceleration not Working Properly](#cuda-hardware-acceleration-not-working-properly)
@@ -26,9 +28,8 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
 
 # Installation
 
-The [Installation README](INSTALL.md) contains the necessary steps to install all dependencies to run `GREEM`.
-
 ## Quick Setup
+
 ****
 If all prerequisites are met, use the quick setup at the root of the project to get started.
 
@@ -37,6 +38,14 @@ conda env create -f environment.yml
 conda activate greem
 pip install -e .
 ```
+
+## On System Installation
+
+The [Installation README](INSTALL.md) contains the necessary steps to install all dependencies on a Linux system to run `GREEM`.
+
+## Docker Installation
+
+The [Docker Installation](README.Docker.md) file contains instructions to build and run a Docker container for GREEM.
 
 # Benchmarks
 
@@ -60,7 +69,6 @@ The error states that the used GPU is 'non-qualified' and only supports a fixed 
 The number of videos that can be encoded/decoded at once can be looked up at: [GPU Support Matrix](https://developer.nvidia.com/video-encode-and-decode-gpu-support-matrix-new#Encoder) with the *Max \# of concurrent sessions* column corresponding to the GPU.
 
 There exists a [repository](https://github.com/keylase/nvidia-patch) to *fix* this restriction, but we did not test its functionality.
-
 
 ## Docker - Could not select device driver "nvidia"
 
