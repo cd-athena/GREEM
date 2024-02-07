@@ -33,3 +33,4 @@ gaia/energy/*
 *.pdf
 
 **/course/*
+.vscode/*
