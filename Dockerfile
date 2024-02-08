@@ -28,10 +28,10 @@ RUN update-locale LC_ALL="C.UTF-8"
 
 # install all dependencies
 RUN apt-get update && apt-get install -yq autoconf automake build-essential cmake curl git git-core jq \
-                                          nano nasm pkg-config texi2html texinfo unzip wget yasm \
+                                          nano nasm pkg-config texi2html texinfo unzip wget yasm libtool \
                                           # ffmpeg libraries
                                           libaom-dev libass-dev libc6 libc6-dev libfreetype6-dev libgpac-dev libmp3lame-dev libnuma-dev libnuma1 libopus-dev \
-                                          libsdl1.2-dev libsdl2-dev libtheora-dev libtool libunistring-dev libva-dev libvdpau-dev libvorbis-dev libvpx-dev \
+                                          libsdl1.2-dev libsdl2-dev libtheora-dev libunistring-dev libva-dev libvdpau-dev libvorbis-dev libvpx-dev \
                                           libx264-dev libx265-dev libxcb-shm0-dev libxcb-xfixes0-dev libxcb1-dev zlib1g-dev
 
 # Prevents Python from writing pyc files.
