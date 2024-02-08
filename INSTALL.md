@@ -4,6 +4,7 @@
   - [0. Prerequisites](#0-prerequisites)
     - [Python 3](#python-3)
     - [Anaconda/Miniconda](#anacondaminiconda)
+    - [FFmpeg](#ffmpeg)
     - [NVIDIA \& CUDA Drivers](#nvidia--cuda-drivers)
       - [FFmpeg with NVIDIA GPU Support](#ffmpeg-with-nvidia-gpu-support)
   - [1. Setting up the Python Environment](#1-setting-up-the-python-environment)
@@ -25,6 +26,7 @@ This section has instructions to install the necessary tools and libraries to ru
 Python 3 is required to be installed on the system. To test if Python 3 is installed on the system, enter the command:
 
 ```bash
+# check if Python is installed
 python3 --version
 ```
 
@@ -33,12 +35,38 @@ This command should prompt the Python 3 version installed on the system.
 If Python 3 is not installed, use the following command:
 
 ```bash
+# install Python 3 on the system
 sudo apt-get update && sudo apt-get install python3 -y
 ```
 
 ### Anaconda/Miniconda
 
-To install the Python virtual environment
+To install the Python virtual environment with all required libraries, GREEM uses Anaconda/Miniconda environments.
+
+### FFmpeg
+
+To use the video processing benchmarks in the `encoding` and `decoding` folders, codec libraries need to be installed first.
+A command including many codec libraries is shown below.
+
+```bash
+# update aptitude
+sudo apt-get update -y
+
+# install FFmpeg libraries
+sudo apt-get install -yq  libaom-dev libass-dev libc6 libc6-dev libfreetype6-dev \ 
+                          libgpac-dev libmp3lame-dev libnuma-dev libnuma1 libopus-dev \
+                          libsdl1.2-dev libsdl2-dev libtheora-dev libunistring-dev \
+                          libva-dev libvdpau-dev libvorbis-dev libvpx-dev \
+                          libx264-dev libx265-dev libxcb-shm0-dev libxcb-xfixes0-dev \
+                          libxcb1-dev zlib1g-dev
+```
+
+In case you don't require GPU video processing, use the following command to install FFmpeg if it is not already installed.
+
+```bash
+# use if you don't require GPU video processing
+sudo apt-get install ffmpeg -y
+```
 
 ### NVIDIA & CUDA Drivers
 
@@ -114,10 +142,6 @@ The `download_full_input_files.py` script can be used to download input videos f
 
 The `download_segments.py` script downloads 500 video segments with a length of 4 seconds each from the **Alpen-Adria University** servers.
 
-
-
 ## 5. Installing Prerequisites on AWS Instance
 
 [How to install FFMPEG with NVIDIA GPU Acceleration on Linux](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/)
-
-
