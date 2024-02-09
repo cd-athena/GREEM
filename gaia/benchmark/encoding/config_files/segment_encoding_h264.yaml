@@ -1,12 +1,12 @@
 codecs:
   - h264
 presets:
-  - ultrafast
+  # - ultrafast
   # - superfast
   # - veryfast
-#   - faster
+  # - faster
   # - fast
-  # - medium
+  - medium
   # - slow
 #   - slower
   # - veryslow
@@ -36,9 +36,9 @@ segment_duration:
   - 4
 
 framerate:
-  - 15
+  # - 15
   - 24
-  - 30
+  # - 30
 
 encode_all_videos: True
 
