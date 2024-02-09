@@ -11,7 +11,6 @@
       - [FFmpeg with NVIDIA GPU Support](#ffmpeg-with-nvidia-gpu-support)
   - [Setting up the Python Environment](#setting-up-the-python-environment)
     - [Create Anaconda Environment](#create-anaconda-environment)
-    - [Setup Project Paths](#setup-project-paths)
   - [Video Processing Benchmarks](#video-processing-benchmarks)
     - [Download and Add Videos to Benchmarks](#download-and-add-videos-to-benchmarks)
   - [(Optional) Installing Prerequisites on AWS Instance](#optional-installing-prerequisites-on-aws-instance)
@@ -19,6 +18,8 @@
 This section has instructions to install the necessary tools and libraries to run GREEM directly on the system.
 
 ## Prerequisites
+
+This section contains the required libraries for GREEM.
 
 ### Python 3
 
@@ -53,6 +54,8 @@ bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
 rm -rf ~/miniconda3/miniconda.sh
 ~/miniconda3/bin/conda init bash
 ```
+
+Miniconda is a minimal installer for `conda` that only includes the `conda` binaries, Python and the packages they depend on.
 
 ### NVIDIA & CUDA Drivers
 
@@ -96,12 +99,11 @@ sudo apt-get install ffmpeg -y
 
 The guide [How to install FFmpeg with NVIDIA GPU support](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/) lists the necessary steps to install FFmpeg with NVIDIA GPU support.
 
+---
+
 An alternative guide how to do so can be found at [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html).
 
 This step is required if you plan to process videos with GPU support.
-
----
----
 
 ## Setting up the Python Environment
 
@@ -126,8 +128,6 @@ Once the environment is installed, activate it with
 conda activate greem
 ```
 
-### Setup Project Paths
-
 After successfully installing the Anaconda environment, it is required to locally install GREEM using the command
 
 ```bash
@@ -146,6 +146,8 @@ In order to use the encoding/decoding benchmark Python scripts, it is required t
 Within the `benchmark` folder, two Python scripts can be found to download video files.
 
 The `download_full_input_files.py` script can be used to download input videos from Youtube.
+
+---
 
 The `download_segments.py` script downloads 500 video segments with a length of 4 seconds each from the **Alpen-Adria University** servers.
 
