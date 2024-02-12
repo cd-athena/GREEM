@@ -20,7 +20,7 @@ from gaia.utils.dataframe import get_dataframe_from_csv
 from gaia.utils.ntfy import send_ntfy
 
 from gaia.hardware.intel import intel_rapl_workaround
-from gaia.hardware.nvidia_top import NvidiaTop
+from gaia.monitoring.nvidia_top import NvidiaTop
 
 from gaia.utils.benchmark import CLI_PARSER
 

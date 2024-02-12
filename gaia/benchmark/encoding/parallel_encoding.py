@@ -33,7 +33,7 @@ USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
 if USE_CUDA:
-    from gaia.hardware.nvidia_top import NvidiaTop
+    from gaia.monitoring.nvidia_top import NvidiaTop
 
 
 def prepare_data_directories(

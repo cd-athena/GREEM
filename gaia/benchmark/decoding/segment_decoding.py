@@ -6,10 +6,6 @@ from codecarbon import track_emissions
 
 from gaia.utils.config import DecodingConfig, DecodingConfigDTO
 
-from colorama import Fore
-
-from time import time
-
 
 from gaia.utils.timing import IdleTimeEnergyMeasurement
 from gaia.utils.dataframe import get_dataframe_from_csv
@@ -21,7 +17,6 @@ from gaia.hardware.intel import intel_rapl_workaround
 from gaia.utils.benchmark import CLI_PARSER
 
 # from gaia.benchmark.decoding.decoding_utils import get_all_possible_video_files, get_input_files
-from gaia.benchmark.decoding.decoding_utils_cython import get_all_possible_video_files, get_input_files
 
 DECODING_CONFIG_PATHS: list[str] = [
     'config_files/test_decoding_config.yaml',
@@ -37,7 +32,7 @@ INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 IS_QUIET: bool = CLI_PARSER.is_quiet_ffmpeg()
 
 if USE_CUDA:
-    from gaia.hardware.nvidia_top import NvidiaTop
+    from gaia.monitoring.nvidia_top import NvidiaTop
 
 def prepare_data_directories(
     decoding_config: DecodingConfig,
