@@ -84,7 +84,7 @@ class BenchmarkParser():
         """Quiet FFMPEG is used to set the logging level to quiet, so no log will be produced by FFMPEG.
 
         Flags:
-            * `--quiet` -> `True`, 
+            * `--quiet` -> `True`,
             * `--no-quiet` -> `False`
             * `--quiet-ffmpeg` -> `True`,
             * `--no-quiet-ffmpeg` -> `False`

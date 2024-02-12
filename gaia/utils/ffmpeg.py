@@ -1,10 +1,10 @@
+import os
 from math import ceil
 
 from gaia.video.video_info import VideoInfo
 
 from gaia.utils.config import Rendition, EncodingConfig, EncodingConfigDTO
 
-import os
 
 QUIET_FLAG: str = '-hide_banner -loglevel error'
 CUDA_ENC_FLAG: str = '-hwaccel cuda'
@@ -23,8 +23,8 @@ def get_lib_codec(codec: str, cuda_mode: bool = False) -> str:
 
 
 def get_representation_ffmpeg_flags(
-    renditions: list[Rendition], 
-    preset: str, 
+    renditions: list[Rendition],
+    preset: str,
     codec: str,
     fps: str = '',
     ) -> list[str]:
@@ -45,8 +45,8 @@ def get_representation_ffmpeg_flags(
             # f'{fps_repr}"',
             f'-preset {preset}'
         ]
-        
-        
+
+
 
         representations.extend(representation)
 
@@ -75,7 +75,7 @@ def create_ffmpeg_encoding_command(
         cmd.append(QUIET_FLAG)
 
     cmd.append(f'-re -i {input_file_path}')
-    
+
     if constant_rate_factor > -1: 
         cmd.append(f'-crf {constant_rate_factor}')
 
@@ -366,9 +366,9 @@ if __name__ == '__main__':
     files = [file.removesuffix('.mp4') for file in os.listdir(data_dir)]
     
     for file_path, file_name in zip(input_files, files):
-        cmd = get_slice_video_commands(file_path, 'out', file_name, 4)
+        slice_cmd = get_slice_video_commands(file_path, 'out', file_name, 4)
         
-        print(cmd)
+        print(slice_cmd)
     
         # os.system(cmd)
     
