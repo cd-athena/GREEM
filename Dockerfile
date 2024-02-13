@@ -65,7 +65,7 @@ RUN --mount=type=cache,target=/root/.cache/conda \
     conda init bash \
     && . ~/.bashrc \
     && conda env create -f environment.yml \
-    && conda activate gaia-tools && pip install -e .
+    && conda activate greem && pip install -e .
 
 
 # Start with FFmpeg Installation
@@ -81,8 +81,5 @@ RUN export PATH=/usr/local/cuda/bin:${PATH}
 RUN apt-get install ffmpeg -y
 
 # Add strings to bashrc to ensure they get executed when starting the image
-RUN echo "conda activate gaia-tools" >> ~/.bashrc
+RUN echo "conda activate greem" >> ~/.bashrc
 RUN echo "pip install -e ." >> ~/.bashrc
-
-
-
