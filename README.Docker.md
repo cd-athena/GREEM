@@ -50,12 +50,23 @@ This should output something similar to:
 +-----------------------------------------------------------------------------+
 ```
 
-This will start the container with the entry point of it being the root of GREEM.
+This will start a Docker container with NVIDIA monitoring output. If an error occurrs when executing this command, this likely has to do with NVIDIA not being properly supported within Docker.
+
+## Pulling Docker Image
+
+A prebuild Docker image is available at [DockerHub GREEM](https://hub.docker.com/repository/docker/fendanez/greem/general) and can be pulled via the command:
+
+```bash
+docker pull fendanez/greem:version1
+```
 
 ## Building and running GREEM
 
-When you're ready, start the application by running:
-`docker compose up --build`.
+If you prefer to build the Docker image on your own system, or want to make some changes in the `Dockerfile` you can build the Docker image via:
+
+```bash
+docker compose up --build
+```
 
 Finally, to run the Docker container, execute the following command:
 

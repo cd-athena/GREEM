@@ -19,7 +19,7 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
   - [FFmpeg - cuda encode - OpenEncodeSessionEx failed: out of memory](#ffmpeg---cuda-encode---openencodesessionex-failed-out-of-memory)
   - [Docker - Could not select device driver "nvidia"](#docker---could-not-select-device-driver-nvidia)
 
-fjfjfj
+
 ## Prerequisites
 
 - Python
