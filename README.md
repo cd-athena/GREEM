@@ -19,6 +19,7 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
   - [FFmpeg - cuda encode - OpenEncodeSessionEx failed: out of memory](#ffmpeg---cuda-encode---openencodesessionex-failed-out-of-memory)
   - [Docker - Could not select device driver "nvidia"](#docker---could-not-select-device-driver-nvidia)
 
+fjfjfj
 ## Prerequisites
 
 - Python
@@ -49,9 +50,7 @@ The [Docker Installation](README.Docker.md) file contains instructions to build 
 
 # Benchmarks
 
-Inside the [benchmark](gaia/benchmark/README.md) folder, benchmarks are located to measure the energy impact in various scenarios.
-
-# Troubleshoot
+Inside the [benchmark](gaia/benchmark/README.md) folder, benchmarks are located to measure the energy impact in various scenarios. Troubleshoot
 
 This section contains information about some issues encountered during the creation and execution of this library.
 

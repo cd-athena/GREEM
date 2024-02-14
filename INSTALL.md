@@ -43,7 +43,7 @@ sudo apt-get update && sudo apt-get install python3 -y
 
 To install the Python virtual environment with all required libraries, GREEM uses Anaconda/Miniconda environments.
 
-#### Install Miniconda from CLI
+### Install Miniconda from CLI
 
 If Anaconda/Miniconda is not installed on the system, the following commands provide a quick installation guide to install Miniconda.
 
@@ -56,6 +56,7 @@ rm -rf ~/miniconda3/miniconda.sh
 ```
 
 Miniconda is a minimal installer for `conda` that only includes the `conda` binaries, Python and the packages they depend on.
+
 
 ### NVIDIA & CUDA Drivers
 
@@ -88,12 +89,6 @@ sudo apt-get install -yq  libaom-dev libass-dev libc6 libc6-dev libfreetype6-dev
                           libxcb1-dev zlib1g-dev
 ```
 
-In case you don't require GPU video processing, use the following command to install FFmpeg if it is not already installed.
-
-```bash
-# use if you don't require GPU video processing
-sudo apt-get install ffmpeg -y
-```
 
 #### FFmpeg with NVIDIA GPU Support
 
@@ -104,6 +99,15 @@ The guide [How to install FFmpeg with NVIDIA GPU support](https://www.cyberciti.
 An alternative guide how to do so can be found at [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html).
 
 This step is required if you plan to process videos with GPU support.
+
+#### Install FFmpeg
+
+Use the following command to install FFmpeg if it is not already installed.
+
+```bash
+# Install FFmpeg
+sudo apt-get install ffmpeg -y
+```
 
 ## Setting up the Python Environment
 
