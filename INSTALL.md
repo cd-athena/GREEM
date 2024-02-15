@@ -60,7 +60,7 @@ Miniconda is a minimal installer for `conda` that only includes the `conda` bina
 
 ### NVIDIA & CUDA Drivers
 
-In order to be able to utilize NVIDIA GPUs for the benchmarks, it has to be ensured that NVIDIA and CUDA drivers are installed on the system.
+In order to be able to utilize NVIDIA GPUs for the benchmarks, ensure that NVIDIA and CUDA drivers are installed on the system.
 
 ### FFmpeg
 
