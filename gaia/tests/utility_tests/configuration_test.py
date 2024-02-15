@@ -1,5 +1,11 @@
 import json
-from gaia.utils.configuration_classes import Resolution, Rendition
+
+import pytest
+from gaia.utils.configuration_classes import (
+    Resolution,
+    Rendition,
+    EncodingConfigDTO,
+    EncodingConfig)
 
 BITRATE: str = 'bitrate'
 BITRATE_BASE_VALUE: int = 1000
@@ -11,12 +17,44 @@ HEIGHT: str = 'height'
 HEIGHT_BASE_VALUE: int = 100
 
 
+# '''
+#    --------------------------------------------------------------------------------------------------
+
+#                                                HELPER FUNCTIONS
+#    --------------------------------------------------------------------------------------------------
+# '''
+
+
 def get_base_resolution() -> Resolution:
     return Resolution(height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE)
 
 
 def get_base_rendition() -> Rendition:
     return Rendition(height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE, bitrate=BITRATE_BASE_VALUE)
+
+
+def get_base_encoding_config_dto() -> EncodingConfigDTO:
+    return EncodingConfigDTO(codec='avc', preset='medium',
+                             rendition=get_base_rendition(), segment_duration=1, framerate=10)
+
+
+def get_base_encoding_config() -> EncodingConfig:
+    return EncodingConfig(
+        codecs=['avc', 'hevc'],
+        presets=['medium'],
+        renditions=[get_base_rendition(), Rendition.new()],
+        segment_duration=[1, 2],
+        framerate=[24, 30],
+        encode_all_videos=True,
+        videos_to_encode=[])
+
+
+# '''
+#    --------------------------------------------------------------------------------------------------
+
+#                                                TEST CASES
+#    --------------------------------------------------------------------------------------------------
+# '''
 
 
 def test_resolution_basic() -> None:
@@ -118,3 +156,107 @@ def test_rendition_from_dict() -> None:
     assert rendition.width == WIDTH_BASE_VALUE
     assert isinstance(rendition.bitrate, int)
     assert rendition.bitrate == BITRATE_BASE_VALUE
+
+
+def test_encoding_config_dto_basic() -> None:
+    dto = get_base_encoding_config_dto()
+
+    assert dto is not None
+    assert isinstance(dto, EncodingConfigDTO)
+    assert isinstance(dto.codec, str)
+    assert isinstance(dto.preset, str)
+    assert isinstance(dto.segment_duration, int)
+    assert isinstance(dto.framerate, int)
+
+    assert dto.codec == 'avc'
+    assert dto.preset == 'medium'
+    assert dto.segment_duration == 1
+    assert dto.framerate == 10
+
+
+def test_encoding_config_dto_from_dict() -> None:
+    data = {
+        'codec': 'avc',
+        'preset': 'medium',
+        'rendition': get_base_rendition(),
+        'segment_duration': 1,
+        'framerate': 10
+    }
+    dto = EncodingConfigDTO(**data)
+
+    assert dto is not None
+    assert isinstance(dto, EncodingConfigDTO)
+    assert isinstance(dto.codec, str)
+    assert isinstance(dto.preset, str)
+    assert isinstance(dto.segment_duration, int)
+    assert isinstance(dto.framerate, int)
+
+    assert dto.codec == 'avc'
+    assert dto.preset == 'medium'
+    assert dto.segment_duration == 1
+    assert dto.framerate == 10
+
+
+def test_encoding_config_dto_get_output_directory() -> None:
+    dto = get_base_encoding_config_dto()
+
+    video_name: str = 'AncientThought'
+    extension: str = '.mp4'  # should be removed by function
+
+    output_dir_path = dto.get_output_directory(f'{video_name}{extension}')
+
+    assert output_dir_path is not None
+    assert len(output_dir_path) > 0
+    assert isinstance(output_dir_path, str)
+
+    assert video_name in output_dir_path
+    # extension should not be kept in output path
+    assert extension not in output_dir_path
+
+
+def test_encoding_config_base() -> None:
+    config = get_base_encoding_config()
+
+    assert config is not None
+    assert isinstance(config, EncodingConfig)
+
+    assert len(config.codecs) > 0
+    assert len(config.presets) > 0
+    assert len(config.renditions) > 0
+
+
+def test_encoding_config_from_file() -> None:
+
+    # this config file should exist
+    config = EncodingConfig.from_file(
+        'gaia/tests/utility_tests/test_datasets/test_config_file.yaml')
+
+    assert config is not None
+    assert isinstance(config, EncodingConfig)
+
+    assert len(config.codecs) == 2
+    assert len(config.presets) == 10
+    assert len(config.renditions) == 6
+    assert len(config.framerate) == 2  # type: ignore
+
+
+def test_encoding_config_get_encoding_dtos() -> None:
+
+    # this config file should exist
+    config = EncodingConfig.from_file(
+        'gaia/tests/utility_tests/test_datasets/test_config_file.yaml')
+
+    encoding_dtos: list[EncodingConfigDTO] = config.get_encoding_dtos()
+
+    # should not be None
+    assert encoding_dtos is not None
+    # should be of type list
+    assert isinstance(encoding_dtos, list)
+    # should not be empty
+    assert len(encoding_dtos) == 1440
+
+
+def test_encoding_config_from_file_raises_error() -> None:
+
+    with pytest.raises(FileNotFoundError):
+        EncodingConfig.from_file('your_file_is_in_another_castle')
