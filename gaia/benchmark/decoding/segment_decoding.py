@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 from codecarbon import track_emissions
 
-from gaia.utils.config import DecodingConfig, DecodingConfigDTO
+from gaia.utils.configuration_classes import DecodingConfig, DecodingConfigDTO
 
 
 from gaia.utils.timing import IdleTimeEnergyMeasurement
@@ -14,7 +14,7 @@ from gaia.utils.ntfy import send_ntfy
 
 from gaia.hardware.intel import intel_rapl_workaround
 
-from gaia.utils.benchmark import CLI_PARSER
+from gaia.utils.cli_parser import CLI_PARSER
 
 # from gaia.benchmark.decoding.decoding_utils import get_all_possible_video_files, get_input_files
 

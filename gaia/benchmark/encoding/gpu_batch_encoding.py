@@ -2,8 +2,8 @@ import os
 from pathlib import Path
 
 from gaia.monitoring.gpu_monitoring import GpuMonitoring
-from gaia.utils.ffmpeg import create_ffmpeg_command_all_renditions
-from gaia.utils.config import EncodingConfig, Rendition, EncodingVariant
+from gaia.utils.ffmpeg import create_dash_ffmpeg_cmd
+from gaia.utils.configuration_classes import EncodingConfig, Rendition, EncodingVariant
 from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd, IdleTimeEnergyMeasurement
 from gaia.hardware.intel import intel_rapl_workaround
 
@@ -100,7 +100,7 @@ def encode_batch(
                     gpu_monitoring.current_video = video_name
                     output_dir: str = f'{RESULT_ROOT}/{codec}/{video_name}/{segment_duration}s/{preset}'
 
-                    cmd = create_ffmpeg_command_all_renditions(
+                    cmd = create_dash_ffmpeg_cmd(
                         input_file_path,
                         output_dir,
                         encoding_config.renditions,
@@ -115,7 +115,7 @@ def encode_batch(
                         cmd)
                     gpu_monitoring.stop()
                     metadata = TimingMetadata(
-                        start_time, end_time, elapsed_time, video_name, codec, preset, Rendition.get_batch_rendition(), segment_duration)
+                        start_time, end_time, elapsed_time, video_name, codec, preset, Rendition.new(), segment_duration)
                     timing_metadata[len(
                         timing_metadata)] = metadata.to_dict()
 

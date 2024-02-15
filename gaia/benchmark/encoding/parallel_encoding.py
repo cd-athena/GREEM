@@ -6,13 +6,13 @@ from datetime import datetime
 from codecarbon import track_emissions
 
 from gaia.utils.ffmpeg import create_multi_video_ffmpeg_command
-from gaia.utils.config import EncodingConfig, EncodingConfigDTO, get_output_directory, Rendition
+from gaia.utils.configuration_classes import EncodingConfig, EncodingConfigDTO, get_output_directory, Rendition
 from gaia.utils.timing import TimingMetadata, measure_time_of_system_cmd
 from gaia.utils.dataframe import get_dataframe_from_csv
 from gaia.utils.ntfy import send_ntfy
 
 
-from gaia.utils.benchmark import CLI_PARSER
+from gaia.utils.cli_parser import CLI_PARSER
 
 NTFY_TOPIC: str = 'gpu_encoding'
 
@@ -128,7 +128,7 @@ def execute_encoding_benchmark():
 
         for window_size in range(2, 20):
             step_size: int = window_size if is_batch_encoding else 1
-            
+
             for idx_offset in range(0, len(input_files), step_size):
                 window_idx: int = window_size + idx_offset
                 if window_idx > len(input_files):
@@ -220,7 +220,7 @@ def write_encoding_results_to_csv() -> None:
 if __name__ == '__main__':
 
     cleanup: bool = False
-    
+
     is_batch_encoding: bool = True
 
     try:

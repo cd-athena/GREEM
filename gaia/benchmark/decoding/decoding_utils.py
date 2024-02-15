@@ -1,6 +1,6 @@
 import os
 
-from gaia.utils.config import DecodingConfigDTO
+from gaia.utils.configuration_classes import DecodingConfigDTO
 
 INPUT_FILE_DIR: str = '../encoding/results'
 

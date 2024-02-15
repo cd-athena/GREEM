@@ -7,7 +7,8 @@ from os import system
 import pandas as pd
 
 from gaia.hardware import nvidia_smi_dataclasses
-from gaia.utils.config import Rendition
+from gaia.utils.configuration_classes import Rendition
+
 
 @dataclass
 class RunningEncoding:
@@ -48,10 +49,9 @@ class GpuMonitoring(BaseMonitoring):
         self.file_stream = open(
             f'{self.monitoring_file_path}/monitoring_stream.csv', 'a')
         self.current_video: str = ''
-        self.rendition = Rendition.get_batch_rendition()
+        self.rendition = Rendition.new()
         self.__write_to_file('start', use_header=True)
         self.gpu_metadata_handler.get_update_metadata()
-
 
     @suppress(Exception)
     def start(self) -> None:
@@ -64,23 +64,22 @@ class GpuMonitoring(BaseMonitoring):
     def stop(self):
         self.last_measured_time = pd.Timestamp('now')
         self.scheduler.stop()
-        
+
     def get_utilisation(self) -> tuple[float, float]:
-    
+
         # metadata = self.gpu_metadata_handler.get_update_metadata()['gpu']
-        
+
         gpu_util: list[float] = list()
         mem_util: list[float] = list()
-        
+
         for gpu in self.gpu_metadata_handler.gpu:
             print(gpu)
-            
+
         # gpu_avg = sum(gpu_util) / len(gpu_util)
         # mem_avg = sum(mem_util) / len(mem_util)
-        
+
         return 0, 0
         # return gpu_avg, mem_avg
-        
 
     def monitor_gpu(self):
         last_measurement_time_delta = pd.Timestamp(
@@ -104,24 +103,25 @@ class GpuMonitoring(BaseMonitoring):
         df.to_csv(self.file_stream, header=use_header)
         self.file_stream.flush()
 
+
 class HardwareMonitoring(BaseMonitoring):
-    
+
     def __init__(self):
         pass
-        
-    
+
     def start(self) -> None:
         pass
-    
+
     def stop(self) -> None:
         pass
+
 
 if __name__ == '__main__':
     REPETITIONS: int = 3
 
     monitoring = GpuMonitoring('.', 1)
     monitoring.start()
-    
+
     # get test video with:
     # wget -O opengl-rotating-triangle.mp4 https://github.com/cirosantilli/media/blob/master/opengl-rotating-triangle.mp4?raw=true
 
@@ -134,7 +134,7 @@ if __name__ == '__main__':
                 -r 20 \
                 -vf scale=4096:-1 \
                 opengl-rotating-triangle.gif'''
-               )
+        )
         sleep(1)
 
     monitoring.stop()

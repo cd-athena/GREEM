@@ -1,7 +1,7 @@
 
 import os
-from gaia.utils.benchmark import CLI_PARSER
-from gaia.utils.config import NtfyConfig
+from gaia.utils.cli_parser import CLI_PARSER
+from gaia.utils.configuration_classes import NtfyConfig
 
 
 USE_NTFY: bool = CLI_PARSER.is_ntfy_enabled()

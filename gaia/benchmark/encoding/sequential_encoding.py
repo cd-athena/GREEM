@@ -9,7 +9,7 @@ from dacite import MissingValueError
 
 from gaia.video.video_info import VideoInfo
 from gaia.utils.ffmpeg import CUDA_ENC_FLAG, QUIET_FLAG, get_lib_codec
-from gaia.utils.config import EncodingConfig, EncodingConfigDTO, Rendition
+from gaia.utils.configuration_classes import EncodingConfig, EncodingConfigDTO, Rendition
 
 from gaia.utils.timing import IdleTimeEnergyMeasurement
 from gaia.utils.dataframe import get_dataframe_from_csv
@@ -17,7 +17,7 @@ from gaia.utils.dataframe import get_dataframe_from_csv
 from gaia.hardware.intel import intel_rapl_workaround
 from gaia.monitoring.nvidia_top import NvidiaTop
 
-from gaia.utils.benchmark import CLI_PARSER
+from gaia.utils.cli_parser import CLI_PARSER
 
 NTFY_TOPIC: str = "aws_encoding"
 
@@ -78,7 +78,7 @@ def create_ffmpeg_encoding_command(
     quiet_mode: bool = False,
 ) -> str:
     """Creates the ffmpeg command for encoding a video file
-    
+
         command = f'ffmpeg {FFMPEG_QUIET} -y {FFMPEG_CUDA} -i {input_ffmpeg}'\
         f' -probesize 10M -vcodec {get_codec_lib(codec)}'\
         f'{lib_params} "log-level=error --keyint {IFRAME_INTERVAL*FPS} --min-keyint {IFRAME_INTERVAL*FPS} --no-scenecut" -preset {encoding_preset}' \
@@ -100,7 +100,8 @@ def create_ffmpeg_encoding_command(
     if framerate > 0:
         fps_str = str(framerate)  # type: ignore
 
-    cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec, fps=fps_str))
+    cmd.extend(get_representation_ffmpeg_flags(
+        [rendition], preset, codec, fps=fps_str))
 
     fps: int = (
         ceil(VideoInfo(input_file_path).get_fps())
@@ -284,7 +285,8 @@ def execute_encoding_benchmark():
 
     for encoding_config in encoding_configs:
         input_files = sorted(
-            [file for file in os.listdir(INPUT_FILE_DIR) if file.endswith(".265")]
+            [file for file in os.listdir(
+                INPUT_FILE_DIR) if file.endswith(".265")]
         )
 
         # encode for each duration defined in the config file
@@ -292,7 +294,8 @@ def execute_encoding_benchmark():
             encoding_config,
             video_names=[file.removesuffix(".265") for file in input_files],
         )
-        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
+        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
+        )
         duration = 4
         # encode each video found in the input files corresponding to the duration
         for video_name in input_files:
@@ -387,7 +390,8 @@ def execute_encoding_cmd(
             rendition.height,
         )
         result_df["video_name"] = video_name
-        result_df["output_path"] = encoding_dto.get_output_directory(video_name)
+        result_df["output_path"] = encoding_dto.get_output_directory(
+            video_name)
 
         metric_results.append(result_df)
 

@@ -5,7 +5,7 @@ from datetime import datetime
 from codecarbon import track_emissions
 
 from gaia.utils.ffmpeg import create_ffmpeg_encoding_command
-from gaia.utils.config import (
+from gaia.utils.configuration_classes import (
     EncodingConfig,
     EncodingConfigDTO,
 )
@@ -18,7 +18,7 @@ from gaia.utils.ntfy import send_ntfy
 from gaia.hardware.intel import intel_rapl_workaround
 from gaia.monitoring.nvidia_top import NvidiaTop
 
-from gaia.utils.benchmark import CLI_PARSER
+from gaia.utils.cli_parser import CLI_PARSER
 
 NTFY_TOPIC: str = "aws_encoding"
 
