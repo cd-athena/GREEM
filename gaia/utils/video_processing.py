@@ -1,5 +1,5 @@
 from enum import Enum
-
+from gaia.utils.config import Rendition
 
 class Codecs(str, Enum):
     """Enum class providing supported video processing codecs.
@@ -39,4 +39,21 @@ class Codecs(str, Enum):
             return 'vvc'
             
         return ''
-    
+
+class FFmpeg():
+
+    @staticmethod
+    def create_cmd_all_renditions(
+            input_file_path: str,
+            output_dir: str,
+    ):
+        pass
+
+
+    @classmethod
+    def _get_representation_ffmpeg_flags(
+            cls,
+            renditions: list[Rendition],
+
+    ) -> list[str]:
+        pass
