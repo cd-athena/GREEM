@@ -83,6 +83,17 @@ class Rendition(Resolution):
 
 
 class EncodingConfigDTO(BaseModel):
+    """Data type object consisting of one encoding configuration
+
+    Parameters
+    ----------
+    BaseModel : Pydantic.BaseModel
+        Pydantic dataclass
+
+    Returns
+    -------
+    `EncodingConfigDTO`
+    """
     codec: str
     preset: str
     rendition: Rendition
@@ -113,17 +124,11 @@ class EncodingConfig(BaseModel):
     encode_all_videos: bool
     videos_to_encode: Optional[list[str]]
 
-# TODO change to BaseModel
-    @classmethod
-    def from_dict(cls: Type['EncodingConfig'], data: dict):
-        '''Creates an EncodingConfig object from a Python dictionary'''
-        ec: EncodingConfig = fd(data_class=EncodingConfig, data=data)
-        return ec
-
     @classmethod
     def from_file(cls: Type['EncodingConfig'], file_path: str):
         '''Creates an EncodingConfig object from a YAML file'''
-        return cls.from_dict(read_yaml(file_path))
+        yaml_file = read_yaml(file_path)
+        return cls(**yaml_file)
 
     def get_all_result_directories(self, video_names: list[str]) -> list[str]:
         '''Returns a list of all possible result directories'''
@@ -149,10 +154,13 @@ class EncodingConfig(BaseModel):
                 self.segment_duration,
                 self.presets, self.renditions, self.codecs,
                 self.framerate if self.framerate is not None and len(self.framerate) > 0 else []):
-            dto = EncodingConfigDTO(codec, preset, rendition, duration, fr)
-            encoding_dtos.append(dto)
+            enc_dto = EncodingConfigDTO(
+                codec=codec, preset=preset, rendition=rendition, segment_duration=duration, framerate=fr)
+            encoding_dtos.append(enc_dto)
 
         return encoding_dtos
+
+# TODO ParallelEncodingConfig classs-
 
 
 def get_output_directory(
