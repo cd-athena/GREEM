@@ -1,5 +1,10 @@
 import os
 from math import ceil
+from enum import Enum
+import queue
+from typing import Literal, Type
+
+from pydantic import BaseModel
 
 from gaia.video.video_info import VideoInfo
 
@@ -9,6 +14,11 @@ from gaia.utils.configuration_classes import Rendition, EncodingConfig, Encoding
 QUIET_FLAG: str = '-hide_banner -loglevel error'
 CUDA_ENC_FLAG: str = '-hwaccel cuda'
 CUDA_DEC_FLAG: str = '-hwaccel cuvid'
+
+
+def get_join_string(pretty_print: bool) -> str:
+    return ' \n' if pretty_print else ' '
+
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
     '''Returns the codec for the ffmpeg command'''
@@ -31,7 +41,7 @@ def get_representation_ffmpeg_flags(
     preset: str,
     codec: str,
     fps: str = '',
-    ) -> list[str]:
+) -> list[str]:
     '''Returns the ffmpeg flags for the renditions'''
     representations: list[str] = []
 
@@ -57,119 +67,79 @@ def get_representation_ffmpeg_flags(
 
 def create_sequential_encoding_cmd(
     input_file_path: str,
-    output_dir: str,
+    input_file_name: str,
     encoding_dto: EncodingConfigDTO,
-    segment_duration: int,
     constant_rate_factor: int = -1,
     cuda_enabled: bool = False,
     quiet_mode: bool = False,
 ) -> str:
-    framerate = encoding_dto.framerate
-    codec = encoding_dto.codec
-    preset = encoding_dto.preset
-    rendition = encoding_dto.rendition
-    
-    cmd: list[str] = ["ffmpeg -y"]
-    if cuda_enabled:
-        cmd.append(CUDA_ENC_FLAG)
-    if quiet_mode:
-        cmd.append(QUIET_FLAG)
+    codec_processing = CodecProcessing(
+        cuda_encoding=cuda_enabled, quiet_mode=quiet_mode)
 
-    cmd.append(f"-re -i {input_file_path}")
-
-    if constant_rate_factor > -1:
-        cmd.append(f"-crf {constant_rate_factor}")
-
-    fps_str: str = ""
-    if framerate > 0:
-        fps_str = str(framerate)  # type: ignore
-
-    cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec, fps=fps_str))
-
-    fps: int = (
-        ceil(VideoInfo(input_file_path).get_fps())
-        if framerate is None or framerate == 0
-        else framerate
-    )
-    keyframe: int = fps * segment_duration
-
-    cmd.extend(
-        [
-            f"-keyint_min {keyframe}",
-            f"-g {keyframe}",
-        ]
+    return codec_processing.create_sequential_encoding_cmd(
+        input_file_path=input_file_path,
+        input_file_name=input_file_name,
+        dto=encoding_dto,
+        constant_rate_factor=constant_rate_factor
     )
 
-    cmd.extend([f"{output_dir}/output.mp4"])
 
-    lib_params: str = " -x264-params" if "264" in codec else " -x265-params"
+# def create_ffmpeg_encoding_command(
+#     input_file_path: str,
+#     output_dir: str,
+#     rendition: Rendition,
+#     preset: str,
+#     segment_duration: int,
+#     codec: str,
+#     framerate: int = 0,
+#     constant_rate_factor: int = -1,
+#     use_dash: bool = False,
+#     cuda_enabled: bool = False,
+#     quiet_mode: bool = False,
+#     pretty_print: bool = False
+# ) -> str:
+#     '''Creates the ffmpeg command for encoding a video file'''
+#     cmd: list[str] = ['ffmpeg -y']
+#     if cuda_enabled:
+#         cmd.append(CUDA_ENC_FLAG)
+#     if quiet_mode:
+#         cmd.append(QUIET_FLAG)
 
-    command = (
-        f"ffmpeg {QUIET_FLAG} -y {CUDA_ENC_FLAG} -i {input_file_path}"
-        f" -probesize 10M -vcodec {get_lib_codec(codec)}"
-        f'{lib_params} "log-level=error --keyint {keyframe} --min-keyint {keyframe} --no-scenecut" -preset {preset}'
-        f" -b:v {rendition.bitrate}k -minrate {rendition.bitrate}k -maxrate {rendition.bitrate}k -bufsize {3*int(rendition.bitrate)}k"
-        f" {output_dir}/encoding_output.mp4"
-    )
+#     cmd.append(f'-re -i {input_file_path}')
 
-    return command
-    # return join_string.join(cmd)
+#     if constant_rate_factor > -1:
+#         cmd.append(f'-crf {constant_rate_factor}')
 
-def create_ffmpeg_encoding_command(
-    input_file_path: str,
-    output_dir: str,
-    rendition: Rendition,
-    preset: str,
-    segment_duration: int,
-    codec: str,
-    framerate: int = 0,
-    constant_rate_factor: int = -1,
-    use_dash: bool = False,
-    cuda_enabled: bool = False,
-    quiet_mode: bool = False,
-    pretty_print: bool = False
-) -> str:
-    '''Creates the ffmpeg command for encoding a video file'''
-    cmd: list[str] = ['ffmpeg -y']
-    if cuda_enabled:
-        cmd.append(CUDA_ENC_FLAG)
-    if quiet_mode:
-        cmd.append(QUIET_FLAG)
+#     fps_str: str = ''
+#     if framerate > 0:
+#         fps_str = str(framerate)  # type: ignore
 
-    cmd.append(f'-re -i {input_file_path}')
+#     cmd.extend(get_representation_ffmpeg_flags(
+#         [rendition], preset, codec, fps=fps_str))
 
-    if constant_rate_factor > -1:
-        cmd.append(f'-crf {constant_rate_factor}')
+#     fps: int = ceil(VideoInfo(input_file_path).get_fps()
+#                     ) if framerate is None or framerate == 0 else framerate
+#     keyframe: int = fps * segment_duration
 
-    fps_str: str = ''
-    if framerate > 0:
-        fps_str = str(framerate) # type: ignore
+#     cmd.extend([
+#         f'-keyint_min {keyframe}',
+#         f'-g {keyframe}',
+#     ])
 
-    cmd.extend(get_representation_ffmpeg_flags([rendition], preset, codec, fps=fps_str))
+#     if use_dash:
+#         cmd.extend([
+#             f'-seg_duration {segment_duration}',
+#             '-adaptation_sets "id=0,streams=v  id=1,streams=a"',
+#             f'-f dash {output_dir}/manifest.mpd'
+#         ])
+#     else:
+#         cmd.extend([
+#             f'{output_dir}/output.mp4'
+#         ])
 
-    fps: int = ceil(VideoInfo(input_file_path).get_fps()) if framerate is None or framerate == 0 else framerate
-    keyframe: int = fps * segment_duration
+#     join_string: str = ' \n' if pretty_print else ' '
 
-    cmd.extend([
-        f'-keyint_min {keyframe}',
-        f'-g {keyframe}',
-    ])
-
-    if use_dash:
-        cmd.extend([
-            f'-seg_duration {segment_duration}',
-            '-adaptation_sets "id=0,streams=v  id=1,streams=a"',
-            f'-f dash {output_dir}/manifest.mpd'
-        ])
-    else:
-        cmd.extend([
-            f'{output_dir}/output.mp4'
-        ])
-
-    join_string: str = ' \n' if pretty_print else ' '
-
-    return join_string.join(cmd)
-
+#     return join_string.join(cmd)
 
 def create_dash_ffmpeg_cmd(
     input_file_path: str,
@@ -227,6 +197,7 @@ def create_dash_ffmpeg_cmd(
 
     return join_string.join(cmd)
 
+
 def create_simple_multi_video_ffmpeg_command(
     video_input_file_paths: list[str],
     output_directories: list[str],
@@ -270,11 +241,12 @@ def create_simple_multi_video_ffmpeg_command(
 
         cmd.extend([
             f'{output_directories[idx]}/output.mp4'
-            ])
+        ])
 
     join_string: str = ' \n' if pretty_print else ' '
 
     return join_string.join(cmd)
+
 
 def create_multi_video_ffmpeg_command(
     video_input_file_paths: list[str],
@@ -296,7 +268,8 @@ def create_multi_video_ffmpeg_command(
 
     # add all input videos
     if cuda_mode:
-        cmd.extend([f'{CUDA_ENC_FLAG} -i {video}' for video in video_input_file_paths])
+        cmd.extend(
+            [f'{CUDA_ENC_FLAG} -i {video}' for video in video_input_file_paths])
     else:
         cmd.extend([f'-i {video}' for video in video_input_file_paths])
 
@@ -318,7 +291,7 @@ def create_multi_video_ffmpeg_command(
         cmd.extend(map_cmd)
         cmd.extend([
             f'{output_directories[idx]}/{output_file_name}'
-            ])
+        ])
 
     join_string: str = ' \n' if pretty_print else ' '
     return join_string.join(cmd)
@@ -329,7 +302,7 @@ def get_slice_video_command(
     output_path: str,
     output_file_name: str,
     segment_duration: int,
-)-> str:
+) -> str:
     '''https://unix.stackexchange.com/questions/1670/how-can-i-use-ffmpeg-to-split-mpeg-video-into-10-minute-chunks'''
     duration: str = f'{segment_duration}' if segment_duration > 9 else f'0{segment_duration}'
 
@@ -356,7 +329,7 @@ def get_slice_video_commands(
     output_path: str,
     output_file_name: str,
     segment_duration: int,
-)-> list[str]:
+) -> list[str]:
     '''
     - https://unix.stackexchange.com/questions/1670/how-can-i-use-ffmpeg-to-split-mpeg-video-into-10-minute-chunks
     - https://stackoverflow.com/questions/18444194/cutting-the-videos-based-on-start-and-end-time-using-ffmpeg
@@ -390,6 +363,7 @@ def get_slice_video_commands(
 def get_video_without_extension(video: str) -> str:
     return video.removesuffix('.webm').removesuffix('.mp4')
 
+
 def prepare_sliced_videos(
     encoding_configs: list[EncodingConfig],
     input_dir: str,
@@ -406,7 +380,8 @@ def prepare_sliced_videos(
     for config in encoding_configs:
 
         if config.encode_all_videos:
-            videos.update([get_video_without_extension(file) for file in os.listdir(input_dir)])
+            videos.update([get_video_without_extension(file)
+                          for file in os.listdir(input_dir)])
         else:
             videos.update(config.videos_to_encode)
 
@@ -427,7 +402,7 @@ def prepare_sliced_videos(
                 output_dir,
                 output_file,
                 duration
-                )
+            )
 
             for cmd in cmd_list:
                 if not dry_run:
@@ -436,24 +411,98 @@ def prepare_sliced_videos(
                     print(cmd)
 
 
+class CodecProcessing(BaseModel):
+    cuda_encoding: bool = False
+    quiet_mode: bool = False
 
-if __name__ == '__main__':
-    print(__file__)
+    @staticmethod
+    def is_codec_supported(codec: str) -> bool:
+        return codec in [
+            'h264',
+            'avc',
+            'h265',
+            'hevc',
+            'av1',
+            'vp9',
+            'vvc'
+        ]
 
-    data_dir = '../data'
+    def create_sequential_encoding_cmd(
+            self,
+            input_file_path: str,
+            input_file_name: str,
+            dto: EncodingConfigDTO,
+            constant_rate_factor: int = -1,
+    ) -> str:
+        if not CodecProcessing.is_codec_supported(dto.codec):
+            raise AssertionError('Codec is not supported')
 
-    input_files: list[str] = [
-        f'{data_dir}/{file}' for file in os.listdir(data_dir)
-    ]
-    print(input_files)
+        cmd: list[str] = ['ffmpeg -y']
 
-    files = [file.removesuffix('.mp4') for file in os.listdir(data_dir)]
+        if self.cuda_encoding:
+            cmd.append(CUDA_ENC_FLAG)
+        if self.quiet_mode:
+            cmd.append(QUIET_FLAG)
 
-    for file_path, file_name in zip(input_files, files):
-        slice_cmd = get_slice_video_commands(file_path, 'out', file_name, 4)
+        cmd.append(f"-re -i {input_file_path}")
 
-        print(slice_cmd)
+        # TODO the code for each codec here
+        if dto.codec in ['avc', 'h264', 'hevc', 'h265']:
+            cmd.extend(self.h26x_sequential_encoding_cmd(
+                input_file_name, dto, constant_rate_factor))
+        if dto.codec in ['av1']:
+            pass
+        if dto.codec in ['vp9']:
+            pass
+        if dto.codec in ['vvc']:
+            cmd.extend(self.vvc_sequential_encoding_cmd(dto))
 
-        # os.system(cmd)
+        cmd.append(f'{dto.get_output_directory()}/{input_file_name}.mp4')
 
-    # print(cmd)
+        join_string = get_join_string(False)
+        return join_string.join(cmd)
+
+    def h26x_sequential_encoding_cmd(self,
+                                     input_file_path: str,
+                                     dto: EncodingConfigDTO,
+                                     constant_rate_factor: int
+                                     ) -> list[str]:
+        cmd: list[str] = []
+
+        if constant_rate_factor > -1:
+            cmd.append(f"-crf {constant_rate_factor}")
+
+        fps_str: str = ""
+        if dto.framerate > 0:
+            fps_str = str(dto.framerate)  # type: ignore
+
+        cmd.extend(get_representation_ffmpeg_flags(
+            [dto.rendition], dto.preset, dto.codec, fps=fps_str))
+
+        fps: int = (
+            ceil(VideoInfo(input_file_path).get_fps())
+            if dto.framerate is None or dto.framerate == 0
+            else dto.framerate
+        )
+        keyframe: int = fps * dto.segment_duration
+
+        cmd.extend(
+            [
+                f"-keyint_min {keyframe}",
+                f"-g {keyframe}",
+            ]
+        )
+        return cmd
+
+    def vvc_sequential_encoding_cmd(self,
+                                    dto: EncodingConfigDTO,
+                                    ) -> list[str]:
+
+        cmd: list[str] = [
+            '-vcodec vvc',
+            f'-b:v {dto.rendition.bitrate}',
+            f'-period {dto.segment_duration}'  # GOP in seconds
+            f'-preset {dto.preset}'
+        ]
+
+        return cmd
