@@ -204,15 +204,15 @@ def test_encoding_config_dto_get_output_directory() -> None:
     video_name: str = 'AncientThought'
     extension: str = '.mp4'  # should be removed by function
 
-    output_dir_path = dto.get_output_directory(f'{video_name}{extension}')
+    output_dir_path = dto.get_output_directory()
 
     assert output_dir_path is not None
     assert len(output_dir_path) > 0
     assert isinstance(output_dir_path, str)
 
-    assert video_name in output_dir_path
+    # assert video_name in output_dir_path
     # extension should not be kept in output path
-    assert extension not in output_dir_path
+    # assert extension not in output_dir_path
 
 
 def test_encoding_config_base() -> None:
@@ -266,15 +266,13 @@ def test_encoding_config_from_file_raises_error() -> None:
 def test_encoding_config_get_all_result_directories() -> None:
     config = get_base_encoding_config()
 
-    result_directories = config.get_all_result_directories(
-        ['AncientThought', 'Balloon'])
+    result_directories = config.get_all_result_directories()
 
     assert result_directories is not None
-    assert len(result_directories) == 32
+    assert len(result_directories) == 16
     for result in result_directories:
         assert len(result) > 0
         assert 'avc' in result or 'hevc' in result
         assert 'medium' in result
         assert 'fps' in result
         assert '24fps' in result or '30fps' in result
-        assert 'AncientThought' in result or 'Balloon' in result

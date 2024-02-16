@@ -102,16 +102,12 @@ class EncodingConfigDTO(BaseModel):
 
     def get_output_directory(
         self,
-        video_name: str
     ) -> str:
         '''Returns the output directory for the encoded video'''
-        if any([x in video_name for x in ['.webm', '.mp4']]):
-            video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
+
         output_dir: str = f'{self.codec}/{self.segment_duration}s/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
         if self.framerate is not None and self.framerate > 0:
             output_dir = f'{output_dir}/{self.framerate}fps'
-
-        output_dir = f'{output_dir}/{video_name}'
 
         return output_dir
 
@@ -133,12 +129,11 @@ class EncodingConfig(BaseModel):
         yaml_file = read_yaml(file_path)
         return cls(**yaml_file)
 
-    def get_all_result_directories(self, video_names: list[str]) -> list[str]:
+    def get_all_result_directories(self) -> list[str]:
         '''Returns a list of all possible result directories'''
         directory_list: list[str] = [
-            dto.get_output_directory(video)
+            dto.get_output_directory()
             for dto in self.get_encoding_dtos()
-            for video in video_names
         ]
 
         return directory_list
