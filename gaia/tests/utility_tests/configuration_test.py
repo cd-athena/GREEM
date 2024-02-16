@@ -260,3 +260,20 @@ def test_encoding_config_from_file_raises_error() -> None:
 
     with pytest.raises(FileNotFoundError):
         EncodingConfig.from_file('your_file_is_in_another_castle')
+
+
+def test_encoding_config_get_all_result_directories() -> None:
+    config = get_base_encoding_config()
+
+    result_directories = config.get_all_result_directories(
+        ['AncientThought', 'Balloon'])
+
+    assert result_directories is not None
+    assert len(result_directories) == 32
+    for result in result_directories:
+        assert len(result) > 0
+        assert 'avc' in result or 'hevc' in result
+        assert 'medium' in result
+        assert 'fps' in result
+        assert '24fps' in result or '30fps' in result
+        assert 'AncientThought' in result or 'Balloon' in result

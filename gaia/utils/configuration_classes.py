@@ -107,9 +107,11 @@ class EncodingConfigDTO(BaseModel):
         '''Returns the output directory for the encoded video'''
         if any([x in video_name for x in ['.webm', '.mp4']]):
             video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
-        output_dir: str = f'{self.codec}/{video_name}/{self.segment_duration}s/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
+        output_dir: str = f'{self.codec}/{self.segment_duration}s/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
         if self.framerate is not None and self.framerate > 0:
             output_dir = f'{output_dir}/{self.framerate}fps'
+
+        output_dir = f'{output_dir}/{video_name}'
 
         return output_dir
 
@@ -133,17 +135,10 @@ class EncodingConfig(BaseModel):
     def get_all_result_directories(self, video_names: list[str]) -> list[str]:
         '''Returns a list of all possible result directories'''
         directory_list: list[str] = [
-            get_output_directory(codec, video, duration, preset, rendition)
-            for rendition in self.renditions
-            for preset in self.presets
+            dto.get_output_directory(video)
+            for dto in self.get_encoding_dtos()
             for video in video_names
-            for duration in self.segment_duration
-            for codec in self.codecs
         ]
-
-        if self.framerate is not None and len(self.framerate) > 0:
-            directory_list = [
-                f'{l}/{fr}' for l in directory_list for fr in self.framerate]
 
         return directory_list
 
@@ -163,17 +158,17 @@ class EncodingConfig(BaseModel):
 # TODO ParallelEncodingConfig classs-
 
 
-def get_output_directory(
-    codec: str,
-    video_name: str,
-    duration: int,
-    preset: str,
-    rendition: Rendition
-) -> str:
-    '''Returns the output directory for the encoded video'''
-    if any([x in video_name for x in ['.webm', '.mp4']]):
-        video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
-    return f'{codec}/{video_name}/{duration}s/{preset}/{rendition.get_rendition_dir_representation()}'
+# def get_output_directory(
+#     codec: str,
+#     video_name: str,
+#     duration: int,
+#     preset: str,
+#     rendition: Rendition
+# ) -> str:
+#     '''Returns the output directory for the encoded video'''
+#     if any([x in video_name for x in ['.webm', '.mp4']]):
+#         video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
+#     return f'{codec}/{video_name}/{duration}s/{preset}/{rendition.get_rendition_dir_representation()}'
 
 
 @dataclass
