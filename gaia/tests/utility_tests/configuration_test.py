@@ -46,7 +46,8 @@ def get_base_encoding_config() -> EncodingConfig:
         segment_duration=[1, 2],
         framerate=[24, 30],
         encode_all_videos=True,
-        videos_to_encode=[])
+        videos_to_encode=[],
+        input_directory_path=['input_path'])
 
 
 # '''

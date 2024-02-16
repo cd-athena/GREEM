@@ -32,3 +32,6 @@ encoding_renditions:
 
 encoding_segment_duration:
   - 2
+
+input_video_directory_path:
+  - ''

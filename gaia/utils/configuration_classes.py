@@ -4,7 +4,7 @@ import itertools
 
 import yaml
 from dacite import from_dict as fd
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from typing import Type, Optional
 from enum import Enum
 
@@ -125,6 +125,7 @@ class EncodingConfig(BaseModel):
     framerate: list[int] | None
     encode_all_videos: bool
     videos_to_encode: Optional[list[str]]
+    input_directory_path: list[str]
 
     @classmethod
     def from_file(cls: Type['EncodingConfig'], file_path: str):
@@ -143,7 +144,7 @@ class EncodingConfig(BaseModel):
         return directory_list
 
     def get_encoding_dtos(self) -> list[EncodingConfigDTO]:
-        encoding_dtos: list[EncodingConfigDTO] = list()
+        encoding_dtos: list[EncodingConfigDTO] = []
 
         for duration, preset, rendition, codec, fr in itertools.product(
                 self.segment_duration,
@@ -200,8 +201,7 @@ class DecodingConfigDTO():
         return output_dir_path
 
 
-@dataclass
-class DecodingConfig():
+class DecodingConfig(BaseModel):
     '''Represents the configuration for the video decoding'''
     scaling_enabled: bool
     scaling_resolutions: list[Resolution]
@@ -213,18 +213,13 @@ class DecodingConfig():
     encoding_renditions: list[Rendition]
 
     @classmethod
-    def from_dict(cls: Type['DecodingConfig'], data: dict):
-        '''Creates a DecodingConfig object from a Python dictionary'''
-        dc: DecodingConfig = fd(data_class=DecodingConfig, data=data)
-        return dc
-
-    @classmethod
     def from_file(cls: Type['DecodingConfig'], file_path: str):
         '''Creates a DecodingConfig object from a YAML file'''
-        return cls.from_dict(read_yaml(file_path))
+        yaml_file = read_yaml(file_path)
+        return cls(**yaml_file)
 
     def get_decoding_dtos(self) -> list[DecodingConfigDTO]:
-        decoding_dtos: list[DecodingConfigDTO] = list()
+        decoding_dtos: list[DecodingConfigDTO] = []
 
         for scale_resolution, framerate, encoding_codec, encoding_preset, encoding_rendition in itertools.product(
                 self.scaling_resolutions,

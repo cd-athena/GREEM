@@ -52,3 +52,5 @@ videos_to_encode:
   - AncientThought
   # - Eldorado
 
+input_directory_path:
+  - ''

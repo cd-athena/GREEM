@@ -41,3 +41,6 @@ encode_all_videos: False
 videos_to_encode:
   - AncientThought
   # - Eldorado
+
+input_directory_path:
+  - ''
