@@ -158,19 +158,6 @@ class EncodingConfig(BaseModel):
 # TODO ParallelEncodingConfig classs-
 
 
-# def get_output_directory(
-#     codec: str,
-#     video_name: str,
-#     duration: int,
-#     preset: str,
-#     rendition: Rendition
-# ) -> str:
-#     '''Returns the output directory for the encoded video'''
-#     if any([x in video_name for x in ['.webm', '.mp4']]):
-#         video_name = video_name.removesuffix('.webm').removesuffix('.mp4')
-#     return f'{codec}/{video_name}/{duration}s/{preset}/{rendition.get_rendition_dir_representation()}'
-
-
 @dataclass
 class DecodingConfigDTO():
     scaling_resolution: Resolution
