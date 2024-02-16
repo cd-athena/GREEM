@@ -2,15 +2,11 @@
 scaling_enabled: True
 
 scaling_resolutions: 
-  # - height: 540
-  #   width: 960
-  - height: 1080
-    width: 1920
-  - height: 2160
-    width: 3840
+  - height: 540
+    width: 960
 
 framerate:
-  - 15
+  # - 15
   - 24
   - 30
 
@@ -33,3 +29,9 @@ encoding_renditions:
   - bitrate: 1100
     height: 432
     width: 768
+
+encoding_segment_duration:
+  - 2
+
+input_video_directory_path:
+  - ''
