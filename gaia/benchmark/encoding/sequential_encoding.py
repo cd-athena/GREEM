@@ -22,8 +22,9 @@ NTFY_TOPIC: str = "aws_encoding"
 
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    "config_files/segment_encoding_h264.yaml",
-    "config_files/segment_encoding_h265.yaml",
+    # "config_files/segment_encoding_h264.yaml",
+    # "config_files/segment_encoding_h265.yaml",
+    'config_files/test_encoding_config.yaml'
 ]
 
 INPUT_FILE_DIR: str = "../dataset/ref_265"
@@ -286,13 +287,9 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
         )
 
         # encode for each duration defined in the config file
-        prepare_data_directories(
-            encoding_config,
-            video_names=[file.removesuffix(".265") for file in input_files],
-        )
-        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
-        )
-        duration = 4
+        prepare_data_directories(encoding_config)
+        
+        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
         # encode each video found in the input files corresponding to the duration
         for video_name in input_files:
             for dto in encoding_dtos:
@@ -312,20 +309,23 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
                     #     quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
                     # )
                     create_sequential_encoding_cmd(
-                        input_file_path, video_name, dto, constant_rate_factor=-1, cuda_enabled=False, quiet_mode=False)
+                        input_file_path, video_name, RESULT_ROOT, dto)
                     if not DRY_RUN
                     else "sleep 0.1"
                 )
 
-                execute_encoding_stage(encoding_cmd, dto, video_name)
+                print(encoding_cmd)
+                break
+                # execute_encoding_stage(encoding_cmd, dto, video_name)
 
                 # scaling_cmd: str = create_ffmpeg_scaling_command(
                 #     output_dir, dto.rendition, cuda_enabled=USE_CUDA
                 # )
 
                 # execute_encoding_cmd(cmd, dto, video_name)
-                execute_scaling_stage(scaling_cmd, dto, video_name)
-    write_encoding_results_to_csv()
+                # execute_scaling_stage(scaling_cmd, dto, video_name)
+            break
+    # write_encoding_results_to_csv()
 
 
 @track_emissions(

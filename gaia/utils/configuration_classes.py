@@ -99,13 +99,16 @@ class EncodingConfigDTO(BaseModel):
     rendition: Rendition
     segment_duration: int
     framerate: int = 0
+    is_dash: bool = False
 
     def get_output_directory(
         self,
     ) -> str:
         '''Returns the output directory for the encoded video'''
 
-        output_dir: str = f'{self.codec}/{self.segment_duration}s/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
+        output_dir: str = f'{self.codec}/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
+        # use this folder structure if dash segments are created
+        # output_dir: str = f'{self.codec}/{self.segment_duration}s/{self.preset}/{self.rendition.get_rendition_dir_representation()}'
         if self.framerate is not None and self.framerate > 0:
             output_dir = f'{output_dir}/{self.framerate}fps'
 
@@ -122,6 +125,7 @@ class EncodingConfig(BaseModel):
     encode_all_videos: bool
     videos_to_encode: Optional[list[str]]
     input_directory_path: list[str]
+    is_dash: bool = False
 
     @classmethod
     def from_file(cls: Type['EncodingConfig'], file_path: str):
@@ -140,9 +144,11 @@ class EncodingConfig(BaseModel):
 
     def get_encoding_dtos(self) -> list[EncodingConfigDTO]:
         encoding_dtos: list[EncodingConfigDTO] = []
+        
+        segment_duration: list[int] = self.segment_duration if self.is_dash else [4]
 
         for duration, preset, rendition, codec, fr in itertools.product(
-                self.segment_duration,
+                segment_duration,
                 self.presets, self.renditions, self.codecs,
                 self.framerate if self.framerate is not None and len(self.framerate) > 0 else []):
             enc_dto = EncodingConfigDTO(
@@ -243,19 +249,3 @@ class NtfyConfig():
     def from_file(cls: Type['NtfyConfig'], file_path: str):
         return cls.from_dict(read_yaml(file_path))
 
-
-if __name__ == '__main__':
-    # ec = EncodingConfig.from_file(
-    #     '../benchmark/config_files/test_encoding_config.yaml')
-
-    # for dto in ec.get_encoding_dtos():
-    #     print(dto.get_output_directory(video_name='test'))
-
-    config = read_yaml('../benchmark/config_files/test_decoding_config.yaml')
-
-    dc = DecodingConfig.from_dict(config)
-    print(dc)
-
-    for dto in dc.get_decoding_dtos():
-        print(dto.get_output_dir('RESULT', 'VIDEO_NAME'))
-        break

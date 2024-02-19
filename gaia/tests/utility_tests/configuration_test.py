@@ -254,7 +254,8 @@ def test_encoding_config_get_encoding_dtos() -> None:
     # should be of type list
     assert isinstance(encoding_dtos, list)
     # should not be empty
-    assert len(encoding_dtos) == 1440
+    assert len(encoding_dtos) == 240
+    # assert len(encoding_dtos) == 1440
 
 
 def test_encoding_config_from_file_raises_error() -> None:
@@ -269,6 +270,18 @@ def test_encoding_config_get_all_result_directories() -> None:
     result_directories = config.get_all_result_directories()
 
     assert result_directories is not None
+    assert len(result_directories) == 8
+    for result in result_directories:
+        assert len(result) > 0
+        assert 'avc' in result or 'hevc' in result
+        assert 'medium' in result
+        assert 'fps' in result
+        assert '24fps' in result or '30fps' in result
+        
+    config = get_base_encoding_config()
+    config.is_dash = True
+    result_directories = config.get_all_result_directories()
+    
     assert len(result_directories) == 16
     for result in result_directories:
         assert len(result) > 0

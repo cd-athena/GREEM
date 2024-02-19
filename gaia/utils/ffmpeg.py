@@ -68,6 +68,7 @@ def get_representation_ffmpeg_flags(
 def create_sequential_encoding_cmd(
     input_file_path: str,
     input_file_name: str,
+    output_dir_path: str,
     encoding_dto: EncodingConfigDTO,
     constant_rate_factor: int = -1,
     cuda_enabled: bool = False,
@@ -79,6 +80,7 @@ def create_sequential_encoding_cmd(
     return codec_processing.create_sequential_encoding_cmd(
         input_file_path=input_file_path,
         input_file_name=input_file_name,
+        output_dir_path=output_dir_path,
         dto=encoding_dto,
         constant_rate_factor=constant_rate_factor
     )
@@ -431,6 +433,7 @@ class CodecProcessing(BaseModel):
             self,
             input_file_path: str,
             input_file_name: str,
+            output_dir_path: str,
             dto: EncodingConfigDTO,
             constant_rate_factor: int = -1,
     ) -> str:
@@ -457,7 +460,7 @@ class CodecProcessing(BaseModel):
         if dto.codec in ['vvc']:
             cmd.extend(self.vvc_sequential_encoding_cmd(dto))
 
-        cmd.append(f'{dto.get_output_directory()}/{input_file_name}.mp4')
+        cmd.append(f'{output_dir_path}/{dto.get_output_directory()}/{input_file_name}.mp4')
 
         join_string = get_join_string(False)
         return join_string.join(cmd)
