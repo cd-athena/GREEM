@@ -118,7 +118,7 @@ class EncodingConfig(BaseModel):
     presets: list[str]
     renditions: list[Rendition]
     segment_duration: list[int]
-    framerate: list[int] | None
+    framerate: list[int]
     encode_all_videos: bool
     videos_to_encode: Optional[list[str]]
     input_directory_path: list[str]
@@ -200,7 +200,7 @@ class DecodingConfig(BaseModel):
     '''Represents the configuration for the video decoding'''
     scaling_enabled: bool
     scaling_resolutions: list[Resolution]
-    framerate: list[int] | None
+    framerate: list[int]
     decoding_sleep: float
     decode_all_videos: bool
     encoding_codecs: list[str]
