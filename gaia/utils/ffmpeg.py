@@ -1,8 +1,5 @@
 import os
 from math import ceil
-from enum import Enum
-import queue
-from typing import Literal, Type
 
 from pydantic import BaseModel
 
@@ -460,7 +457,8 @@ class CodecProcessing(BaseModel):
         if dto.codec in ['vvc']:
             cmd.extend(self.vvc_sequential_encoding_cmd(dto))
 
-        cmd.append(f'{output_dir_path}/{dto.get_output_directory()}/{input_file_name}.mp4')
+        cmd.append(
+            f'{output_dir_path}/{dto.get_output_directory()}/{input_file_name}.mp4')
 
         join_string = get_join_string(False)
         return join_string.join(cmd)
