@@ -277,11 +277,11 @@ def test_encoding_config_get_all_result_directories() -> None:
         assert 'medium' in result
         assert 'fps' in result
         assert '24fps' in result or '30fps' in result
-        
+
     config = get_base_encoding_config()
     config.is_dash = True
     result_directories = config.get_all_result_directories()
-    
+
     assert len(result_directories) == 16
     for result in result_directories:
         assert len(result) > 0
