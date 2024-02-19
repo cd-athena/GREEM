@@ -52,8 +52,7 @@ def get_representation_ffmpeg_flags(
             f'-b:v:{idx} {bitrate}k',
             f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
             f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
-            f'"scale={width}:{height}"',
-            f'{fps_repr}"',
+            f'"scale={width}:{height} {fps_repr}"',
             f'-preset {preset}'
         ]
 
