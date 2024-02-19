@@ -315,8 +315,8 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
                 )
 
                 print(encoding_cmd)
+                execute_encoding_stage(encoding_cmd, dto, video_name)
                 break
-                # execute_encoding_stage(encoding_cmd, dto, video_name)
 
                 # scaling_cmd: str = create_ffmpeg_scaling_command(
                 #     output_dir, dto.rendition, cuda_enabled=USE_CUDA
