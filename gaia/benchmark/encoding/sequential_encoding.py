@@ -388,8 +388,7 @@ def execute_encoding_cmd(
             rendition.height,
         )
         result_df["video_name"] = video_name
-        result_df["output_path"] = encoding_dto.get_output_directory(
-            video_name)
+        result_df["output_path"] = encoding_dto.get_output_directory()
 
         metric_results.append(result_df)
 
