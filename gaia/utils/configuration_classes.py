@@ -144,15 +144,16 @@ class EncodingConfig(BaseModel):
 
     def get_encoding_dtos(self) -> list[EncodingConfigDTO]:
         encoding_dtos: list[EncodingConfigDTO] = []
-        
-        segment_duration: list[int] = self.segment_duration if self.is_dash else [4]
+
+        segment_duration: list[int] = self.segment_duration if self.is_dash else [
+            4]
 
         for duration, preset, rendition, codec, fr in itertools.product(
                 segment_duration,
                 self.presets, self.renditions, self.codecs,
                 self.framerate if self.framerate is not None and len(self.framerate) > 0 else []):
             enc_dto = EncodingConfigDTO(
-                codec=codec, preset=preset, rendition=rendition, segment_duration=duration, framerate=fr)
+                codec=codec, preset=preset, rendition=rendition, segment_duration=duration, framerate=fr, is_dash=self.is_dash)
             encoding_dtos.append(enc_dto)
 
         return encoding_dtos
@@ -248,4 +249,3 @@ class NtfyConfig():
     @classmethod
     def from_file(cls: Type['NtfyConfig'], file_path: str):
         return cls.from_dict(read_yaml(file_path))
-

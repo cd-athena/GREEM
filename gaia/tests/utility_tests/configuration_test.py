@@ -249,13 +249,48 @@ def test_encoding_config_get_encoding_dtos() -> None:
 
     encoding_dtos: list[EncodingConfigDTO] = config.get_encoding_dtos()
 
+    #     assert len(result) > 0
+    # assert 'avc' in result or 'hevc' in result
+    # assert 'medium' in result
+    # assert 'fps' in result
+    # assert '24fps' in result or '30fps' in result
+
     # should not be None
     assert encoding_dtos is not None
     # should be of type list
     assert isinstance(encoding_dtos, list)
     # should not be empty
     assert len(encoding_dtos) == 240
-    # assert len(encoding_dtos) == 1440
+
+    for dto in encoding_dtos:
+        assert dto.is_dash is False
+        assert dto.codec in ['h264', 'h265']
+        assert dto.preset in ['ultrafast',
+                              'superfast', 'veryfast', 'faster', 'fast',
+                              'medium', 'slow', 'slower', 'veryslow', 'placebo']
+        assert dto.framerate in [24, 30]
+
+    # this config file should exist
+    config = EncodingConfig.from_file(
+        'gaia/tests/utility_tests/test_datasets/test_config_file.yaml')
+    config.is_dash = True
+
+    encoding_dtos: list[EncodingConfigDTO] = config.get_encoding_dtos()
+
+    # should not be None
+    assert encoding_dtos is not None
+    # should be of type list
+    assert isinstance(encoding_dtos, list)
+    # should not be empty
+    assert len(encoding_dtos) == 1440
+
+    for dto in encoding_dtos:
+        assert dto.is_dash is True
+        assert dto.codec in ['h264', 'h265']
+        assert dto.preset in ['ultrafast',
+                              'superfast', 'veryfast', 'faster', 'fast',
+                              'medium', 'slow', 'slower', 'veryslow', 'placebo']
+        assert dto.framerate in [24, 30]
 
 
 def test_encoding_config_from_file_raises_error() -> None:
