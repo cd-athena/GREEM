@@ -7,7 +7,7 @@ from gaia.utils.configuration_classes import (
     EncodingConfigDTO,
     EncodingConfig)
 
-from gaia.utils.ffmpeg import CodecProcessing
+from gaia.utils.ffmpeg import CodecProcessing, get_lib_codec
 
 BITRATE: str = 'bitrate'
 BITRATE_BASE_VALUE: int = 1000
@@ -59,6 +59,51 @@ def get_base_encoding_config() -> EncodingConfig:
 #    --------------------------------------------------------------------------------------------------
 # '''
 
+def test_get_lib_codec():
+    avc_lib = 'libx264'
+    avc_cuda_lib = 'h264_nvenc'
+    hevc_lib = 'libx265'
+    hevc_cuda_lib = 'hevc_nvenc'
+    av1_lib = 'libsvtav1'
+    vp9_lib = 'libvpx-vp9'
+    vvc_lib = 'vvc'
+    # these codecs should exist
+    # AVC
+    assert get_lib_codec('avc') == avc_lib
+    assert get_lib_codec('h264') == avc_lib
+    # AVC with CUDA
+    assert get_lib_codec(value='avc', cuda_mode=True) == avc_cuda_lib
+    assert get_lib_codec(value='h264', cuda_mode=True) == avc_cuda_lib
+    # HEVC
+    assert get_lib_codec('hevc') == hevc_lib
+    assert get_lib_codec('h265') == hevc_lib
+    # HEVC with CUDA
+    assert get_lib_codec(value='hevc', cuda_mode=True) == hevc_cuda_lib
+    assert get_lib_codec(value='h265', cuda_mode=True) == hevc_cuda_lib
+    # AV1
+    assert get_lib_codec('av1') == av1_lib
+    # VP9
+    assert get_lib_codec('vp9') == vp9_lib
+    # VVC
+    assert get_lib_codec('vvc') == vvc_lib
+
+    # should also work with strings not being lowercase
+    assert get_lib_codec('avc'.upper()) == avc_lib
+    assert get_lib_codec('h264'.upper()) == avc_lib
+    assert get_lib_codec('hevc'.upper()) == hevc_lib
+    assert get_lib_codec('h265'.upper()) == hevc_lib
+    assert get_lib_codec('av1'.upper()) == av1_lib
+    assert get_lib_codec('vp9'.upper()) == vp9_lib
+    assert get_lib_codec('vvc'.upper()) == vvc_lib
+
+# '''
+#    --------------------------------------------------------------------------------------------------
+
+#                                         CODEC PROCESSING TEST CASES
+#    --------------------------------------------------------------------------------------------------
+# '''
+
+
 def test_basic_codec_processing_init():
     cp = CodecProcessing()
 
@@ -85,7 +130,6 @@ def test_basic_codec_processing_init():
     assert cp.quiet_mode is True
 
 
-
 def test_codec_processing_is_codec_supported():
     cp = CodecProcessing()
 
@@ -97,6 +141,15 @@ def test_codec_processing_is_codec_supported():
     assert cp.is_codec_supported('h265')
     assert cp.is_codec_supported('hevc')
 
+    # AV1 is currently not supported
+    assert not cp.is_codec_supported('av1')
+
+    # VP9 is currently not supported
+    assert not cp.is_codec_supported('vp9')
+
+    # VVC is currently not supported
+    assert not cp.is_codec_supported('vvc')
+
 
 def test_codec_processing_create_sequential_cmd():
     cp = CodecProcessing()
@@ -107,9 +160,9 @@ def test_codec_processing_create_sequential_cmd():
     dto = get_base_encoding_config_dto()
 
     sequential_cmd = cp.create_sequential_encoding_cmd(
-        input_file_path, 
-        input_file_name, 
-        output_dir_path, 
+        input_file_path,
+        input_file_name,
+        output_dir_path,
         dto)
 
     assert sequential_cmd is not None
@@ -130,5 +183,3 @@ def test_codec_processing_create_sequential_cmd():
     assert str(dto.rendition.bitrate) in sequential_cmd
     assert str(dto.rendition.height) in sequential_cmd
     assert str(dto.rendition.width) in sequential_cmd
-
-    
