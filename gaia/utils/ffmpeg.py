@@ -19,6 +19,7 @@ def get_join_string(pretty_print: bool) -> str:
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
     '''Returns the codec for the ffmpeg command'''
+    value = value.lower()
     if value in ['h264', 'avc']:
         return 'h264_nvenc' if cuda_mode else 'libx264'
     elif value in ['h265', 'hevc']:
@@ -359,7 +360,7 @@ def get_slice_video_commands(
 
 
 def get_video_without_extension(video: str) -> str:
-    return video.removesuffix('.webm').removesuffix('.mp4')
+    return video.removesuffix('.webm').removesuffix('.mp4').removesuffix('.265')
 
 
 def prepare_sliced_videos(
@@ -498,7 +499,6 @@ class CodecProcessing(BaseModel):
     def vvc_sequential_encoding_cmd(self,
                                     dto: EncodingConfigDTO,
                                     ) -> list[str]:
-
         cmd: list[str] = [
             '-vcodec omx_enc_vvc',
             # '-vcodec vvc',
