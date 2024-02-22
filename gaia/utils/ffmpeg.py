@@ -19,15 +19,15 @@ def get_join_string(pretty_print: bool) -> str:
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
     '''Returns the codec for the ffmpeg command'''
-    if value == 'h264':
+    if value in ['h264', 'avc']:
         return 'h264_nvenc' if cuda_mode else 'libx264'
-    elif value == 'h265':
+    elif value in ['h265', 'hevc']:
         return 'hevc_nvenc' if cuda_mode else 'libx265'
-    elif value == 'av1':
+    elif value in ['av1']:
         return 'libsvtav1'
-    elif value == 'vp9':
+    elif value in ['vp9']:
         return 'libvpx-vp9'
-    elif value == 'vvc':
+    elif value in ['vvc']:
         return 'vvc'
     else:
         raise ValueError('Provided codec value not supported')
@@ -420,9 +420,9 @@ class CodecProcessing(BaseModel):
             'avc',
             'h265',
             'hevc',
-            'av1',
-            'vp9',
-            'vvc'
+            # 'av1',
+            # 'vp9',
+            # 'vvc'
         ]
 
     def create_sequential_encoding_cmd(
@@ -450,11 +450,12 @@ class CodecProcessing(BaseModel):
             cmd.extend(self.h26x_sequential_encoding_cmd(
                 input_file_name, dto, constant_rate_factor))
         if dto.codec in ['av1']:
-            pass
+            raise NotImplementedError('AV1 codec is not implemented yet')
         if dto.codec in ['vp9']:
-            pass
+            raise NotImplementedError('VP9 codec is not implemented yet')
         if dto.codec in ['vvc']:
-            cmd.extend(self.vvc_sequential_encoding_cmd(dto))
+            raise NotImplementedError('VVC codec is not implemented yet')
+            # cmd.extend(self.vvc_sequential_encoding_cmd(dto))
 
         cmd.append(
             f'{output_dir_path}/{dto.get_output_directory()}/{input_file_name}.mp4')
@@ -499,9 +500,10 @@ class CodecProcessing(BaseModel):
                                     ) -> list[str]:
 
         cmd: list[str] = [
-            '-vcodec vvc',
+            '-vcodec omx_enc_vvc',
+            # '-vcodec vvc',
             f'-b:v {dto.rendition.bitrate}',
-            f'-period {dto.segment_duration}'  # GOP in seconds
+            # f'-period {dto.segment_duration}'  # GOP in seconds
             f'-preset {dto.preset}'
         ]
 
