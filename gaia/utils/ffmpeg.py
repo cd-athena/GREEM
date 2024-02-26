@@ -509,8 +509,8 @@ class CodecProcessing(BaseModel):
             '-vcodec omx_enc_vvc',
             # '-vcodec vvc',
             f'-b:v {dto.rendition.bitrate}',
-            # f'-period {dto.segment_duration}'  # GOP in seconds
-            f'-preset {dto.preset}'
+            f'-period {dto.segment_duration}',  # GOP in seconds
+            f'-preset {dto.preset}',
         ]
 
         return cmd

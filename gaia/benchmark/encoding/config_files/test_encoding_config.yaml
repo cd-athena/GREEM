@@ -1,5 +1,6 @@
 codecs:
-  - h264
+  # - h264
+  - vvc
 presets:
   - ultrafast
   - fast
@@ -43,5 +44,5 @@ videos_to_encode:
   # - Eldorado
 
 input_directory_path:
-  - ''
-  - ''
+  - ""
+  - ""

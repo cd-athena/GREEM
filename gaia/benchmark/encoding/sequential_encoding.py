@@ -296,24 +296,13 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
                 # output_dir = f'{RESULT_ROOT}/{dto.get_output_directory(video_name.removesuffix(".265"))}'
                 input_file_path = f'{input_dir}/{video_name}'
                 encoding_cmd = (
-                    # create_ffmpeg_encoding_command(
-                    #     f"{input_dir}/{video_name}",
-                    #     output_dir,
-                    #     dto.rendition,
-                    #     dto.preset,
-                    #     duration,
-                    #     dto.codec,
-                    #     framerate=dto.framerate,
-                    #     constant_rate_factor=-1,
-                    #     cuda_enabled=USE_CUDA,
-                    #     quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
-                    # )
                     create_sequential_encoding_cmd(
                         input_file_path, video_name, RESULT_ROOT, dto)
                     if not DRY_RUN
                     else "sleep 0.1"
                 )
 
+                print(dto.codec)
                 print(encoding_cmd)
                 execute_encoding_stage(encoding_cmd, dto, video_name)
                 break
