@@ -51,8 +51,8 @@ def get_representation_ffmpeg_flags(
         width = rendition.width
         representation: list[str] = [
             f'-b:v:{idx} {bitrate}k',
-            f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {
-                bitrate}k -bufsize {3*int(bitrate)}k',
+            f'-b:v:{idx} {bitrate}k -minrate {bitrate}k', 
+            f'-maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
             f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
             f'"scale={width}:{height} {fps_repr}"',
             f'-preset {preset}'
@@ -304,8 +304,7 @@ def get_slice_video_command(
     segment_duration: int,
 ) -> str:
     '''https://unix.stackexchange.com/questions/1670/how-can-i-use-ffmpeg-to-split-mpeg-video-into-10-minute-chunks'''
-    duration: str = f'{segment_duration}' if segment_duration > 9 else f'0{
-        segment_duration}'
+    duration: str = f'{segment_duration}' if segment_duration > 9 else f'0{segment_duration}'
 
     cmd: list[str] = [
         'ffmpeg -n',
@@ -353,8 +352,9 @@ def get_slice_video_commands(
             '-strict -2',
             '-async 1',
             '-reset_timestamps 1',
-            f'{output_path}/{output_file_name}_{segment_duration}s_{start_segment //
-                                                                    segment_duration}.mp4'
+            # TODO
+            # f'{output_path}/{output_file_name}_{segment_duration}s_{start_segment //
+            #                                                         segment_duration}.mp4'
         ]
 
         cmd_list.append(' '.join(cmd))
