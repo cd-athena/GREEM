@@ -115,24 +115,26 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
 
         encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
         )
-        # encode each video found in the input files corresponding to the duration
-        for video_name in input_files:
-            for dto in encoding_dtos:
 
-                input_file_path = f'{input_dir}/{video_name}'
+        for i in range(3):
+            # encode each video found in the input files corresponding to the duration
+            for video_name in input_files:
+                for dto in encoding_dtos:
 
-                time_dir[f'{video_name}_start'] = datetime.now().__str__()
+                    input_file_path = f'{input_dir}/{video_name}'
 
-                encoding_cmd = (
-                    create_sequential_encoding_cmd(
-                        input_file_path, video_name, RESULT_ROOT, dto)
-                    if not DRY_RUN
-                    else "sleep 0.1"
-                )
+                    time_dir[f'{video_name}_start_{i}'] = datetime.now().__str__()
 
-                execute_encoding_stage(encoding_cmd, dto, video_name)
-                time_dir[f'{video_name}_end'] = datetime.now().__str__()
-                break
+                    encoding_cmd = (
+                        create_sequential_encoding_cmd(
+                            input_file_path, video_name, RESULT_ROOT, dto)
+                        if not DRY_RUN
+                        else "sleep 0.1"
+                    )
+
+                    execute_encoding_stage(encoding_cmd, dto, video_name)
+                    time_dir[f'{video_name}_end_{i}'] = datetime.now().__str__()
+                    break
 
     time_dir['end'] = datetime.now().__str__()
     print(time_dir)
