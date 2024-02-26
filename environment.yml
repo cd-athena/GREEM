@@ -11,11 +11,11 @@ dependencies:
   - jupyter
   - numpy
   - pandas
+  - pydantic
   # - watchdog
   - pip
- 
-  - pip:
-    - opencv-python
-    - yt-dlp
-    - nvitop
 
+  - pip:
+      - opencv-python
+      - yt-dlp
+      - nvitop
