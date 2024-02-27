@@ -20,6 +20,8 @@ from gaia.utils.cli_parser import CLI_PARSER
 
 NTFY_TOPIC: str = "aws_encoding"
 
+MEASUREMENT_INTERVAL: float = 0.25
+
 
 ENCODING_CONFIG_PATHS: list[str] = [
     # "config_files/segment_encoding_h264.yaml",
@@ -116,28 +118,36 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
         encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
         )
 
-        for i in range(3):
+        max_rep = 6
+        video_count = 0
+
+        for rep in range(1, max_rep):
             # encode each video found in the input files corresponding to the duration
-            for video_name in input_files:
+            for idx, video_name in enumerate(input_files):
                 for dto in encoding_dtos:
+                    video_count += 1
 
                     input_file_path = f'{input_dir}/{video_name}'
 
-                    time_dir[f'{video_name}_start_{i}'] = datetime.now().__str__()
+                    time_dir[f'{video_name}_start_{rep}'] = datetime.now(
+                    ).__str__()
 
                     encoding_cmd = (
                         create_sequential_encoding_cmd(
-                            input_file_path, video_name, RESULT_ROOT, dto)
+                            input_file_path, video_name, RESULT_ROOT, dto, quiet_mode=True)
                         if not DRY_RUN
                         else "sleep 0.1"
                     )
 
                     execute_encoding_stage(encoding_cmd, dto, video_name)
-                    time_dir[f'{video_name}_end_{i}'] = datetime.now().__str__()
+                    time_dir[f'{video_name}_end_{rep}'] = datetime.now().__str__()
+
+                    print(
+                        f'Encoded video ({video_count}/{(max_rep - 1) * len(input_files)})')
                     break
 
     time_dir['end'] = datetime.now().__str__()
-    print(time_dir)
+
     pd.Series(time_dir).to_csv(f'start_stop_times_{datetime.now()}.csv')
     write_encoding_results_to_csv()
 
@@ -145,8 +155,9 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
 @track_emissions(
     offline=True,
     country_iso_code="AUT",
-    log_level="error" if CLI_PARSER.is_quiet_ffmpeg() else "debug",
-    measure_power_secs=1,
+    log_level="error",
+    # log_level="error" if CLI_PARSER.is_quiet_ffmpeg() else "debug",
+    measure_power_secs=MEASUREMENT_INTERVAL,
     output_dir=RESULT_ROOT,
     save_to_file=True,
     project_name="encoding_stage",
