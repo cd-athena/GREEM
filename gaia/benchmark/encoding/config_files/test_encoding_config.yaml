@@ -2,8 +2,9 @@ codecs:
   - h264
   # - vvc
 presets:
-  - ultrafast
-  - fast
+  # - ultrafast
+  # - fast
+  - slow
 
 renditions:
   # - bitrate: 145
@@ -18,12 +19,12 @@ renditions:
   # - bitrate: 5800
   #   height: 1080
   #   width: 1920
-  # - bitrate: 8100
-  #   height: 1440
-  #   width: 2560
-  - bitrate: 16800
-    height: 2160
-    width: 3840
+  - bitrate: 8100
+    height: 1440
+    width: 2560
+  # - bitrate: 16800
+  #   height: 2160
+  #   width: 3840
 
 segment_duration:
   - 1
