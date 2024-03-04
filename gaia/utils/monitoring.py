@@ -28,7 +28,8 @@ class MonitoringMetadata(BaseModel):
     name: str
 
 
-@dataclass  # has to be a dataclass instead of BaseModel because of __post_init__ and the tracker
+@dataclass  # has to be a dataclass instead of BaseModel because
+# __post_init__ is required
 class BaseMonitoring(ABC):
     measure_power_secs: float = 1
     use_cuda: bool = False
@@ -38,6 +39,10 @@ class BaseMonitoring(ABC):
     @abstractmethod
     def start_monitoring(self, cmd: str):
         pass
+
+    # @abstractmethod
+    # def stop_monitoring(self):
+    #     pass
 
     # def get_emissions_tracker(self) -> EmissionsTracker:
     #     return EmissionsTracker(measure_power_secs=self.measure_power_secs, save_to_file=False)
