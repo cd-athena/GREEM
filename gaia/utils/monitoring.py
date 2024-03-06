@@ -47,8 +47,9 @@ class BaseMonitoring(ABC):
     # def get_emissions_tracker(self) -> EmissionsTracker:
     #     return EmissionsTracker(measure_power_secs=self.measure_power_secs, save_to_file=False)
     def __post_init__(self):
-        self.tracker = EmissionsTracker(
-            measure_power_secs=self.measure_power_secs, save_to_file=False)
+        if self.tracker is None:
+            self.tracker = EmissionsTracker(
+                measure_power_secs=self.measure_power_secs, save_to_file=False)
         self.tracker.start()
 
 
