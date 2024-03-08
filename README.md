@@ -1,5 +1,7 @@
 # GREEM
 
+**G**aia **R**esource **E**nergy and **E**mission **M**onitoring
+
 ## Description
 
 We present a monitoring tool that is open-source, easy-to-use, and easy-to-set up for benchmarking video processing. The tool measures various hardware parameters, such as energy consumption and GPU metrics, including core and memory usage, temperature, and fan speed. Additionally, we offer scripts that generate sample analytic plots, which assist researchers in analyzing and understanding their benchmark results.
