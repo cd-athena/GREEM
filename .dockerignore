@@ -31,6 +31,6 @@
 **/obj
 **/secrets.dev.yaml
 **/values.dev.yaml
-**/gaia.egg-info
+**/greem.egg-info
 LICENSE
 README.md
