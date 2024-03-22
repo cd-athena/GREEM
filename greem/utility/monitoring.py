@@ -1,4 +1,4 @@
-from codecarbon import EmissionsTracker
+from codecarbon import OfflineEmissionsTracker
 from codecarbon.output import EmissionsData
 from codecarbon.external.scheduler import PeriodicScheduler
 from pydantic import BaseModel
@@ -36,7 +36,7 @@ class BaseMonitoring(ABC):
     measure_power_secs: float = 1
     cuda_enabled: bool = False
     collected_data: deque[MonitoringData] = field(default_factory=deque)
-    tracker: EmissionsTracker = None
+    tracker: OfflineEmissionsTracker = None
 
     @abstractmethod
     def start_monitoring(self, cmd: str):
@@ -50,8 +50,8 @@ class BaseMonitoring(ABC):
     #     return EmissionsTracker(measure_power_secs=self.measure_power_secs, save_to_file=False)
     def __post_init__(self):
         if self.tracker is None:
-            self.tracker = EmissionsTracker(
-                measure_power_secs=self.measure_power_secs, save_to_file=False)
+            self.tracker = OfflineEmissionsTracker(
+                measure_power_secs=self.measure_power_secs, save_to_file=False, country_iso_code='AUT')
         self.tracker.start()
 
 
@@ -98,6 +98,12 @@ class PeriodicMonitoring(BaseMonitoring):
             function=self._fetch_hardware_metrics,
             interval=self.measure_power_secs
         )
+
+    def start(self):
+        self.scheduler.start()
+
+    def stop(self):
+        self.scheduler.stop()
 
     def _fetch_hardware_metrics(self):
         monitoring_data: MonitoringData = MonitoringData(self.tracker._prepare_emissions_data(
