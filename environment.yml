@@ -3,16 +3,15 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python=3.10
+  - python=3.11
   - dacite
-  # - pynvml
   - codecarbon
   - ipython
   - jupyter
   - numpy
   - pandas
   - pydantic
-  # - watchdog
+  - pytest
   - pip
 
   - pip:
