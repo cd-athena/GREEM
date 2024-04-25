@@ -1,0 +1,12 @@
+pytest~=7.4.0
+greem~=0.1
+opencv-python~=4.8.0.76
+pydantic~=2.6.1
+pandas~=1.5.3
+codecarbon~=2.2.2
+yaml~=0.2.5
+pyyaml~=6.0
+dacite~=1.8.1
+pynvml~=11.5.0
+setuptools~=68.0.0
+cython~=3.0.0
