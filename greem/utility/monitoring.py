@@ -74,7 +74,7 @@ class RegularMonitoring(BaseMonitoring):
 
 
 @dataclass
-class PeriodicMonitoring(BaseMonitoring):
+class CyclicTracker(BaseMonitoring):
     _scheduler: PeriodicScheduler = None
 
     def monitor_process(self, cmd: str):
