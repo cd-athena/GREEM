@@ -171,15 +171,15 @@ class MetricTracker(OfflineEmissionsTracker):
         if self.extended_gpu_metrics:
             self.gpu_collector.clear()
 
-    def start_monitoring(self, cmd: str, tag: str = ''):
-        self.collected_data.append(self.collect())
+    def start_monitoring(self, cmd: str):
+        # self.collected_data.append(self.collect())
         self.start()
         system(cmd)
-        self.stop()
+        self.stop_monitoring()
         self.collected_data.append(self.collect(delta=True))
         self.flush()  # start a new monitoring cycle
 
-    def stop_monitoring(self, tag: str = ''):
+    def stop_monitoring(self):
         self._scheduler.stop()
 
     def _fetch_hardware_metrics(self):
