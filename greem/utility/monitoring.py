@@ -156,7 +156,7 @@ class MetricTracker(OfflineEmissionsTracker):
         if self.extended_gpu_metrics:
             self.gpu_collector.collect()
 
-    def collect(self, delta: bool = False) -> MonitoringData:
+    def collect(self, delta: bool = False) -> EmissionsData:
         codecarbon_data: EmissionsData = self._prepare_emissions_data(delta=True)
 
         if self.extended_gpu_metrics:
@@ -164,7 +164,8 @@ class MetricTracker(OfflineEmissionsTracker):
             codecarbon_data.__dict__.update(gpu_data)
             self.gpu_collector.clear()
 
-        return MonitoringData(codecarbon_data)
+        # return MonitoringData(codecarbon_data)
+        return codecarbon_data
 
     def flush(self) -> None:
         self._prepare_emissions_data(delta=True)
@@ -182,5 +183,5 @@ class MetricTracker(OfflineEmissionsTracker):
 
 
     def _fetch_hardware_metrics(self):
-        monitoring_data: MonitoringData = self.collect()
+        monitoring_data: EmissionsData = self.collect()
         self.collected_data.append(monitoring_data)
