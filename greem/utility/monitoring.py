@@ -132,12 +132,12 @@ class MetricTracker(OfflineEmissionsTracker):
             measure_power_secs: float = 1,
             **kwargs,
     ):
-        super(MetricTracker, self).__init__(
-            country_iso_code=country_iso_code,
-            measure_power_secs=measure_power_secs,
-            *args,
-            **kwargs,
-        )
+        # super(MetricTracker, self).__init__(
+        #     country_iso_code=country_iso_code,
+        #     measure_power_secs=measure_power_secs,
+        #     *args,
+        #     **kwargs,
+        # )
 
         self.collected_data = deque()
         self.measure_power_secs = measure_power_secs
