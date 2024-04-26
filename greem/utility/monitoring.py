@@ -159,21 +159,31 @@ class MetricTracker(OfflineEmissionsTracker):
             interval=self.measure_power_secs
         )
 
-    def flush(self) -> Optional[MonitoringData]:
+    def collect_and_clear(self) -> MonitoringData:
         codecarbon_data: EmissionsData = self._tracker._prepare_emissions_data(delta=True)
         if self.extended_gpu_metrics:
             gpu_data = self.gpu_collector.collect()
-            self.gpu_collector.clear()
             codecarbon_data.__dict__.update(gpu_data)
+            self.gpu_collector.clear()
 
         return MonitoringData(codecarbon_data)
 
+    def flush(self) -> None:
+        self._tracker._prepare_emissions_data(delta=True)
+        if self.extended_gpu_metrics:
+            self.gpu_collector.clear()
+
     def start_monitoring(self, cmd: str, tag: str = ''):
-        pass
+        self.flush()  # start a new monitoring cycle
+
+        self.start()
+        system(cmd)
+        self.stop()
+        self.collected_data.append(self.collect_and_clear())
 
     def stop_monitoring(self, tag: str = ''):
-        pass
+        self._scheduler.stop()
 
     def _fetch_hardware_metrics(self):
-        monitoring_data: MonitoringData = self.flush()
+        monitoring_data: MonitoringData = self.collect_and_clear()
         self.collected_data.append(monitoring_data)
