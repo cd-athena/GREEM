@@ -146,13 +146,17 @@ class MetricTracker(OfflineEmissionsTracker):
         if self.extended_gpu_metrics:
             self.gpu_collector = ResourceMetricCollector()
 
-    def __post_init__(self):
         self._scheduler = PeriodicScheduler(
             function=self._fetch_hardware_metrics,
             interval=self.measure_power_secs
         )
 
-    def collect_and_clear(self) -> MonitoringData:
+    def __post_init__(self):
+        self._prepare_emissions_data()
+        if self.extended_gpu_metrics:
+            self.gpu_collector.collect()
+
+    def collect(self, delta: bool = False) -> MonitoringData:
         codecarbon_data: EmissionsData = self._prepare_emissions_data(delta=True)
 
         if self.extended_gpu_metrics:
@@ -168,17 +172,16 @@ class MetricTracker(OfflineEmissionsTracker):
             self.gpu_collector.clear()
 
     def start_monitoring(self, cmd: str, tag: str = ''):
-        self.flush()  # start a new monitoring cycle
-
+        self.collected_data.append(self.collect())
         self.start()
         system(cmd)
         self.stop()
-
-        self.collected_data.append(self.collect_and_clear())
+        self.collected_data.append(self.collect(delta=True))
+        self.flush()  # start a new monitoring cycle
 
     def stop_monitoring(self, tag: str = ''):
         self._scheduler.stop()
 
     def _fetch_hardware_metrics(self):
-        monitoring_data: MonitoringData = self.collect_and_clear()
+        monitoring_data: MonitoringData = self.collect()
         self.collected_data.append(monitoring_data)
