@@ -130,18 +130,11 @@ class MetricTracker(OfflineEmissionsTracker):
             country_iso_code: Optional[str] = 'AUT',
             extended_gpu_metrics: bool = False,
             measure_power_secs: float = 1,
-            region: Optional[str] = _sentinel,
-            cloud_provider: Optional[str] = _sentinel,
-            cloud_region: Optional[str] = _sentinel,
-            country_2letter_iso_code: Optional[str] = _sentinel,
             **kwargs,
     ):
         super(MetricTracker, self).__init__(
             country_iso_code=country_iso_code,
-            region=region,
-            cloud_provider=cloud_provider,
-            cloud_region=cloud_region,
-            country_2letter_iso_code=country_2letter_iso_code,
+            measure_power_secs=measure_power_secs,
             *args,
             **kwargs,
         )
