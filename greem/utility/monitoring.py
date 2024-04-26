@@ -132,12 +132,12 @@ class MetricTracker(OfflineEmissionsTracker):
             measure_power_secs: float = 1,
             **kwargs,
     ):
-        # super(MetricTracker, self).__init__(
-        #     country_iso_code=country_iso_code,
-        #     measure_power_secs=measure_power_secs,
-        #     *args,
-        #     **kwargs,
-        # )
+        super(MetricTracker, self).__init__(
+            country_iso_code=country_iso_code,
+            measure_power_secs=measure_power_secs,
+            *args,
+            **kwargs,
+        )
 
         self.collected_data = deque()
         self.measure_power_secs = measure_power_secs
@@ -176,8 +176,8 @@ class MetricTracker(OfflineEmissionsTracker):
         self.start()
         system(cmd)
         self.stop_monitoring()
-        self.collected_data.append(self.collect(delta=True))
-        self.flush()  # start a new monitoring cycle
+        # self.collected_data.append(self.collect(delta=True))
+        # self.flush()  # start a new monitoring cycle
 
     def stop_monitoring(self):
         self._scheduler.stop()
