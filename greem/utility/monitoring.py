@@ -173,6 +173,7 @@ class MetricTracker(OfflineEmissionsTracker):
         self.start()
         system(cmd)
         self.stop()
+
         self.collected_data.append(self.collect_and_clear())
 
     def stop_monitoring(self, tag: str = ''):
