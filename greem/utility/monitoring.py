@@ -23,8 +23,8 @@ class MonitoringData(EmissionsData):
         return object.__new__(cls)
 
 
-class MonitoringMetadata(BaseModel):
-    name: str
+
+
 
 
 @dataclass  # has to be a dataclass instead of BaseModel because
@@ -56,8 +56,8 @@ class BaseMonitoring(ABC):
         codecarbon_data = self.tracker._prepare_emissions_data(delta=delta)
         if self.cuda_enabled:
             gpu_data = self.gpu_collector.collect()
-            self.gpu_collector.clear()
             codecarbon_data.__dict__.update(gpu_data)
+            self.gpu_collector.clear()
         return MonitoringData(codecarbon_data)
 
 
@@ -96,14 +96,14 @@ class CyclicTracker(BaseMonitoring):
         self.tracker.start()
         self._scheduler.start()
         if self.cuda_enabled:
-            self.gpu_collector.activate(tag='collect')
+            self.gpu_collector.activate(tag='')
 
     def stop(self):
         self._fetch_hardware_metrics()
         self._scheduler.stop()
         self.tracker.stop()
         if self.cuda_enabled:
-            self.gpu_collector.deactivate(tag='collect')
+            self.gpu_collector.deactivate(tag='')
 
     def _fetch_hardware_metrics(self):
         monitoring_data: MonitoringData = self.flush_monitoring_data(delta=True)
