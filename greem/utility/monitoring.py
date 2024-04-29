@@ -94,7 +94,8 @@ class CyclicTracker(BaseMonitoring):
         self.tracker.start()
         self._scheduler.start()
         if self.cuda_enabled:
-            self.gpu_collector.activate(tag='collect')
+            self.gpu_collector.start(tag='collect')
+            # self.gpu_collector.activate(tag='collect')
 
     def stop(self):
         self._fetch_hardware_metrics()
