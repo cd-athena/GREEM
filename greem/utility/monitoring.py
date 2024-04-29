@@ -23,10 +23,6 @@ class MonitoringData(EmissionsData):
         return object.__new__(cls)
 
 
-
-
-
-
 @dataclass  # has to be a dataclass instead of BaseModel because
 # __post_init__ is required
 class BaseMonitoring(ABC):
@@ -56,7 +52,7 @@ class BaseMonitoring(ABC):
         codecarbon_data = self.tracker._prepare_emissions_data(delta=delta)
         if self.cuda_enabled:
             gpu_data = self.gpu_collector.collect()
-            codecarbon_data.__dict__.update(gpu_data)
+            codecarbon_data.values.update(gpu_data)
             self.gpu_collector.clear()
         return MonitoringData(codecarbon_data)
 
