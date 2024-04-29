@@ -52,7 +52,7 @@ class BaseMonitoring(ABC):
         codecarbon_data = self.tracker._prepare_emissions_data(delta=delta)
         if self.cuda_enabled:
             gpu_data = self.gpu_collector.collect()
-            codecarbon_data.values.update(gpu_data)
+            codecarbon_data.__dict__.update(gpu_data)
             self.gpu_collector.clear()
         return MonitoringData(codecarbon_data)
 
@@ -73,10 +73,12 @@ class RegularMonitoring(BaseMonitoring):
 class CyclicTracker(BaseMonitoring):
     _scheduler: PeriodicScheduler = None
 
-    def monitor_process(self, cmd: str):
+    def monitor_process(self, cmd: str, tag: str = 'monitoring'):
 
         self.start()
+        self.tracker._project_name = tag
         self.flush_monitoring_data(delta=True)
+
         system(cmd)
         self.stop()
 
