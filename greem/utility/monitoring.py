@@ -91,13 +91,11 @@ class CyclicTracker(BaseMonitoring):
             function=self._fetch_hardware_metrics,
             interval=self.measure_power_secs
         )
-        self.start()
 
     def start(self):
         self.tracker.start()
         self._scheduler.start()
         if self.cuda_enabled:
-            # self.gpu_collector.start(tag='collect')
             self.gpu_collector.activate(tag='collect')
 
     def stop(self):
