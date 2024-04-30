@@ -256,7 +256,6 @@ def create_multi_video_ffmpeg_command(
     cuda_mode: bool = False,
     quiet_mode: bool = False,
     pretty_print: bool = False,
-    output_file_name: str = 'output.mp4'
 ) -> str:
     cmd: list[str] = [
         'ffmpeg', '-y',
@@ -277,6 +276,9 @@ def create_multi_video_ffmpeg_command(
     # TODO take a look into how to integrate FPS to the encoding
     # fps_repr: str = '' if dto.framerate == 0 else f'fps={dto.framerate}'
 
+    
+    output_file_names: list[str] = [get_video_name(x) for x in video_input_file_paths]
+
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
             f'-map {idx}:0',
@@ -290,7 +292,7 @@ def create_multi_video_ffmpeg_command(
 
         cmd.extend(map_cmd)
         cmd.extend([
-            f'{output_directories[idx]}/{output_file_name}'
+            f'{output_directories[idx]}/{output_file_names[idx]}.mp4'
         ])
 
     join_string: str = ' \n' if pretty_print else ' '
@@ -365,6 +367,11 @@ def get_slice_video_commands(
 def get_video_without_extension(video: str) -> str:
     return video.removesuffix('.webm').removesuffix('.mp4').removesuffix('.265')
 
+def get_video_name(video: str) -> str:
+    if video is None or len(video) == 0:
+        return ''
+    video = video.split('/')[-1]
+    return get_video_without_extension(video)
 
 def prepare_sliced_videos(
     encoding_configs: list[EncodingConfig],

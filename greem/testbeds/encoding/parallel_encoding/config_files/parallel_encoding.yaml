@@ -23,9 +23,9 @@ renditions:
   # - bitrate: 1100
   #   height: 432
   #   width: 768
-  # - bitrate: 2000
-  #   height: 540
-  #   width: 960
+  - bitrate: 2000
+    height: 540
+    width: 960
   - bitrate: 4500
     height: 720
     width: 1280
@@ -39,10 +39,13 @@ segment_duration:
 framerate:
   - 15
   - 24
-  - 30
+  # - 30
 
 encode_all_videos: True
 
 videos_to_encode:
   - AncientThought
   # - Eldorado
+
+input_directory_path:
+  - ''

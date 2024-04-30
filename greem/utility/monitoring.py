@@ -21,11 +21,11 @@ class MonitoringData(EmissionsData):
     def __init__(self, other):
         super(EmissionsData, self).__init__()
 
-    def __new__(cls, other) -> MonitoringData | Self:
+    def __new__(cls, other):
         if isinstance(other, EmissionsData):
             other = copy.copy(other)
             other.__class__ = MonitoringData
-            return MonitoringData(other)
+            return other
         return object.__new__(cls)
 
     def as_dict(self) -> OrderedDict:
@@ -92,7 +92,7 @@ class HardwareTracker(BaseMonitoring):
         self.flush_monitoring_data(delta=True)
 
         system(cmd)
-        self.stop()
+        # self.stop()
 
     def __post_init__(self):
         super().__post_init__()
@@ -130,9 +130,10 @@ class HardwareTracker(BaseMonitoring):
             delta=True)
         self.collected_data.append(monitoring_data)
 
-    def collected_data_to_dataframe(self) -> pd.DataFrame:
+    def to_dataframe(self) -> pd.DataFrame:
         collected_data = self.collected_data
         if len(collected_data) == 0:
             return pd.DataFrame()
 
+        # TODO currently only works with CodeCarbon
         return pd.DataFrame(collected_data, columns=collected_data[0].as_dict().keys())
