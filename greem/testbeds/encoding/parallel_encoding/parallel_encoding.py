@@ -1,16 +1,15 @@
-from greem.hardware.intel import intel_rapl_workaround
 import os
+from datetime import datetime
 from pathlib import Path
 import pandas as pd
-from datetime import datetime
-from codecarbon import track_emissions
 
+# from greem.hardware.intel import intel_rapl_workaround
 from greem.utility.ffmpeg import create_multi_video_ffmpeg_command
-from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO, Rendition
-from greem.utility.timing import TimingMetadata, measure_time_of_system_cmd
+from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
 from greem.utility.dataframe import get_dataframe_from_csv
 
 from greem.utility.cli_parser import CLI_PARSER
+from greem.utility.monitoring import HardwareTracker
 
 NTFY_TOPIC: str = 'gpu_encoding'
 
@@ -31,6 +30,8 @@ INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 
 if USE_CUDA:
     from greem.monitoring.nvidia_top import NvidiaTop
+
+hardware_tracker = HardwareTracker(cuda_enabled=USE_CUDA)
 
 
 def prepare_data_directories(
@@ -105,18 +106,20 @@ def remove_media_extension(file_name: str) -> str:
 def multiple_video_one_representation_encoding():
     pass
 
+
 def one_video_multiple_representations_encoding():
     pass
+
 
 def multiple_video_multiple_representations_encoding():
     pass
 
-def execute_encoding_benchmark():
-    global timing_metadata, nvidia_top, metric_results, is_batch_encoding
+
+def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]):
 
     input_dir = INPUT_FILE_DIR
 
-    for en_idx, encoding_config in enumerate(encoding_configs):
+    for en_idx, encoding_config in enumerate(encoding_configuration):
 
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
@@ -131,7 +134,7 @@ def execute_encoding_benchmark():
 
         rendition = encoding_config.renditions[-1]
 
-        for window_size in range(2, 20):
+        for window_size in range(2, 4):
             step_size: int = window_size if is_batch_encoding else 1
 
             for idx_offset in range(0, len(input_files), step_size):
@@ -148,7 +151,7 @@ def execute_encoding_benchmark():
                         f'{RESULT_ROOT}/{dto.get_output_directory()}/{output}'
                         for output in output_files[:window_size]
                     ]
-                        # f'{RESULT_ROOT}/{get_output_directory(dto.codec, output, 4, dto.preset, rendition)
+                    # f'{RESULT_ROOT}/{get_output_directory(dto.codec, output, 4, dto.preset, rendition)
                     # {get_output_directory(dto.codec, output, 4, dto.preset, rendition)}'
 
                     cmd = create_multi_video_ffmpeg_command(
@@ -160,15 +163,12 @@ def execute_encoding_benchmark():
                         pretty_print=DRY_RUN
                     )
 
-                    if not DRY_RUN:
-                        execute_encoding_cmd(cmd, dto, input_slice)
-                    else:
-                        print(cmd)
+                    execute_encoding_cmd(cmd, dto, input_slice)
 
                     # remove all encoded files on the go
-                    if cleanup:
-                        for out in output_dirs:
-                            os.system(f'rm {out}/output.mp4')
+                    # if cleanup:
+                    #     for out in output_dirs:
+                    #         os.system(f'rm {out}/output.mp4')
 
     write_encoding_results_to_csv()
 
@@ -178,43 +178,41 @@ def execute_encoding_cmd(
         dto: EncodingConfigDTO,
         input_slice: list[str]
 ) -> None:
-    global metric_results, nvidia_top
 
     preset, codec, rendition = dto.preset, dto.preset, dto.rendition
     bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
 
-    if USE_CUDA:
-        result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
-        result_df['preset'] = preset
-        result_df['codec'] = codec
-        result_df[['bitrate', 'width', 'height']] = bitrate, width, height
-        result_df['video_name_abbr'] = ','.join(
-            [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
-        result_df['num_videos'] = len(input_slice)
-
-        metric_results.append(result_df)
-
-    elif DRY_RUN:
-        print(cmd)
+    if not DRY_RUN:
+        hardware_tracker.monitor_process(cmd)
     else:
-        os.system(cmd)
+        print(cmd)
+
+    # if USE_CUDA:
+    #     result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
+    #     result_df['preset'] = preset
+    #     result_df['codec'] = codec
+    #     result_df[['bitrate', 'width', 'height']] = bitrate, width, height
+    #     result_df['video_name_abbr'] = ','.join(
+    #         [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
+    #     result_df['num_videos'] = len(input_slice)
+
+    #     metric_results.append(result_df)
 
 
 def write_encoding_results_to_csv() -> None:
-    global nvidia_top, metric_results
 
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
 
-    if INCLUDE_CODE_CARBON and USE_CUDA:
-        emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
+    # if INCLUDE_CODE_CARBON and USE_CUDA:
+    #     emission_df = get_dataframe_from_csv(f'{RESULT_ROOT}/emissions.csv')
 
-        nvitop_df = NvidiaTop.merge_resource_metric_dfs(
-            metric_results, exclude_timestamps=True)
-        merged_df = pd.concat([emission_df, nvitop_df], axis=1)
-        # save to disk
-        merged_df.to_csv(result_path)
-        os.system(f'rm {RESULT_ROOT}/emissions.csv')
+    #     nvitop_df = NvidiaTop.merge_resource_metric_dfs(
+    #         metric_results, exclude_timestamps=True)
+    #     merged_df = pd.concat([emission_df, nvitop_df], axis=1)
+    #     # save to disk
+    #     merged_df.to_csv(result_path)
+    #     os.system(f'rm {RESULT_ROOT}/emissions.csv')
 
 
 if __name__ == '__main__':
@@ -229,14 +227,8 @@ if __name__ == '__main__':
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
-        timing_metadata: dict[int, dict] = dict()
 
-        gpu_monitoring = None
-        if USE_CUDA:
-            nvidia_top = NvidiaTop()
-            metric_results: list[pd.DataFrame] = list()
-
-        execute_encoding_benchmark()
+        execute_encoding_benchmark(encoding_configs)
 
     except Exception as err:
         print('err', err)

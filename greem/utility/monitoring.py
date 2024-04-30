@@ -1,26 +1,35 @@
+from os import system
+import copy
+from abc import ABC, abstractmethod
+from collections import deque
+from dataclasses import dataclass, field
+from typing import OrderedDict
 from codecarbon import OfflineEmissionsTracker
 from codecarbon.output import EmissionsData
 from codecarbon.external.scheduler import PeriodicScheduler
-from pydantic import BaseModel
-from abc import ABC, abstractmethod
-from os import system
-from collections import deque
-from dataclasses import dataclass, field
 from nvitop import ResourceMetricCollector
-import copy
+
+import pandas as pd
 
 
 class MonitoringData(EmissionsData):
+    """Container that contains data fetched from hardware resources.
+
+    Contains CodeCarbon EmissionsData, but also additional measurements from nvitop.
+    """
 
     def __init__(self, other):
         super(EmissionsData, self).__init__()
 
-    def __new__(cls, other):
+    def __new__(cls, other) -> MonitoringData | Self:
         if isinstance(other, EmissionsData):
             other = copy.copy(other)
             other.__class__ = MonitoringData
-            return other
+            return MonitoringData(other)
         return object.__new__(cls)
+
+    def as_dict(self) -> OrderedDict:
+        return self.values
 
 
 @dataclass  # has to be a dataclass instead of BaseModel because
@@ -44,7 +53,8 @@ class BaseMonitoring(ABC):
                 save_to_file=False,
                 country_iso_code=self.country_iso_code)
         if self.cuda_enabled:
-            self.gpu_collector = ResourceMetricCollector(interval=self.measure_power_secs)
+            self.gpu_collector = ResourceMetricCollector(
+                interval=self.measure_power_secs)
 
         # self.tracker.start()
 
@@ -70,7 +80,9 @@ class RegularMonitoring(BaseMonitoring):
 
 
 @dataclass
-class CyclicTracker(BaseMonitoring):
+class HardwareTracker(BaseMonitoring):
+    """Monitoring class that fetches the hardware state with CodeCarbon and nvitop but also keeps intermediate results.
+    """
     _scheduler: PeriodicScheduler = None
 
     def monitor_process(self, cmd: str, tag: str = 'monitoring'):
@@ -91,18 +103,36 @@ class CyclicTracker(BaseMonitoring):
         )
 
     def start(self):
+        """Start the monitoring libraries
+        """
         self.tracker.start()
         self._scheduler.start()
         if self.cuda_enabled:
             self.gpu_collector.activate(tag='')
 
     def stop(self):
+        """Stop the monitoring libraries
+        """
         self._fetch_hardware_metrics()
         self._scheduler.stop()
         self.tracker.stop()
         if self.cuda_enabled:
             self.gpu_collector.deactivate(tag='')
 
+    def clear(self) -> None:
+        """Clears the collected data and monitored value
+        """
+        self.collected_data.clear()
+        self.flush_monitoring_data(delta=True)
+
     def _fetch_hardware_metrics(self):
-        monitoring_data: MonitoringData = self.flush_monitoring_data(delta=True)
+        monitoring_data: MonitoringData = self.flush_monitoring_data(
+            delta=True)
         self.collected_data.append(monitoring_data)
+
+    def collected_data_to_dataframe(self) -> pd.DataFrame:
+        collected_data = self.collected_data
+        if len(collected_data) == 0:
+            return pd.DataFrame()
+
+        return pd.DataFrame(collected_data, columns=collected_data[0].as_dict().keys())
