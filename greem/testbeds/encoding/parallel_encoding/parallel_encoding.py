@@ -32,7 +32,7 @@ INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 if USE_CUDA:
     from greem.monitoring.nvidia_top import NvidiaTop
 
-hardware_tracker = HardwareTracker(cuda_enabled=USE_CUDA, measure_power_secs=0.5)
+hardware_tracker = HardwareTracker(cuda_enabled=True, measure_power_secs=0.5)
 
 
 def prepare_data_directories(
@@ -124,6 +124,10 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]):
 
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
+        
+        if small_test:
+            input_files = input_files[:5]
+        
         output_files = [remove_media_extension(
             out_file) for out_file in input_files]
 
@@ -133,7 +137,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]):
         encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
         )
 
-        for window_size in range(2, 6):
+        for window_size in range(2, 4):
             step_size: int = window_size if is_batch_encoding else 1
 
             for idx_offset in range(0, len(input_files), step_size):
@@ -172,33 +176,38 @@ def execute_encoding_cmd(
         input_slice: list[str]
 ) -> None:
 
-    preset, codec, rendition = dto.preset, dto.preset, dto.rendition
-    bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
-    
-    video_abbr = ','.join([abbreviate_video_name(video.split('/')[-1]) for video in input_slice]) + f'{bitrate}k:{width}x{height}'
 
     if not DRY_RUN:
         hardware_tracker.monitor_process(cmd)
-        
+        add_monitoring_results(dto, input_slice)
+
+        hardware_tracker.clear()
+    else:
+        print(cmd)
+
+
+def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]):
+        preset, codec, rendition = dto.preset, dto.codec, dto.rendition
+        bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
+        framerate, segment_duration = dto.framerate, dto.segment_duration
         result_df = hardware_tracker.to_dataframe()
-        result_df['preset'] = preset
-        result_df['codec'] = codec
+        result_df[['preset', 'codec']] = preset, codec
+        result_df[['framerate', 'segment_duration']] = framerate, segment_duration
         result_df[['bitrate', 'width', 'height']] = bitrate, width, height
         result_df['video_list'] = ','.join(
             [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
         result_df['num_videos'] = len(input_slice)
         
         monitoring_results.append(result_df)
-        hardware_tracker.clear()
-    else:
-        print(cmd)
-
+        
 
 
 
 if __name__ == '__main__':
 
     cleanup: bool = False
+    
+    small_test: bool = True
 
     is_batch_encoding: bool = True
     monitoring_results: deque = deque()
@@ -209,6 +218,8 @@ if __name__ == '__main__':
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
+        
+        hardware_tracker.start()
 
         execute_encoding_benchmark(encoding_configs)
         
