@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 import pandas as pd
+from enum import Enum
 
 # from greem.hardware.intel import intel_rapl_workaround
 from greem.utility.ffmpeg import create_multi_video_ffmpeg_command
@@ -34,6 +35,11 @@ if USE_CUDA:
 
 hardware_tracker = HardwareTracker(cuda_enabled=True, measure_power_secs=0.5)
 
+class ParallelMode(Enum):
+    OVMR = 1
+    MVOR = 2
+    MVMR = 3
+    
 
 def prepare_data_directories(
         encoding_config: EncodingConfig,
@@ -104,19 +110,56 @@ def remove_media_extension(file_name: str) -> str:
     return file_name.removesuffix('.265').removesuffix('.webm').removesuffix('.mp4')
 
 
-def multiple_video_one_representation_encoding():
-    pass
 
 
 def one_video_multiple_representations_encoding():
     pass
 
+def multiple_video_one_representation_encoding(
+    encoding_config: EncodingConfig, 
+    window_size_start: int, 
+    window_size_end: int,
+    input_files: list[str],
+    input_dir: str = INPUT_FILE_DIR
+    ) -> None:
+    
+    assert(window_size_start > 0)
+    assert(window_size_start < window_size_end)
+    
+    encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
+        )
+
+    for window_size in range(window_size_start, window_size_end):
+        step_size: int = window_size if is_batch_encoding else 1
+
+        for idx_offset in range(0, len(input_files), step_size):
+            window_idx: int = window_size + idx_offset
+            if window_idx > len(input_files):
+                break
+
+            input_slice = [
+                f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
+
+            for dto in encoding_dtos:
+                dto.get_output_directory()
+                output_directory: str = dto.get_output_directory()
+
+                cmd = create_multi_video_ffmpeg_command(
+                    input_slice,
+                    [f'{RESULT_ROOT}/{output_directory}']*len(input_slice),
+                    dto,
+                    cuda_mode=USE_CUDA,
+                    quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
+                    pretty_print=DRY_RUN
+                )
+
+                execute_encoding_cmd(cmd, dto, input_slice)
 
 def multiple_video_multiple_representations_encoding():
     pass
 
 
-def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]):
+def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], parallel_mode: ParallelMode):
 
     input_dir = INPUT_FILE_DIR
 
@@ -134,34 +177,45 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]):
         # encode for each duration defined in the config file
         prepare_data_directories(encoding_config, video_names=output_files)
 
-        encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
-        )
+        # encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
+        # )
+        
+        if parallel_mode == ParallelMode.MVOR:
+            multiple_video_one_representation_encoding(encoding_config, 2, 4, input_files, input_dir)
+        elif parallel_mode == ParallelMode.OVMR:
+            # TODO
+            raise NotImplementedError('OVMR not implemented yet')
+            one_video_multiple_representations_encoding()
+        elif parallel_mode == ParallelMode.MVMR:
+            # TODO
+            raise NotImplementedError('MVMR not implemented yet')
+            multiple_video_multiple_representations_encoding()
 
-        for window_size in range(2, 4):
-            step_size: int = window_size if is_batch_encoding else 1
+        # for window_size in range(2, 4):
+        #     step_size: int = window_size if is_batch_encoding else 1
 
-            for idx_offset in range(0, len(input_files), step_size):
-                window_idx: int = window_size + idx_offset
-                if window_idx > len(input_files):
-                    break
+        #     for idx_offset in range(0, len(input_files), step_size):
+        #         window_idx: int = window_size + idx_offset
+        #         if window_idx > len(input_files):
+        #             break
 
-                input_slice = [
-                    f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
+        #         input_slice = [
+        #             f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
 
-                for dto in encoding_dtos:
-                    dto.get_output_directory()
-                    output_directory: str = dto.get_output_directory()
+        #         for dto in encoding_dtos:
+        #             dto.get_output_directory()
+        #             output_directory: str = dto.get_output_directory()
 
-                    cmd = create_multi_video_ffmpeg_command(
-                        input_slice,
-                        [f'{RESULT_ROOT}/{output_directory}']*len(input_slice),
-                        dto,
-                        cuda_mode=USE_CUDA,
-                        quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
-                        pretty_print=DRY_RUN
-                    )
+        #             cmd = create_multi_video_ffmpeg_command(
+        #                 input_slice,
+        #                 [f'{RESULT_ROOT}/{output_directory}']*len(input_slice),
+        #                 dto,
+        #                 cuda_mode=USE_CUDA,
+        #                 quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
+        #                 pretty_print=DRY_RUN
+        #             )
 
-                    execute_encoding_cmd(cmd, dto, input_slice)
+        #             execute_encoding_cmd(cmd, dto, input_slice)
 
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
@@ -208,6 +262,8 @@ if __name__ == '__main__':
     cleanup: bool = False
     
     small_test: bool = True
+    
+    parallel_mode: ParallelMode = ParallelMode.MVOR
 
     is_batch_encoding: bool = True
     monitoring_results: deque = deque()
@@ -221,7 +277,7 @@ if __name__ == '__main__':
         
         hardware_tracker.start()
 
-        execute_encoding_benchmark(encoding_configs)
+        execute_encoding_benchmark(encoding_configs, parallel_mode)
         
         hardware_tracker.stop()
 
