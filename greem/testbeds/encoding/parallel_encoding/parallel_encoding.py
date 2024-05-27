@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 import pandas as pd
 from enum import Enum
+import numpy as np
 
 # from greem.hardware.intel import intel_rapl_workaround
 from greem.utility.ffmpeg import create_multi_video_ffmpeg_command
@@ -29,6 +30,8 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
+SMALL_TESTBED: bool = True
+HOST_NAME: str = os.uname()[1]
 
 
 hardware_tracker = HardwareTracker(cuda_enabled=True, measure_power_secs=0.5)
@@ -119,10 +122,23 @@ def one_video_multiple_representations_encoding(
     input_files: list[str],
     input_dir: str = INPUT_FILE_DIR
 ):
-    assert (window_size_start > 0)
-    assert (window_size_start < window_size_end)
+    assert window_size_start > 0
+    assert window_size_start < window_size_end
 
-    encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
+    # encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
+
+    for codec in encoding_config.codecs:
+        for preset in encoding_config.presets:
+            for framerate in encoding_config.framerate:
+                for input_file in input_files:
+                    input_file_dir = f'{input_dir}/{input_file}'
+
+                print(codec, preset, framerate, encoding_config.renditions)
+
+        # for idx_offset in range(0, len(encoding_dtos), step_size):
+        #     window_idx: int = window_size + idx_offset
+        #     if window_idx > len(input_files):
+        #         break
 
 
 def multiple_video_one_representation_encoding(
@@ -131,13 +147,13 @@ def multiple_video_one_representation_encoding(
     window_size_end: int,
     input_files: list[str],
     input_dir: str = INPUT_FILE_DIR
-    ) -> None:
+) -> None:
 
-    assert (window_size_start > 0)
-    assert (window_size_start < window_size_end)
+    assert window_size_start > 0
+    assert window_size_start < window_size_end
 
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
-        )
+    )
 
     for window_size in range(window_size_start, window_size_end):
         step_size: int = window_size if is_batch_encoding else 1
@@ -151,7 +167,6 @@ def multiple_video_one_representation_encoding(
                 f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
 
             for dto in encoding_dtos:
-                dto.get_output_directory()
                 output_directory: str = dto.get_output_directory()
 
                 cmd = create_multi_video_ffmpeg_command(
@@ -163,7 +178,7 @@ def multiple_video_one_representation_encoding(
                     pretty_print=DRY_RUN
                 )
 
-                    execute_encoding_cmd(cmd, dto, input_slice)
+                execute_encoding_cmd(cmd, dto, input_slice)
 
 
 def multiple_video_multiple_representations_encoding():
@@ -179,7 +194,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
         input_files = sorted([file for file in os.listdir(
             INPUT_FILE_DIR) if file.endswith('.265')])
 
-        if small_test:
+        if SMALL_TESTBED:
             input_files = input_files[:5]
 
         output_files = [remove_media_extension(
@@ -192,15 +207,16 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
                 encoding_config, 2, 4, input_files, input_dir)
         elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
             # TODO
-            raise NotImplementedError('OVMR not implemented yet')
-            one_video_multiple_representations_encoding()
+            # raise NotImplementedError('OVMR not implemented yet')
+            one_video_multiple_representations_encoding(
+                encoding_config, 2, 4, input_files, input_dir)
         elif parallel_mode == ParallelMode.MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS:
             # TODO
             raise NotImplementedError('MVMR not implemented yet')
             multiple_video_multiple_representations_encoding()
 
     current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    result_path = f'{RESULT_ROOT}/encoding_results_{current_time}.csv'
+    result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
 
     df = pd.concat(monitoring_results)
     df.to_csv(result_path)
@@ -228,31 +244,25 @@ def execute_encoding_cmd(
 
 
 def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]):
-        preset, codec, rendition = dto.preset, dto.codec, dto.rendition
-        bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
-        framerate, segment_duration = dto.framerate, dto.segment_duration
-        result_df = hardware_tracker.to_dataframe()
-        result_df[['preset', 'codec']] = preset, codec
-        result_df[['framerate', 'segment_duration']
-            ] = framerate, segment_duration
-        result_df[['bitrate', 'width', 'height']] = bitrate, width, height
-        result_df['video_list'] = ','.join(
-            [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
-        result_df['num_videos'] = len(input_slice)
+    preset, codec, rendition = dto.preset, dto.codec, dto.rendition
+    bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
+    framerate, segment_duration = dto.framerate, dto.segment_duration
+    result_df = hardware_tracker.to_dataframe()
+    result_df[['preset', 'codec']] = preset, codec
+    result_df[['framerate', 'segment_duration']
+              ] = framerate, segment_duration
+    result_df[['bitrate', 'width', 'height']] = bitrate, width, height
+    result_df['video_list'] = ','.join(
+        [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
+    result_df['num_videos'] = len(input_slice)
 
-        monitoring_results.append(result_df)
-        hardware_tracker.clear()
-    else:
-        print(cmd)
+    monitoring_results.append(result_df)
+    hardware_tracker.clear()
 
 
 if __name__ == '__main__':
 
     cleanup: bool = False
-    
-    small_test: bool = True
-    
-    parallel_mode: ParallelMode = ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION
 
     is_batch_encoding: bool = True
 
@@ -262,11 +272,12 @@ if __name__ == '__main__':
 
         encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
             file_path) for file_path in ENCODING_CONFIG_PATHS]
-        
+
         hardware_tracker.start()
 
-        execute_encoding_benchmark(encoding_configs, parallel_mode)
-        
+        execute_encoding_benchmark(
+            encoding_configs, ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS)
+
         hardware_tracker.stop()
 
     except Exception as err:
