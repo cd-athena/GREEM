@@ -254,8 +254,11 @@ class NvidiaGpuUtils:
     has_nvidia_gpu: bool = field(init=False)
 
     def __post_init__(self):
-        self.gpu_count = self.get_device_count()
         self.has_nvidia_gpu = has_nvidia_gpu()
+        if self.has_nvidia_gpu:
+            self.gpu_count = self.get_device_count()
+        else:
+            self.gpu_count = 0
 
     @staticmethod
     def get_device_count():
