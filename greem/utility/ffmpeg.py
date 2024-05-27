@@ -51,7 +51,7 @@ def get_representation_ffmpeg_flags(
         width = rendition.width
         representation: list[str] = [
             f'-b:v:{idx} {bitrate}k',
-            f'-b:v:{idx} {bitrate}k -minrate {bitrate}k', 
+            f'-b:v:{idx} {bitrate}k -minrate {bitrate}k',
             f'-maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
             f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
             f'"scale={width}:{height} {fps_repr}"',
@@ -248,6 +248,76 @@ def create_simple_multi_video_ffmpeg_command(
     return join_string.join(cmd)
 
 
+def create_one_video_multiple_representation_command(
+    input_video_file_path: str,
+    output_result_path: str,
+    encoding_config: EncodingConfig,
+    cuda_mode: bool = False,
+    quiet_mode: bool = False,
+    pretty_print: bool = False,
+) -> str:
+    """_summary_
+
+    Parameters
+    ----------
+    input_video_file_path : str
+        _description_
+    output_directories : list[str]
+        _description_
+
+    class EncodingConfig(BaseModel):
+    '''Represents the configuration for the video encoding'''
+        codecs: list[str]
+        presets: list[str]
+        renditions: list[Rendition]
+        framerate: list[int]
+        input_directory_path: list[str]
+
+    ffmpeg -i input \
+        -s 1280x720 -acodec … -vcodec … output1 \
+        -s 640x480  -acodec … -vcodec … output2 \
+        -s 320x240  -acodec … -vcodec … output3
+    Returns
+    -------
+    str
+        _description_
+    """
+    cmd: list[str] = [
+        'ffmpeg', '-y',
+        '-hide_banner',
+    ]
+
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
+
+    # TODO input stuff
+    input_name: str = input_video_file_path.split('/')[-1].split('.')[0]
+
+    codec: str = encoding_config.codecs[0]
+    preset: str = encoding_config.presets[0]
+    framerate: int = encoding_config.framerate[0]
+
+    # add encoding outputs
+    for r in encoding_config.renditions:
+        height, width, bitrate = r.height, r.width, r.bitrate
+        encoding_codec = get_lib_codec(codec, cuda_mode)
+        # create DTO for output dir
+        dto = EncodingConfigDTO(
+            codec=codec, preset=preset, rendition=r, framerate=framerate
+        )
+        sub_cmd: list[str] = [
+            f'-s {width}x{height}',
+            '-acodec copy',
+            f'-vcodec {encoding_codec}',
+            f'{output_result_path}/{dto.get_output_directory()}/{input_name}.mp4'
+        ]
+
+        cmd.append(' '.join(sub_cmd))
+
+    join_string: str = ' \n' if pretty_print else ' '
+    return join_string.join(cmd)
+
+
 def create_multi_video_ffmpeg_command(
     video_input_file_paths: list[str],
     output_directories: list[str],
@@ -276,8 +346,8 @@ def create_multi_video_ffmpeg_command(
     # TODO take a look into how to integrate FPS to the encoding
     # fps_repr: str = '' if dto.framerate == 0 else f'fps={dto.framerate}'
 
-    
-    output_file_names: list[str] = [get_video_name(x) for x in video_input_file_paths]
+    output_file_names: list[str] = [
+        get_video_name(x) for x in video_input_file_paths]
 
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
@@ -367,11 +437,13 @@ def get_slice_video_commands(
 def get_video_without_extension(video: str) -> str:
     return video.removesuffix('.webm').removesuffix('.mp4').removesuffix('.265')
 
+
 def get_video_name(video: str) -> str:
     if video is None or len(video) == 0:
         return ''
     video = video.split('/')[-1]
     return get_video_without_extension(video)
+
 
 def prepare_sliced_videos(
     encoding_configs: list[EncodingConfig],
