@@ -250,7 +250,7 @@ def create_simple_multi_video_ffmpeg_command(
 
 def create_one_video_multiple_representation_command(
     input_video_file_path: str,
-    output_directories: list[str],
+    output_result_path: str,
     encoding_config: EncodingConfig,
     cuda_mode: bool = False,
     quiet_mode: bool = False,
@@ -291,21 +291,28 @@ def create_one_video_multiple_representation_command(
         cmd.append(QUIET_FLAG)
 
     # TODO input stuff
+    input_name: str = input_video_file_path.split('/')[-1].split('.')[0]
 
-    codec: str = encoding_config.codecs.pop()
-    preset: str = encoding_config.presets.pop()
-    framerate: int = encoding_config.framerate.pop()
+    codec: str = encoding_config.codecs[0]
+    preset: str = encoding_config.presets[0]
+    framerate: int = encoding_config.framerate[0]
 
     # add encoding outputs
     for r in encoding_config.renditions:
         height, width, bitrate = r.height, r.width, r.bitrate
         encoding_codec = get_lib_codec(codec, cuda_mode)
         # create DTO for output dir
+        dto = EncodingConfigDTO(
+            codec=codec, preset=preset, rendition=r, framerate=framerate
+        )
         sub_cmd: list[str] = [
             f'-s {width}x{height}',
             '-acodec copy',
             f'-vcodec {encoding_codec}',
+            f'{output_result_path}/{dto.get_output_directory()}/{input_name}.mp4'
         ]
+
+        cmd.append(' '.join(sub_cmd))
 
     join_string: str = ' \n' if pretty_print else ' '
     return join_string.join(cmd)
