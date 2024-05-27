@@ -97,7 +97,7 @@ class EncodingConfigDTO(BaseModel):
     codec: str
     preset: str
     rendition: Rendition
-    segment_duration: int
+    segment_duration: int = 4
     framerate: int = 0
     is_dash: bool = False
 
