@@ -2,6 +2,7 @@ from collections import deque
 import os
 from datetime import datetime
 from pathlib import Path
+from tkinter import N, NO
 import pandas as pd
 from enum import Enum
 import numpy as np
@@ -13,6 +14,7 @@ from greem.utility.dataframe import get_dataframe_from_csv
 
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.monitoring import HardwareTracker
+from greem.utility.gpu_utils import NvidiaGpuUtils, NvidiaGPUMetadata
 
 NTFY_TOPIC: str = 'gpu_encoding'
 
@@ -33,7 +35,18 @@ INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 SMALL_TESTBED: bool = True
 HOST_NAME: str = os.uname()[1]
 
+gpu_utils = NvidiaGpuUtils()
+has_nvidia = gpu_utils.has_nvidia_gpu
+if has_nvidia:
+    gpu_count = gpu_utils.gpu_count
+    gpu_info: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu
+else:
+    gpu_count = 0
+    gpu_info = []
+del gpu_utils
 
+current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
 hardware_tracker = HardwareTracker(cuda_enabled=True, measure_power_secs=0.5)
 
 
@@ -185,6 +198,15 @@ def multiple_video_multiple_representations_encoding():
     pass
 
 
+def store_monitoring_results() -> None:
+    
+    if len(monitoring_results) > 0:
+        df = pd.concat(monitoring_results)
+        df.to_csv(result_path)
+    else:
+        print('no monitoring results found')
+    
+
 def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], parallel_mode: ParallelMode):
 
     input_dir = INPUT_FILE_DIR
@@ -215,11 +237,8 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
             raise NotImplementedError('MVMR not implemented yet')
             multiple_video_multiple_representations_encoding()
 
-    current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-    result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
 
-    df = pd.concat(monitoring_results)
-    df.to_csv(result_path)
+    store_monitoring_results()
 
 
 def execute_encoding_cmd(
@@ -266,22 +285,17 @@ if __name__ == '__main__':
 
     is_batch_encoding: bool = True
 
-    try:
 
-        Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+    Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
-        encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
-            file_path) for file_path in ENCODING_CONFIG_PATHS]
+    encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
+        file_path) for file_path in ENCODING_CONFIG_PATHS]
 
-        hardware_tracker.start()
+    hardware_tracker.start()
 
-        execute_encoding_benchmark(
-            encoding_configs, ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS)
+    execute_encoding_benchmark(
+        encoding_configs, ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS)
 
-        hardware_tracker.stop()
+    hardware_tracker.stop()
 
-    except Exception as err:
-        print('err', err)
 
-    finally:
-        print('done')

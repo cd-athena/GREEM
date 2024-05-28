@@ -159,7 +159,7 @@ class NvidiaMetadataHandler:
     )
 
     @classmethod
-    def from_smi(cls: Type['NvidiaMetadataHandler']) -> Type['NvidiaMetadataHandler']:
+    def from_smi(cls: Type['NvidiaMetadataHandler']) -> "NvidiaMetadataHandler":
 
         nvidia_smi = cls.nvidia_smi_instance
         data = nvidia_smi.DeviceQuery()
@@ -252,13 +252,18 @@ class NvidiaGpuUtils:
 
     gpu_count: int = field(init=False)
     has_nvidia_gpu: bool = field(init=False)
+    nvidia_metadata: NvidiaMetadataHandler = field(init=False)
+    
 
     def __post_init__(self):
         self.has_nvidia_gpu = has_nvidia_gpu()
         if self.has_nvidia_gpu:
             self.gpu_count = self.get_device_count()
+            self.nvidia_metadata = NvidiaMetadataHandler.from_smi()
+            
         else:
             self.gpu_count = 0
+            
 
     @staticmethod
     def get_device_count():
