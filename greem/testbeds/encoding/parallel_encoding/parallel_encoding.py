@@ -2,15 +2,13 @@ from collections import deque
 import os
 from datetime import datetime
 from pathlib import Path
-from tkinter import N, NO
-import pandas as pd
 from enum import Enum
-import numpy as np
+
+import pandas as pd
 
 # from greem.hardware.intel import intel_rapl_workaround
 from greem.utility.ffmpeg import create_multi_video_ffmpeg_command
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
-from greem.utility.dataframe import get_dataframe_from_csv
 
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.monitoring import HardwareTracker
@@ -37,12 +35,8 @@ HOST_NAME: str = os.uname()[1]
 
 gpu_utils = NvidiaGpuUtils()
 has_nvidia = gpu_utils.has_nvidia_gpu
-if has_nvidia:
-    gpu_count = gpu_utils.gpu_count
-    gpu_info: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu
-else:
-    gpu_count = 0
-    gpu_info = []
+gpu_count = gpu_utils.gpu_count if has_nvidia else 0
+gpu_info: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
 del gpu_utils
 
 current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -199,13 +193,13 @@ def multiple_video_multiple_representations_encoding():
 
 
 def store_monitoring_results() -> None:
-    
+
     if len(monitoring_results) > 0:
         df = pd.concat(monitoring_results)
         df.to_csv(result_path)
     else:
         print('no monitoring results found')
-    
+
 
 def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], parallel_mode: ParallelMode):
 
@@ -236,7 +230,6 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
             # TODO
             raise NotImplementedError('MVMR not implemented yet')
             multiple_video_multiple_representations_encoding()
-
 
     store_monitoring_results()
 
@@ -285,7 +278,6 @@ if __name__ == '__main__':
 
     is_batch_encoding: bool = True
 
-
     Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
@@ -297,5 +289,3 @@ if __name__ == '__main__':
         encoding_configs, ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS)
 
     hardware_tracker.stop()
-
-
