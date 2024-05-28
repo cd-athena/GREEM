@@ -34,3 +34,4 @@ gaia/energy/*
 
 **/course/*
 .vscode/*
+.idea/*
