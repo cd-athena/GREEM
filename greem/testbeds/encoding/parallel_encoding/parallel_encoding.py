@@ -12,7 +12,6 @@ from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDT
 
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.monitoring import HardwareTracker
-from greem.utility.gpu_utils import NvidiaGpuUtils, NvidiaGPUMetadata
 
 NTFY_TOPIC: str = 'gpu_encoding'
 
@@ -33,11 +32,14 @@ INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 SMALL_TESTBED: bool = True
 HOST_NAME: str = os.uname()[1]
 
-gpu_utils = NvidiaGpuUtils()
-has_nvidia = gpu_utils.has_nvidia_gpu
-gpu_count = gpu_utils.gpu_count if has_nvidia else 0
-gpu_info: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
-del gpu_utils
+
+if USE_CUDA:
+    from greem.utility.gpu_utils import NvidiaGpuUtils, NvidiaGPUMetadata
+    gpu_utils = NvidiaGpuUtils()
+    has_nvidia = gpu_utils.has_nvidia_gpu
+    gpu_count = gpu_utils.gpu_count if has_nvidia else 0
+    gpu_info: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
+    del gpu_utils
 
 current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
@@ -140,7 +142,9 @@ def one_video_multiple_representations_encoding(
                 for input_file in input_files:
                     input_file_dir = f'{input_dir}/{input_file}'
 
-                print(codec, preset, framerate, encoding_config.renditions)
+                    print(codec, preset, framerate,
+                          encoding_config.renditions, input_file)
+                    print()
 
         # for idx_offset in range(0, len(encoding_dtos), step_size):
         #     window_idx: int = window_size + idx_offset
@@ -270,6 +274,7 @@ def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]):
 
     monitoring_results.append(result_df)
     hardware_tracker.clear()
+    store_monitoring_results()
 
 
 if __name__ == '__main__':
