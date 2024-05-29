@@ -32,6 +32,10 @@ INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
 SMALL_TESTBED: bool = True
 HOST_NAME: str = os.uname()[1]
 
+CLEANUP: bool = False
+
+IS_BATCH_ENCODING: bool = True
+
 
 if USE_CUDA:
     from greem.utility.gpu_utils import NvidiaGpuUtils, NvidiaGPUMetadata
@@ -167,15 +171,24 @@ def multiple_video_one_representation_encoding(
     )
 
     for window_size in range(window_size_start, window_size_end):
-        step_size: int = window_size if is_batch_encoding else 1
+        if USE_CUDA and gpu_count > 0:
+            step_size: int = window_size * gpu_count
+        elif IS_BATCH_ENCODING:
+            step_size: int = window_size
+        else:
+            step_size: int = 1
+        gpu_count = gpu_count if gpu_count > 0 else 1
+        print(f'window_size: {window_size} -- step_size: {step_size}')
 
         for idx_offset in range(0, len(input_files), step_size):
-            window_idx: int = window_size + idx_offset
+            window_idx: int = window_size * gpu_count + idx_offset
             if window_idx > len(input_files):
                 break
 
             input_slice = [
                 f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
+            print('input slice length', len(input_slice))
+            print(input_files[idx_offset:window_idx])
 
             for dto in encoding_dtos:
                 output_directory: str = dto.get_output_directory()
@@ -185,11 +198,14 @@ def multiple_video_one_representation_encoding(
                     [f'{RESULT_ROOT}/{output_directory}']*len(input_slice),
                     dto,
                     cuda_mode=USE_CUDA,
+                    gpu_count=gpu_count,
                     quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
                     pretty_print=DRY_RUN
                 )
 
                 execute_encoding_cmd(cmd, dto, input_slice)
+                break
+            break
 
 
 def multiple_video_multiple_representations_encoding():
@@ -215,7 +231,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
             INPUT_FILE_DIR) if file.endswith('.265')])
 
         if SMALL_TESTBED:
-            input_files = input_files[:5]
+            input_files = input_files[:20]
 
         output_files = [remove_media_extension(
             out_file) for out_file in input_files]
@@ -224,7 +240,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
 
         if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
             multiple_video_one_representation_encoding(
-                encoding_config, 2, 4, input_files, input_dir)
+                encoding_config, 2, 8, input_files, input_dir)
         elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
             # TODO
             # raise NotImplementedError('OVMR not implemented yet')
@@ -279,10 +295,6 @@ def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]):
 
 if __name__ == '__main__':
 
-    cleanup: bool = False
-
-    is_batch_encoding: bool = True
-
     Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
@@ -291,6 +303,6 @@ if __name__ == '__main__':
     hardware_tracker.start()
 
     execute_encoding_benchmark(
-        encoding_configs, ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS)
+        encoding_configs, ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION)
 
     hardware_tracker.stop()

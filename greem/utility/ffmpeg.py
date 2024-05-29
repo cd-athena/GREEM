@@ -2,6 +2,7 @@ import os
 from math import ceil
 
 from pydantic import BaseModel
+from websockets import InvalidState
 
 from greem.video.video_info import VideoInfo
 
@@ -322,8 +323,8 @@ def create_multi_video_ffmpeg_command(
     video_input_file_paths: list[str],
     output_directories: list[str],
     dto: EncodingConfigDTO,
-    segment_seconds: int = 4,
     cuda_mode: bool = False,
+    gpu_count: int = 0,
     quiet_mode: bool = False,
     pretty_print: bool = False,
 ) -> str:
@@ -336,9 +337,12 @@ def create_multi_video_ffmpeg_command(
         cmd.append(QUIET_FLAG)
 
     # add all input videos
-    if cuda_mode:
+    if cuda_mode and gpu_count > 0:
         cmd.extend(
-            [f'{CUDA_ENC_FLAG} -i {video}' for video in video_input_file_paths])
+            [f'-hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+        # cmd.extend(
+        #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+
     else:
         cmd.extend([f'-i {video}' for video in video_input_file_paths])
 
@@ -349,13 +353,14 @@ def create_multi_video_ffmpeg_command(
     output_file_names: list[str] = [
         get_video_name(x) for x in video_input_file_paths]
 
+    scale_flag = 'scale_cuda' if cuda_mode else 'scale'
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
             f'-map {idx}:0',
+            f'-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}'.replace('x', ':'),
             f'-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}',
             f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
 
-            f'-vf "scale={dto.rendition.get_resolution_dir_representation()}"',
 
             # f'-seg_duration {segment_seconds}',
         ]
