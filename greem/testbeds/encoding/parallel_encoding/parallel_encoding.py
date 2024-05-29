@@ -41,8 +41,8 @@ if USE_CUDA:
     from greem.utility.gpu_utils import NvidiaGpuUtils, NvidiaGPUMetadata
     gpu_utils = NvidiaGpuUtils()
     has_nvidia = gpu_utils.has_nvidia_gpu
-    gpu_count = gpu_utils.gpu_count if has_nvidia else 0
-    gpu_info: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
+    GPU_COUNT = gpu_utils.gpu_count if has_nvidia else 0
+    GPU_INFO: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
     del gpu_utils
 
 current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
@@ -177,7 +177,7 @@ def multiple_video_one_representation_encoding(
             step_size: int = window_size
         else:
             step_size: int = 1
-        gpu_count = gpu_count if gpu_count > 0 else 1
+        gpu_count = gpu_count if GPU_COUNT > 0 else 1
         print(f'window_size: {window_size} -- step_size: {step_size}')
 
         for idx_offset in range(0, len(input_files), step_size):
@@ -187,8 +187,6 @@ def multiple_video_one_representation_encoding(
 
             input_slice = [
                 f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
-            print('input slice length', len(input_slice))
-            print(input_files[idx_offset:window_idx])
 
             for dto in encoding_dtos:
                 output_directory: str = dto.get_output_directory()
