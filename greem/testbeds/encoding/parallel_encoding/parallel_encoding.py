@@ -169,6 +169,7 @@ def multiple_video_one_representation_encoding(
 
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
     )
+    gpu_count = GPU_COUNT
 
     for window_size in range(window_size_start, window_size_end):
         if USE_CUDA and GPU_COUNT > 0:
