@@ -171,7 +171,7 @@ def multiple_video_one_representation_encoding(
     )
 
     for window_size in range(window_size_start, window_size_end):
-        if USE_CUDA and gpu_count > 0:
+        if USE_CUDA and GPU_COUNT > 0:
             step_size: int = window_size * gpu_count
         elif IS_BATCH_ENCODING:
             step_size: int = window_size
