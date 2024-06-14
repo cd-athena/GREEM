@@ -6,10 +6,10 @@ presets:
   # - superfast
   # - veryfast
 #   - faster
-  # - fast
+  - fast
   - medium
-  # - slow
-#   - slower
+  - slow
+  # - slower
   # - veryslow
 #   - placebo
 
@@ -37,7 +37,7 @@ segment_duration:
   - 4
 
 framerate:
-  - 15
+  # - 15
   - 24
   # - 30
 

@@ -4,11 +4,11 @@ presets:
   # - ultrafast
   # - superfast
   # - veryfast
-  - faster
+  # - faster
   - fast
   - medium
   - slow
-  - slower
+  # - slower
   # - veryslow
 #   - placebo
 
@@ -36,9 +36,9 @@ segment_duration:
   - 4
 
 framerate:
-  - 15
+  # - 15
   - 24
-  - 30
+  # - 30
 
 encode_all_videos: True
 
@@ -46,6 +46,5 @@ videos_to_encode:
   - AncientThought
   # - Eldorado
 
-input_video_directory_path:
-  - ''
+input_directory_path:
   - ''
