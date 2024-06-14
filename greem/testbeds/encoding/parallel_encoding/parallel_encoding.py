@@ -6,18 +6,18 @@ from enum import Enum
 
 import pandas as pd
 
-# from greem.hardware.intel import intel_rapl_workaround
 from greem.utility.ffmpeg import create_multi_video_ffmpeg_command
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
 
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.monitoring import HardwareTracker
+from greem.utility.video_file_utility import abbreviate_video_name, remove_media_extension
 
 NTFY_TOPIC: str = 'gpu_encoding'
 
 ENCODING_CONFIG_PATHS: list[str] = [
-    'config_files/parallel_encoding.yaml',
-    # 'config_files/segment_encoding_h265.yaml',
+    'config_files/parallel_encoding_h264.yaml',
+    'config_files/parallel_encoding_h265.yaml',
 ]
 
 INPUT_FILE_DIR: str = '../../dataset/ref_265'
@@ -29,12 +29,14 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
-SMALL_TESTBED: bool = True
+SMALL_TESTBED: bool = False
 HOST_NAME: str = os.uname()[1]
 
 CLEANUP: bool = False
 
-IS_BATCH_ENCODING: bool = True
+TEST_REPETITIONS: int = 3
+
+assert TEST_REPETITIONS > 0, 'must be bigger than zero'
 
 
 if USE_CUDA:
@@ -45,19 +47,14 @@ if USE_CUDA:
     GPU_INFO: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
     del gpu_utils
 
-current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
-hardware_tracker = HardwareTracker(cuda_enabled=True, measure_power_secs=0.5)
-
+hardware_tracker = HardwareTracker(cuda_enabled=USE_CUDA, measure_power_secs=0.5)
 
 class ParallelMode(Enum):
     ONE_VIDEO_MULTIPLE_REPRESENTATIONS = 1
     MULTIPLE_VIDEOS_ONE_REPRESENTATION = 2
     MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS = 3
 
-
 monitoring_results: deque = deque()
-
 
 def prepare_data_directories(
         encoding_config: EncodingConfig,
@@ -109,25 +106,6 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
     return sorted(input_files)
 
-
-def abbreviate_video_name(video_name: str) -> str:
-    video_name_no_ext: str = video_name.replace('.265', '')
-
-    upper_case: str = ''.join(
-        [
-            f'{c}{video_name_no_ext[video_name_no_ext.find(c) + 1]}'
-            for c in video_name_no_ext if c.isupper()
-        ])
-    numbers: str = ''.join([c for c in video_name_no_ext if c.isnumeric()])
-    abbreviate: str = f'{upper_case}_{numbers}'
-
-    return abbreviate
-
-
-def remove_media_extension(file_name: str) -> str:
-    return file_name.removesuffix('.265').removesuffix('.webm').removesuffix('.mp4')
-
-
 def one_video_multiple_representations_encoding(
     encoding_config: EncodingConfig,
     window_size_start: int,
@@ -138,6 +116,7 @@ def one_video_multiple_representations_encoding(
     assert window_size_start > 0
     assert window_size_start < window_size_end
 
+    # TODO
     # encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
 
     for codec in encoding_config.codecs:
@@ -174,12 +153,9 @@ def multiple_video_one_representation_encoding(
     for window_size in range(window_size_start, window_size_end):
         if USE_CUDA and GPU_COUNT > 0:
             step_size: int = window_size * GPU_COUNT
-        elif IS_BATCH_ENCODING:
-            step_size: int = window_size
         else:
-            step_size: int = 1
+            step_size: int = window_size
         gpu_count = gpu_count if GPU_COUNT > 0 else 1
-        print(f'window_size: {window_size} -- step_size: {step_size}')
 
         for idx_offset in range(0, len(input_files), step_size):
             window_idx: int = window_size * gpu_count + idx_offset
@@ -203,19 +179,24 @@ def multiple_video_one_representation_encoding(
                 )
 
                 execute_encoding_cmd(cmd, dto, input_slice)
-                break
-            break
+                
+        store_monitoring_results(reset_monitoring_results=True)
+
 
 
 def multiple_video_multiple_representations_encoding():
     pass
 
 
-def store_monitoring_results() -> None:
+def store_monitoring_results(reset_monitoring_results: bool = False) -> None:
 
     if len(monitoring_results) > 0:
+        current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
         df = pd.concat(monitoring_results)
         df.to_csv(result_path)
+        if reset_monitoring_results:
+            monitoring_results.clear()
     else:
         print('no monitoring results found')
 
@@ -224,31 +205,29 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
 
     input_dir = INPUT_FILE_DIR
 
-    for en_idx, encoding_config in enumerate(encoding_configuration):
+    for _ in range(TEST_REPETITIONS):
+        for _, encoding_config in enumerate(encoding_configuration):
 
-        input_files = sorted([file for file in os.listdir(
-            INPUT_FILE_DIR) if file.endswith('.265')])
+            input_files = sorted([file for file in os.listdir(
+                INPUT_FILE_DIR) if file.endswith('.265')])
 
-        if SMALL_TESTBED:
-            input_files = input_files[:20]
+            output_files = [remove_media_extension(
+                out_file) for out_file in input_files]
 
-        output_files = [remove_media_extension(
-            out_file) for out_file in input_files]
+            prepare_data_directories(encoding_config, video_names=output_files)
 
-        prepare_data_directories(encoding_config, video_names=output_files)
-
-        if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
-            multiple_video_one_representation_encoding(
-                encoding_config, 2, 8, input_files, input_dir)
-        elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
-            # TODO
-            # raise NotImplementedError('OVMR not implemented yet')
-            one_video_multiple_representations_encoding(
-                encoding_config, 2, 4, input_files, input_dir)
-        elif parallel_mode == ParallelMode.MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS:
-            # TODO
-            raise NotImplementedError('MVMR not implemented yet')
-            multiple_video_multiple_representations_encoding()
+            if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
+                multiple_video_one_representation_encoding(
+                    encoding_config, 4, 20, input_files, input_dir)
+                
+            elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
+                one_video_multiple_representations_encoding(
+                    encoding_config, 2, 4, input_files, input_dir)
+                
+            elif parallel_mode == ParallelMode.MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS:
+                # TODO
+                raise NotImplementedError('MVMR not implemented yet')
+                multiple_video_multiple_representations_encoding()
 
     store_monitoring_results()
 
@@ -258,23 +237,15 @@ def execute_encoding_cmd(
         dto: EncodingConfigDTO,
         input_slice: list[str]
 ) -> None:
-
-    preset, codec, rendition = dto.preset, dto.preset, dto.rendition
-    bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
-
-    video_abbr = ','.join([abbreviate_video_name(video.split('/')[-1])
-                          for video in input_slice]) + f'{bitrate}k:{width}x{height}'
-
     if not DRY_RUN:
         hardware_tracker.monitor_process(cmd)
         add_monitoring_results(dto, input_slice)
-
         hardware_tracker.clear()
     else:
         print(cmd)
 
 
-def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]):
+def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> None:
     preset, codec, rendition = dto.preset, dto.codec, dto.rendition
     bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
     framerate, segment_duration = dto.framerate, dto.segment_duration
@@ -283,13 +254,18 @@ def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]):
     result_df[['framerate', 'segment_duration']
               ] = framerate, segment_duration
     result_df[['bitrate', 'width', 'height']] = bitrate, width, height
-    result_df['video_list'] = ','.join(
-        [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
+    if USE_CUDA and GPU_COUNT > 0:
+        video_list = [f'{abbreviate_video_name(video.split("/")[-1])}_gpu:{idx % GPU_COUNT}' for idx, video in enumerate(input_slice)]
+        for idx in range(len(video_list)):
+            idx_mod = idx % GPU_COUNT
+            result_df[f'video_list_gpu:{idx_mod}'] = ','.join([video.removesuffix(f'_gpu:{idx_mod}') for video in video_list if f'gpu:{idx_mod}' in video])
+    else:
+        result_df['video_list'] = ','.join(
+            [abbreviate_video_name(video.split('/')[-1]) for video in input_slice])
     result_df['num_videos'] = len(input_slice)
 
     monitoring_results.append(result_df)
     hardware_tracker.clear()
-    store_monitoring_results()
 
 
 if __name__ == '__main__':
