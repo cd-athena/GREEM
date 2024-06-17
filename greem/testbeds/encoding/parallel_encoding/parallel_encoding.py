@@ -166,11 +166,11 @@ def multiple_video_one_representation_encoding(
                 f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
 
             for dto in encoding_dtos:
-                output_directory: str = dto.get_output_directory()
+                output_directory: str = f'{RESULT_ROOT}/{dto.get_output_directory()}'
 
                 cmd = create_multi_video_ffmpeg_command(
                     input_slice,
-                    [f'{RESULT_ROOT}/{output_directory}']*len(input_slice),
+                    [output_directory]*len(input_slice),
                     dto,
                     cuda_mode=USE_CUDA,
                     gpu_count=gpu_count,
@@ -180,19 +180,27 @@ def multiple_video_one_representation_encoding(
 
                 execute_encoding_cmd(cmd, dto, input_slice)
                 
-        store_monitoring_results(reset_monitoring_results=True)
+                
+        store_monitoring_results(reset_monitoring_results=True, window_size=window_size * gpu_count)
+        
 
-
+def video_cleanup(videos: list[str]) -> None:
+    
+    for video in videos:
+        Path(video).unlink()
 
 def multiple_video_multiple_representations_encoding():
     pass
 
 
-def store_monitoring_results(reset_monitoring_results: bool = False) -> None:
+def store_monitoring_results(
+    reset_monitoring_results: bool = False, 
+    window_size: int = 1
+    ) -> None:
 
     if len(monitoring_results) > 0:
-        current_time = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-        result_path = f'{RESULT_ROOT}/encoding_results_{current_time}_{HOST_NAME}.csv'
+        current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
+        result_path = f'{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}.csv'
         df = pd.concat(monitoring_results)
         df.to_csv(result_path)
         if reset_monitoring_results:
@@ -218,7 +226,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
 
             if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
                 multiple_video_one_representation_encoding(
-                    encoding_config, 4, 20, input_files, input_dir)
+                    encoding_config, 1, 20, input_files, input_dir)
                 
             elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
                 one_video_multiple_representations_encoding(
