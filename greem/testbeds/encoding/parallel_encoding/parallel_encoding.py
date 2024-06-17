@@ -58,7 +58,7 @@ class ParallelMode(Enum):
     MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS = 3
 
 
-monitoring_results: deque = deque()
+monitoring_results: list = []
 
 
 def prepare_data_directories(
