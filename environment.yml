@@ -16,6 +16,7 @@ dependencies:
   - pydantic
   - pytest
   - pip
+  - pyarrow
 
   - pip:
       - opencv-python
