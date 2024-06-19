@@ -216,7 +216,7 @@ def store_monitoring_results(
         current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
         result_path = f'{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}'
         df = pd.concat(monitoring_results)
-        df.to_parquet(f'{result_path}.parquet')
+        df.to_parquet(f'{result_path}.parquet', index=True)
 
         if reset_monitoring_results:
             monitoring_results.clear()
