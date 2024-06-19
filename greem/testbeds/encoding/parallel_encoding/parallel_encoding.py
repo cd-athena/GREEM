@@ -1,5 +1,3 @@
-import code
-from collections import deque
 import os
 from datetime import datetime
 from pathlib import Path
@@ -137,7 +135,7 @@ def one_video_multiple_representations_encoding(
                     # TODO
                     cmd = create_one_video_multiple_representation_command(
                         input_file_dir, RESULT_ROOT,
-                        encoding_config, USE_CUDA
+                        encoding_config, USE_CUDA, pretty_print=False
                     )
 
                     print(cmd)
@@ -194,30 +192,32 @@ def multiple_video_one_representation_encoding(
                 )
 
                 execute_encoding_cmd(cmd, dto, input_slice)
-                
-                
-        store_monitoring_results(reset_monitoring_results=True, window_size=window_size * gpu_count)
-        
+
+        store_monitoring_results(
+            reset_monitoring_results=True, window_size=window_size * gpu_count)
+
 
 def video_cleanup(videos: list[str]) -> None:
-    
+
     for video in videos:
         Path(video).unlink()
+
 
 def multiple_video_multiple_representations_encoding():
     pass
 
 
 def store_monitoring_results(
-    reset_monitoring_results: bool = False, 
+    reset_monitoring_results: bool = False,
     window_size: int = 1
-    ) -> None:
+) -> None:
 
     if len(monitoring_results) > 0:
         current_time = datetime.now().strftime('%Y-%m-%d_%H-%M')
-        result_path = f'{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}.csv'
+        result_path = f'{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}'
         df = pd.concat(monitoring_results)
-        df.to_csv(result_path)
+        df.to_parquet(f'{result_path}.parquet')
+
         if reset_monitoring_results:
             monitoring_results.clear()
     else:
@@ -242,7 +242,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
             if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
                 multiple_video_one_representation_encoding(
                     encoding_config, 1, 20, input_files, input_dir)
-                
+
             elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
                 one_video_multiple_representations_encoding(
                     encoding_config, 2, 4, input_files, input_dir)
@@ -250,7 +250,7 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
             elif parallel_mode == ParallelMode.MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS:
                 # TODO
                 raise NotImplementedError('MVMR not implemented yet')
-                multiple_video_multiple_representations_encoding()
+                # multiple_video_multiple_representations_encoding()
 
     store_monitoring_results()
 
