@@ -35,3 +35,4 @@ gaia/energy/*
 **/course/*
 .vscode/*
 .idea/*
+greem/evaluation/parallel_encoding/mvor/*
