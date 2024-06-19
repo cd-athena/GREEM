@@ -291,8 +291,8 @@ def create_one_video_multiple_representation_command(
     if quiet_mode:
         cmd.append(QUIET_FLAG)
 
-    # TODO input stuff
     input_name: str = input_video_file_path.split('/')[-1].split('.')[0]
+    cmd.append(f'-i {input_video_file_path}')
 
     codec: str = encoding_config.codecs[0]
     preset: str = encoding_config.presets[0]
@@ -310,6 +310,9 @@ def create_one_video_multiple_representation_command(
             f'-s {width}x{height}',
             '-acodec copy',
             f'-vcodec {encoding_codec}',
+            f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
+            f'-preset {preset}',
+            f'-filter:v fps={framerate}',
             f'{output_result_path}/{dto.get_output_directory()}/{input_name}.mp4'
         ]
 
@@ -347,8 +350,6 @@ def create_multi_video_ffmpeg_command(
         cmd.extend([f'-i {video}' for video in video_input_file_paths])
 
     bitrate = int(dto.rendition.bitrate)
-    # TODO take a look into how to integrate FPS to the encoding
-    # fps_repr: str = '' if dto.framerate == 0 else f'fps={dto.framerate}'
 
     output_file_names: list[str] = [
         get_video_name(x) for x in video_input_file_paths]
@@ -360,9 +361,7 @@ def create_multi_video_ffmpeg_command(
             f'-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}'.replace('x', ':'),
             f'-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}',
             f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
-
-
-            # f'-seg_duration {segment_seconds}',
+            f'-filter:v fps={dto.framerate}',
         ]
 
         cmd.extend(map_cmd)
