@@ -1,10 +1,8 @@
 from os import system
-import copy
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import OrderedDict, Type
+from typing import OrderedDict
 
-from attr import asdict
 from codecarbon import OfflineEmissionsTracker
 from codecarbon.output import EmissionsData
 from codecarbon.external.scheduler import PeriodicScheduler
@@ -12,17 +10,18 @@ from nvitop import ResourceMetricCollector
 
 import pandas as pd
 
+
 @dataclass
 class NviTopData():
     nvitop_dict: dict[str, float]
-        
+
     @property
     def values(self) -> OrderedDict:
         return OrderedDict(self.nvitop_dict.items())
-        
+
     def update(self, data: dict[str, float]) -> None:
         self.nvitop_dict.update(data)
-        
+
 
 @dataclass  # has to be a dataclass instead of BaseModel because
 # __post_init__ is required
@@ -31,7 +30,8 @@ class BaseMonitoring(ABC):
     cuda_enabled: bool = False
     tracker: OfflineEmissionsTracker = None
     country_iso_code: str = 'AUT'
-    collected_codecarbon_data: list[EmissionsData] = field(default_factory=list)
+    collected_codecarbon_data: list[EmissionsData] = field(
+        default_factory=list)
     collected_nvitop_data: list = field(default_factory=list)
     gpu_collector: ResourceMetricCollector = None
 
@@ -44,9 +44,9 @@ class BaseMonitoring(ABC):
             self.tracker = OfflineEmissionsTracker(
                 measure_power_secs=self.measure_power_secs,
                 save_to_file=False,
-                country_iso_code=self.country_iso_code, 
+                country_iso_code=self.country_iso_code,
                 log_level='error',
-                )
+            )
         if self.cuda_enabled:
             self.gpu_collector = ResourceMetricCollector(
                 interval=self.measure_power_secs)
@@ -59,7 +59,7 @@ class BaseMonitoring(ABC):
             gpu_data = self.gpu_collector.collect()
             self.gpu_collector.clear()
             return codecarbon_data, NviTopData(gpu_data)
-        
+
         return codecarbon_data, NviTopData({})
 
 
@@ -75,8 +75,6 @@ class HardwareTracker(BaseMonitoring):
         system(cmd)
         self._fetch_hardware_metrics()
 
-        
-
     def __post_init__(self) -> None:
         super().__post_init__()
         self.collected_codecarbon_data = []
@@ -85,7 +83,6 @@ class HardwareTracker(BaseMonitoring):
             function=self._fetch_hardware_metrics,
             interval=self.measure_power_secs
         )
-        
 
     def start(self) -> None:
         """Start the monitoring libraries
@@ -93,9 +90,8 @@ class HardwareTracker(BaseMonitoring):
         self.tracker.start()
         if self.cuda_enabled:
             self.gpu_collector.start(tag='nvitop')
-            
+
         self._scheduler.start()
-    
 
     def stop(self) -> None:
         """Stop the monitoring libraries
@@ -130,9 +126,8 @@ class HardwareTracker(BaseMonitoring):
                 collected_data.append(carbon_dict)
                 if len(carbon_dict) > max_length:
                     max_length = len(carbon_dict)
-                    
-            collected_data = [d for d in collected_data if len(d) == max_length]
-                
-            
-        return pd.DataFrame(collected_data)
 
+            collected_data = [
+                d for d in collected_data if len(d) == max_length]
+
+        return pd.DataFrame(collected_data)
