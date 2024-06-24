@@ -14,3 +14,7 @@ def abbreviate_video_name(video_name: str) -> str:
 
 def remove_media_extension(file_name: str) -> str:
     return file_name.removesuffix('.265').removesuffix('.webm').removesuffix('.mp4')
+
+
+def get_media_extension(file_name: str) -> str:
+    return file_name.split('.')[-1]
