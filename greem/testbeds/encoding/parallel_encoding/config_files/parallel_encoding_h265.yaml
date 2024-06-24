@@ -1,7 +1,7 @@
 codecs:
   - h265
 presets:
-  # - ultrafast
+  - ultrafast
   # - superfast
   # - veryfast
   # - faster
@@ -37,8 +37,9 @@ segment_duration:
 
 framerate:
   # - 15
-  - 24
-  # - 30
+  # - 24
+  - 30
+  - 60
 
 encode_all_videos: True
 
