@@ -1,11 +1,10 @@
 import os
 from math import ceil
+from pathlib import Path
 
 from pydantic import BaseModel
-from websockets import InvalidState
 
 from greem.video.video_info import VideoInfo
-
 from greem.utility.configuration_classes import Rendition, EncodingConfig, EncodingConfigDTO
 # https://www.streamingmedia.com/Articles/ReadArticle.aspx?ArticleID=157714
 
@@ -33,6 +32,26 @@ def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
         return 'vvc'
     else:
         raise ValueError('Provided codec value not supported')
+
+
+def video_to_yuv_cmd(video: str, dir_path: str = '') -> str:
+
+    yuv_name = f'{dir_path}/{get_video_name(video)}.yuv'
+
+    cmd: list[str] = [
+        'ffmpeg -y',
+        f'-i {video}',
+        # '-c:v rawvideo -pixel_format yuv420p',
+        yuv_name
+    ]
+
+    return ' '.join(cmd)
+
+
+def remove_yuv(video: str):
+    if '.mp4' in video:
+        video = video.replace('.mp4', '.yuv')
+    Path(video).unlink(missing_ok=True)
 
 
 def get_representation_ffmpeg_flags(
@@ -367,6 +386,68 @@ def create_multi_video_ffmpeg_command(
         cmd.extend(map_cmd)
         cmd.extend([
             f'{output_directories[idx]}/{output_file_names[idx]}.mp4'
+        ])
+
+    join_string: str = ' \n' if pretty_print else ' '
+    return join_string.join(cmd)
+
+
+def create_multi_video_ffmpeg_yuv_to_mp4_command(
+    video_input_file_paths: list[str],
+    output_directories: list[str],
+    dto: EncodingConfigDTO,
+    cuda_mode: bool = False,
+    gpu_count: int = 0,
+    quiet_mode: bool = False,
+    pretty_print: bool = False,
+) -> str:
+    """Creates a FFmpeg command that requires YUV video formats as input videos
+
+    Returns
+    -------
+    str
+        A command string to be executed in a CLI
+    """
+    cmd: list[str] = [
+        'ffmpeg', '-y',
+        '-hide_banner',
+    ]
+
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
+
+    cmd.append('-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p')
+
+    # add all input videos
+    if cuda_mode and gpu_count > 0:
+        cmd.extend(
+            [f'-hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+        # cmd.extend(
+        #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+
+    else:
+        cmd.extend([f'-i {video}' for video in video_input_file_paths])
+
+    cmd.append('-t 5')
+
+    bitrate = int(dto.rendition.bitrate)
+
+    output_file_names: list[str] = [
+        get_video_name(x) for x in video_input_file_paths]
+
+    scale_flag = 'scale_cuda' if cuda_mode else 'scale'
+    for idx in range(len(video_input_file_paths)):
+        map_cmd: list[str] = [
+            f'-map {idx}:0',
+            f'-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}'.replace('x', ':'),
+            f'-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}',
+            f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
+            f'-crf 18 -filter:v fps={dto.framerate}',
+        ]
+
+        cmd.extend(map_cmd)
+        cmd.extend([
+            f'{output_directories[idx]}/{output_file_names[idx].removesuffix(".yuv")}.mp4'
         ])
 
     join_string: str = ' \n' if pretty_print else ' '
