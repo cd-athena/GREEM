@@ -5,7 +5,7 @@ from enum import Enum
 
 import pandas as pd
 
-from greem.utility.ffmpeg import create_multi_video_ffmpeg_command, create_one_video_multiple_representation_command
+from greem.utility.ffmpeg import create_multi_video_ffmpeg_yuv_to_mp4_command, create_one_video_multiple_representation_command, remove_yuv, video_to_yuv_cmd
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
 
 from greem.utility.cli_parser import CLI_PARSER
@@ -19,7 +19,8 @@ ENCODING_CONFIG_PATHS: list[str] = [
     'config_files/parallel_encoding_h265.yaml',
 ]
 
-INPUT_FILE_DIR: str = '../../dataset/ref_265'
+INPUT_FILE_DIR: str = '../../dataset/Inter4K/60fps/UHD'
+# INPUT_FILE_DIR: str = '../../dataset/ref_265'
 RESULT_ROOT: str = 'results'
 COUNTRY_ISO_CODE: str = 'AUT'
 
@@ -37,12 +38,13 @@ TEST_REPETITIONS: int = 3
 
 assert TEST_REPETITIONS > 0, 'must be bigger than zero'
 
+GPU_COUNT = 0
 
 if USE_CUDA:
     from greem.utility.gpu_utils import NvidiaGpuUtils, NvidiaGPUMetadata
     gpu_utils = NvidiaGpuUtils()
     has_nvidia = gpu_utils.has_nvidia_gpu
-    GPU_COUNT = gpu_utils.gpu_count if has_nvidia else 0
+    GPU_COUNT = gpu_utils.gpu_count
     GPU_INFO: list[NvidiaGPUMetadata] = gpu_utils.nvidia_metadata.gpu if has_nvidia else []
     del gpu_utils
 
@@ -163,7 +165,7 @@ def multiple_video_one_representation_encoding(
     )
     gpu_count = GPU_COUNT
 
-    for window_size in range(window_size_start, window_size_end):
+    for window_size in range(window_size_start, 2):
         if USE_CUDA and GPU_COUNT > 0:
             step_size: int = window_size * GPU_COUNT
         else:
@@ -178,11 +180,19 @@ def multiple_video_one_representation_encoding(
             input_slice = [
                 f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
 
-            for dto in encoding_dtos:
+            for v in input_slice:
+                cmd = video_to_yuv_cmd(v, f'{RESULT_ROOT}/tmp')
+                os.system(cmd)
+
+            yuv_slice = [
+                f'{RESULT_ROOT}/tmp/{v.replace(".mp4", ".yuv")}' for v in input_files[idx_offset:window_idx]
+            ]
+
+            for dto in encoding_dtos[:1]:
                 output_directory: str = f'{RESULT_ROOT}/{dto.get_output_directory()}'
 
-                cmd = create_multi_video_ffmpeg_command(
-                    input_slice,
+                cmd = create_multi_video_ffmpeg_yuv_to_mp4_command(
+                    yuv_slice,
                     [output_directory]*len(input_slice),
                     dto,
                     cuda_mode=USE_CUDA,
@@ -192,6 +202,9 @@ def multiple_video_one_representation_encoding(
                 )
 
                 execute_encoding_cmd(cmd, dto, input_slice)
+
+            for v in yuv_slice:
+                remove_yuv(v)
 
         store_monitoring_results(
             reset_monitoring_results=True, window_size=window_size * gpu_count)
@@ -210,6 +223,8 @@ def multiple_video_multiple_representations_encoding():
 def store_monitoring_results(
     reset_monitoring_results: bool = False,
     window_size: int = 1
+
+
 ) -> None:
 
     if len(monitoring_results) > 0:
@@ -227,12 +242,11 @@ def store_monitoring_results(
 def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], parallel_mode: ParallelMode):
 
     input_dir = INPUT_FILE_DIR
+    input_files = sorted([file for file in os.listdir(
+        INPUT_FILE_DIR) if file.endswith('.mp4') or file.endswith('.265')])
 
     for _ in range(TEST_REPETITIONS):
         for _, encoding_config in enumerate(encoding_configuration):
-
-            input_files = sorted([file for file in os.listdir(
-                INPUT_FILE_DIR) if file.endswith('.265')])
 
             output_files = [remove_media_extension(
                 out_file) for out_file in input_files]
@@ -296,13 +310,14 @@ def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> No
 if __name__ == '__main__':
 
     Path(RESULT_ROOT).mkdir(parents=True, exist_ok=True)
+    Path(f'{RESULT_ROOT}/tmp').mkdir(parents=True, exist_ok=True)
 
     encoding_configs: list[EncodingConfig] = [EncodingConfig.from_file(
         file_path) for file_path in ENCODING_CONFIG_PATHS]
 
     hardware_tracker.start()
 
-    pm = ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS
+    pm = ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION
 
     execute_encoding_benchmark(
         encoding_configs, pm)
