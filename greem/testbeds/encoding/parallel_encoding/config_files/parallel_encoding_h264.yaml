@@ -2,10 +2,10 @@ codecs:
   - h264
   # - h265
 presets:
-  - ultrafast
+  # - ultrafast
   # - superfast
   # - veryfast
-#   - faster
+  # - faster
   - fast
   - medium
   - slow

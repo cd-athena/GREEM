@@ -1,7 +1,7 @@
 codecs:
   - h265
 presets:
-  - ultrafast
+  # - ultrafast
   # - superfast
   # - veryfast
   # - faster
