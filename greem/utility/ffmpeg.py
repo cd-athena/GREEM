@@ -416,17 +416,19 @@ def create_multi_video_ffmpeg_yuv_to_mp4_command(
     if quiet_mode:
         cmd.append(QUIET_FLAG)
 
-    cmd.append('-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p')
+    # cmd.append('-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p')
 
     # add all input videos
     if cuda_mode and gpu_count > 0:
         cmd.extend(
-            [f'-hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+            [f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+        # cmd.extend(
+        #     [f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
         # cmd.extend(
         #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
 
     else:
-        cmd.extend([f'-i {video}' for video in video_input_file_paths])
+        cmd.extend([f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -i {video}' for video in video_input_file_paths])
 
     cmd.append('-t 5')
 
@@ -439,10 +441,68 @@ def create_multi_video_ffmpeg_yuv_to_mp4_command(
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
             f'-map {idx}:0',
+            # f'-filter_hw_device {idx}',
             f'-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}'.replace('x', ':'),
             f'-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}',
             f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
-            f'-crf 18 -filter:v fps={dto.framerate}',
+            f'-filter:v fps={dto.framerate}',
+        ]
+        # if cuda_mode:
+        #     cmd.append(f'-filter_hw_device cuda{idx % gpu_count}')
+
+        cmd.extend(map_cmd)
+        cmd.extend([
+            f'{output_directories[idx]}/{output_file_names[idx].removesuffix(".yuv")}.mp4'
+        ])
+
+    join_string: str = ' \n' if pretty_print else ' '
+    return join_string.join(cmd)
+
+
+def multi_video_ffmpeg_yuv_to_mp4_command_per_gpu(
+    video_input_file_paths: list[str],
+    output_directories: list[str],
+    dto: EncodingConfigDTO,
+    gpu_idx: int = 0,
+    quiet_mode: bool = True,
+    pretty_print: bool = False,
+) -> str:
+    """Creates a FFmpeg command that requires YUV video formats as input videos
+
+    Returns
+    -------
+    str
+        A command string to be executed in a CLI
+    """
+    cmd: list[str] = [
+        'ffmpeg', '-y',
+    ]
+
+    if quiet_mode:
+        cmd.append(QUIET_FLAG)
+
+    cmd.extend(
+        [f'-hwaccel_device {gpu_idx} {CUDA_ENC_FLAG} -f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -t 5 -i {video}' for video in video_input_file_paths])
+        # [f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -hwaccel_device {gpu_idx} {CUDA_ENC_FLAG} -t 5 -i {video}' for video in video_input_file_paths])
+        # cmd.extend(
+        #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+
+    # cmd.append('-t 5')
+
+    bitrate = int(dto.rendition.bitrate)
+
+    output_file_names: list[str] = [
+        get_video_name(x) for x in video_input_file_paths]
+
+    scale_flag = 'scale_cuda'
+    for idx in range(len(video_input_file_paths)):
+        map_cmd: list[str] = [
+            f'-map {idx}:0',
+            # f'-filter_hw_device {idx}',
+            f'-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}'.replace('x', ':'),
+            f'-c:v {get_lib_codec(dto.codec, True)} -preset {dto.preset}',
+            f'-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k',
+            f'-filter:v fps={dto.framerate}',
         ]
 
         cmd.extend(map_cmd)
