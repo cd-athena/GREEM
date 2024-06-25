@@ -5,7 +5,10 @@ from enum import Enum
 
 import pandas as pd
 
-from greem.utility.ffmpeg import create_multi_video_ffmpeg_yuv_to_mp4_command, create_one_video_multiple_representation_command, remove_yuv, video_to_yuv_cmd
+from greem.utility.ffmpeg import (
+    create_one_video_multiple_representation_command, 
+    create_multi_video_ffmpeg_command
+    )
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
 
 from greem.utility.cli_parser import CLI_PARSER
@@ -19,7 +22,9 @@ ENCODING_CONFIG_PATHS: list[str] = [
     'config_files/parallel_encoding_h265.yaml',
 ]
 
-INPUT_FILE_DIR: str = '../../dataset/Inter4K/60fps/UHD'
+# INPUT_FILE_DIR: str = '/home/shared2/athena2/Dataset/Inter4K'
+# INPUT_FILE_DIR: str = '../../dataset/Inter4K/60fps/UHD'
+INPUT_FILE_DIR: str = '../../dataset/Inter4K/60fps/HEVC'
 # INPUT_FILE_DIR: str = '../../dataset/ref_265'
 RESULT_ROOT: str = 'results'
 COUNTRY_ISO_CODE: str = 'AUT'
@@ -34,7 +39,7 @@ HOST_NAME: str = os.uname()[1]
 
 CLEANUP: bool = False
 
-TEST_REPETITIONS: int = 3
+TEST_REPETITIONS: int = 1
 
 assert TEST_REPETITIONS > 0, 'must be bigger than zero'
 
@@ -164,8 +169,10 @@ def multiple_video_one_representation_encoding(
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos(
     )
     gpu_count = GPU_COUNT
+    
+    
 
-    for window_size in range(window_size_start, 2):
+    for window_size in range(window_size_start, window_size_end + 1):
         if USE_CUDA and GPU_COUNT > 0:
             step_size: int = window_size * GPU_COUNT
         else:
@@ -180,19 +187,11 @@ def multiple_video_one_representation_encoding(
             input_slice = [
                 f'{input_dir}/{file_slice}' for file_slice in input_files[idx_offset:window_idx]]
 
-            for v in input_slice:
-                cmd = video_to_yuv_cmd(v, f'{RESULT_ROOT}/tmp')
-                os.system(cmd)
-
-            yuv_slice = [
-                f'{RESULT_ROOT}/tmp/{v.replace(".mp4", ".yuv")}' for v in input_files[idx_offset:window_idx]
-            ]
-
             for dto in encoding_dtos[:1]:
                 output_directory: str = f'{RESULT_ROOT}/{dto.get_output_directory()}'
 
-                cmd = create_multi_video_ffmpeg_yuv_to_mp4_command(
-                    yuv_slice,
+                cmd = create_multi_video_ffmpeg_command(
+                    input_slice,
                     [output_directory]*len(input_slice),
                     dto,
                     cuda_mode=USE_CUDA,
@@ -200,11 +199,8 @@ def multiple_video_one_representation_encoding(
                     quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
                     pretty_print=DRY_RUN
                 )
-
+                
                 execute_encoding_cmd(cmd, dto, input_slice)
-
-            for v in yuv_slice:
-                remove_yuv(v)
 
         store_monitoring_results(
             reset_monitoring_results=True, window_size=window_size * gpu_count)
@@ -223,8 +219,6 @@ def multiple_video_multiple_representations_encoding():
 def store_monitoring_results(
     reset_monitoring_results: bool = False,
     window_size: int = 1
-
-
 ) -> None:
 
     if len(monitoring_results) > 0:
@@ -244,6 +238,8 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig], par
     input_dir = INPUT_FILE_DIR
     input_files = sorted([file for file in os.listdir(
         INPUT_FILE_DIR) if file.endswith('.mp4') or file.endswith('.265')])
+    
+    assert len(input_files) > 0, 'no input files detected'
 
     for _ in range(TEST_REPETITIONS):
         for _, encoding_config in enumerate(encoding_configuration):
