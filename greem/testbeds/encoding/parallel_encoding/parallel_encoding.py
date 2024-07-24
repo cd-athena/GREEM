@@ -17,8 +17,6 @@ from greem.utility.video_file_utility import (
     remove_media_extension,
 )
 
-NTFY_TOPIC: str = "gpu_encoding"
-
 ENCODING_CONFIG_PATHS: list[str] = [
     "config_files/parallel_encoding_h264.yaml",
     "config_files/parallel_encoding_h265.yaml",
@@ -58,7 +56,8 @@ if USE_CUDA:
     )
     del gpu_utils
 
-hardware_tracker = HardwareTracker(cuda_enabled=USE_CUDA, measure_power_secs=0.5)
+hardware_tracker = HardwareTracker(
+    cuda_enabled=USE_CUDA, measure_power_secs=0.5)
 
 
 class ParallelMode(Enum):
@@ -177,14 +176,10 @@ def multiple_video_one_representation_encoding(
     assert window_size_start < window_size_end
 
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
-    gpu_count = GPU_COUNT
+    gpu_count = GPU_COUNT if USE_CUDA and GPU_COUNT > 0 else 1
 
     for window_size in range(window_size_start, window_size_end + 1):
-        if USE_CUDA and GPU_COUNT > 0:
-            step_size: int = window_size * GPU_COUNT
-        else:
-            step_size: int = window_size
-        gpu_count = gpu_count if GPU_COUNT > 0 else 1
+        step_size: int = window_size * gpu_count
 
         for idx_offset in range(0, len(input_files), step_size):
             window_idx: int = window_size * gpu_count + idx_offset
@@ -221,7 +216,7 @@ def video_cleanup(videos: list[str]) -> None:
         Path(video).unlink()
 
 
-def multiple_video_multiple_representations_encoding():
+def multiple_video_multiple_representations_encoding() -> None:
     pass
 
 
@@ -242,7 +237,7 @@ def store_monitoring_results(
 
 def execute_encoding_benchmark(
     encoding_configuration: list[EncodingConfig], parallel_mode: ParallelMode
-):
+) -> None:
     input_dir = INPUT_FILE_DIR
     input_files = sorted(
         [
@@ -315,7 +310,8 @@ def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> No
             )
     else:
         result_df["video_list"] = ",".join(
-            [abbreviate_video_name(video.split("/")[-1]) for video in input_slice]
+            [abbreviate_video_name(video.split("/")[-1])
+             for video in input_slice]
         )
     result_df["num_videos"] = len(input_slice)
 
