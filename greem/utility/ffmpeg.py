@@ -14,11 +14,50 @@ CUDA_DEC_FLAG: str = '-hwaccel cuvid'
 
 
 def get_join_string(pretty_print: bool) -> str:
+    """
+    Returns the appropriate join string based on the pretty_print flag.
+
+    Parameters:
+        pretty_print (bool): If True, use a newline character and space for pretty printing.
+                             If False, use a single space.
+
+    Returns:
+        str: The join string to be used for formatting output.
+
+    Examples:
+        >>> get_join_string(True)
+        ' \\n'
+        
+        >>> get_join_string(False)
+        ' '
+    """
     return ' \n' if pretty_print else ' '
 
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
-    '''Returns the codec for the ffmpeg command'''
+    """
+    Returns the appropriate codec for the FFmpeg command based on the input value and CUDA mode.
+
+    Parameters:
+        value (str): The codec value, e.g., 'h264', 'h265', 'av1', 'vp9', 'vvc'.
+        cuda_mode (bool): If True, use the CUDA-accelerated version of the codec if available. Defaults to False.
+
+    Returns:
+        str: The codec string to be used in the FFmpeg command.
+
+    Raises:
+        ValueError: If the provided codec value is not supported.
+
+    Examples:
+        >>> get_lib_codec('h264', cuda_mode=True)
+        'h264_nvenc'
+
+        >>> get_lib_codec('h265', cuda_mode=False)
+        'libx265'
+
+        >>> get_lib_codec('av1')
+        'libsvtav1'
+    """
     value = value.lower()
     if value in ['h264', 'avc']:
         return 'h264_nvenc' if cuda_mode else 'libx264'
@@ -41,6 +80,7 @@ def video_to_yuv_cmd(video: str, dir_path: str = '') -> str:
     cmd: list[str] = [
         'ffmpeg -y',
         f'-i {video}',
+        # has led to errors when encoding to mp4
         # '-c:v rawvideo -pixel_format yuv420p',
         yuv_name
     ]
@@ -103,64 +143,6 @@ def create_sequential_encoding_cmd(
         constant_rate_factor=constant_rate_factor
     )
 
-
-# def create_ffmpeg_encoding_command(
-#     input_file_path: str,
-#     output_dir: str,
-#     rendition: Rendition,
-#     preset: str,
-#     segment_duration: int,
-#     codec: str,
-#     framerate: int = 0,
-#     constant_rate_factor: int = -1,
-#     use_dash: bool = False,
-#     cuda_enabled: bool = False,
-#     quiet_mode: bool = False,
-#     pretty_print: bool = False
-# ) -> str:
-#     '''Creates the ffmpeg command for encoding a video file'''
-#     cmd: list[str] = ['ffmpeg -y']
-#     if cuda_enabled:
-#         cmd.append(CUDA_ENC_FLAG)
-#     if quiet_mode:
-#         cmd.append(QUIET_FLAG)
-
-#     cmd.append(f'-re -i {input_file_path}')
-
-#     if constant_rate_factor > -1:
-#         cmd.append(f'-crf {constant_rate_factor}')
-
-#     fps_str: str = ''
-#     if framerate > 0:
-#         fps_str = str(framerate)  # type: ignore
-
-#     cmd.extend(get_representation_ffmpeg_flags(
-#         [rendition], preset, codec, fps=fps_str))
-
-#     fps: int = ceil(VideoInfo(input_file_path).get_fps()
-#                     ) if framerate is None or framerate == 0 else framerate
-#     keyframe: int = fps * segment_duration
-
-#     cmd.extend([
-#         f'-keyint_min {keyframe}',
-#         f'-g {keyframe}',
-#     ])
-
-#     if use_dash:
-#         cmd.extend([
-#             f'-seg_duration {segment_duration}',
-#             '-adaptation_sets "id=0,streams=v  id=1,streams=a"',
-#             f'-f dash {output_dir}/manifest.mpd'
-#         ])
-#     else:
-#         cmd.extend([
-#             f'{output_dir}/output.mp4'
-#         ])
-
-#     join_string: str = ' \n' if pretty_print else ' '
-
-#     return join_string.join(cmd)
-
 def create_dash_ffmpeg_cmd(
     input_file_path: str,
     output_dir: str,
@@ -213,7 +195,7 @@ def create_dash_ffmpeg_cmd(
         f'-f dash {output_dir}/manifest.mpd'
     ])
 
-    join_string: str = ' \n' if pretty_print else ' '
+    join_string: str = get_join_string(pretty_print)
 
     return join_string.join(cmd)
 
@@ -263,7 +245,7 @@ def create_simple_multi_video_ffmpeg_command(
             f'{output_directories[idx]}/output.mp4'
         ])
 
-    join_string: str = ' \n' if pretty_print else ' '
+    join_string: str = get_join_string(pretty_print)
 
     return join_string.join(cmd)
 
@@ -337,7 +319,7 @@ def create_one_video_multiple_representation_command(
 
         cmd.append(' '.join(sub_cmd))
 
-    join_string: str = ' \n' if pretty_print else ' '
+    join_string: str = get_join_string(pretty_print)
     return join_string.join(cmd)
 
 
@@ -350,6 +332,36 @@ def create_multi_video_ffmpeg_command(
     quiet_mode: bool = False,
     pretty_print: bool = False,
 ) -> str:
+    """
+    Creates an FFmpeg command for encoding multiple video files.
+
+    Parameters:
+        video_input_file_paths (list[str]): List of paths to the input video files.
+        output_directories (list[str]): List of directories where the output videos will be saved.
+        dto (EncodingConfigDTO): Data Transfer Object containing encoding configuration details.
+        cuda_mode (bool): If True, use CUDA for hardware acceleration. Defaults to False.
+        gpu_count (int): Number of GPUs to use for encoding. Effective only if cuda_mode is True. Defaults to 0.
+        quiet_mode (bool): If True, suppresses FFmpeg output. Defaults to False.
+        pretty_print (bool): If True, formats the command string for better readability. Defaults to False.
+
+    Returns:
+        str: The constructed FFmpeg command as a string.
+
+    Example:
+        >>> dto = EncodingConfigDTO(
+                codec="h264", preset="fast", rendition=Rendition(bitrate=800, height=1080, width=1920), framerate=30
+            )
+        >>> create_multi_video_ffmpeg_command(
+                ["input1.mp4", "input2.mp4"],
+                ["output_dir1", "output_dir2"],
+                dto,
+                cuda_mode=True,
+                gpu_count=2,
+                quiet_mode=True,
+                pretty_print=True
+            )
+        'ffmpeg -y -hide_banner -loglevel quiet -hwaccel_device 0 cuda -i input1.mp4 -hwaccel_device 1 cuda -i input2.mp4 ...'
+    """
     cmd: list[str] = [
         'ffmpeg', '-y',
         '-hide_banner',
@@ -388,7 +400,7 @@ def create_multi_video_ffmpeg_command(
             f'{output_directories[idx]}/{output_file_names[idx]}.mp4'
         ])
 
-    join_string: str = ' \n' if pretty_print else ' '
+    join_string: str = get_join_string(pretty_print)
     return join_string.join(cmd)
 
 
@@ -455,7 +467,7 @@ def create_multi_video_ffmpeg_yuv_to_mp4_command(
             f'{output_directories[idx]}/{output_file_names[idx].removesuffix(".yuv")}.mp4'
         ])
 
-    join_string: str = ' \n' if pretty_print else ' '
+    join_string: str = get_join_string(pretty_print)
     return join_string.join(cmd)
 
 
@@ -510,7 +522,8 @@ def multi_video_ffmpeg_yuv_to_mp4_command_per_gpu(
             f'{output_directories[idx]}/{output_file_names[idx].removesuffix(".yuv")}.mp4'
         ])
 
-    join_string: str = ' \n' if pretty_print else ' '
+    join_string: str = get_join_string(pretty_print)
+
     return join_string.join(cmd)
 
 
@@ -605,11 +618,8 @@ def prepare_sliced_videos(
 
     for config in encoding_configs:
 
-        if config.encode_all_videos:
-            videos.update([get_video_without_extension(file)
-                          for file in os.listdir(input_dir)])
-        else:
-            videos.update(config.videos_to_encode)
+        videos.update([get_video_without_extension(file)
+                       for file in os.listdir(input_dir)])
 
         durations.update(config.segment_duration)
 
