@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
+import sys
 
 import pandas as pd
 
@@ -93,35 +94,16 @@ def prepare_data_directories(
     return data_directories
 
 
-def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> list[str]:
-    def is_file_in_config(file_name: str) -> bool:
-        if encoding_config.encode_all_videos:
-            return True
-
-        file = file_name.split(".")[0]
-        if USE_SLICED_VIDEOS:
-            file = file.split("_")[0]
-        return (
-            encoding_config.videos_to_encode is not None
-            and file in encoding_config.videos_to_encode
-        )
+def get_video_input_files(video_dir: str) -> list[str]:
 
     input_files: list[str] = [
-        file_name for file_name in os.listdir(video_dir) if is_file_in_config(file_name)
+        file_name for file_name in os.listdir(video_dir)
     ]
 
     if len(input_files) == 0:
         raise ValueError("no video files to encode")
 
     return input_files
-
-
-def get_filtered_sliced_videos(
-    encoding_config: EncodingConfig, input_dir: str
-) -> list[str]:
-    input_files: list[str] = get_video_input_files(input_dir, encoding_config)
-
-    return sorted(input_files)
 
 
 def one_video_multiple_representations_encoding(
@@ -178,13 +160,60 @@ def multiple_video_one_representation_encoding(
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
     gpu_count = GPU_COUNT if USE_CUDA and GPU_COUNT > 0 else 1
 
+    # [1, 2, 5, 10, 15, 20]
     for window_size in range(window_size_start, window_size_end + 1):
         step_size: int = window_size * gpu_count
 
         for idx_offset in range(0, len(input_files), step_size):
             window_idx: int = window_size * gpu_count + idx_offset
             if window_idx > len(input_files):
-                break
+                window_idx = len(input_files)
+
+            input_slice = [
+                f"{input_dir}/{file_slice}"
+                for file_slice in input_files[idx_offset:window_idx]
+            ]
+
+            for dto in encoding_dtos[:1]:
+                output_directory: str = f"{RESULT_ROOT}/{dto.get_output_directory()}"
+
+                cmd = create_multi_video_ffmpeg_command(
+                    input_slice,
+                    [output_directory] * len(input_slice),
+                    dto,
+                    cuda_mode=USE_CUDA,
+                    gpu_count=gpu_count,
+                    quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
+                    pretty_print=DRY_RUN,
+                )
+
+                execute_encoding_cmd(cmd, dto, input_slice)
+
+        store_monitoring_results(
+            reset_monitoring_results=True, window_size=window_size * gpu_count
+        )
+
+
+def reduced_multiple_video_one_representation_encoding(
+    encoding_config: EncodingConfig,
+    input_files: list[str],
+    input_dir: str = INPUT_FILE_DIR,
+) -> None:
+
+    encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
+    gpu_count = GPU_COUNT if USE_CUDA and GPU_COUNT > 0 else 1
+
+    num_videos_in_parallel: list[int] = [1, 2, 5, 10, 15, 20]
+
+    for window_size in num_videos_in_parallel:
+        step_size: int = window_size * gpu_count
+
+        for idx_offset in range(0, len(input_files), step_size):
+            window_idx: int = window_size * gpu_count + idx_offset
+            # make sure we don't exceed the index of available input videos
+            # and still encode the remainder of a run
+            if window_idx > len(input_files):
+                window_idx = len(input_files)
 
             input_slice = [
                 f"{input_dir}/{file_slice}"
@@ -258,9 +287,11 @@ def execute_encoding_benchmark(
             prepare_data_directories(encoding_config, video_names=output_files)
 
             if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
-                multiple_video_one_representation_encoding(
-                    encoding_config, 1, 20, input_files, input_dir
-                )
+                reduced_multiple_video_one_representation_encoding(
+                    encoding_config, input_files, input_dir)
+                # multiple_video_one_representation_encoding(
+                #     encoding_config, 1, 20, input_files, input_dir
+                # )
 
             elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
                 one_video_multiple_representations_encoding(
@@ -329,7 +360,11 @@ if __name__ == "__main__":
 
     hardware_tracker.start()
 
+    # Change to encode in a different parallel mode
     pm = ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION
+
+    hardware_tracker.stop()
+    sys.exit(0)
 
     execute_encoding_benchmark(encoding_configs, pm)
 
