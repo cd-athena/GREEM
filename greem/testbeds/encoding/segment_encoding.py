@@ -17,8 +17,6 @@ from greem.utility.configuration_classes import (
 from greem.utility.timing import IdleTimeEnergyMeasurement
 from greem.utility.dataframe import get_dataframe_from_csv
 
-from greem.utility.ntfy import send_ntfy
-
 from greem.hardware.intel import intel_rapl_workaround
 from greem.monitoring.nvidia_top import NvidiaTop
 
@@ -220,7 +218,7 @@ def prepare_data_directories(
     '''
     # data_directories = encoding_config.get_all_result_directories(video_names)
     data_directories = [
-        dto.get_output_directory(video)
+        dto.get_output_directory()
         for dto in encoding_config.get_encoding_dtos()
         for video in video_names
     ]
@@ -233,18 +231,8 @@ def prepare_data_directories(
 
 
 def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> list[str]:
-
-    def is_file_in_config(file_name: str) -> bool:
-        if encoding_config.encode_all_videos:
-            return True
-
-        file = file_name.split('.')[0]
-        if USE_SLICED_VIDEOS:
-            file = file.split('_')[0]
-        return encoding_config.videos_to_encode is not None and file in encoding_config.videos_to_encode
-
     input_files: list[str] = [file_name for file_name in os.listdir(
-        video_dir) if is_file_in_config(file_name)]
+        video_dir)]
 
     if len(input_files) == 0:
         raise ValueError('no video files to encode')
@@ -261,7 +249,7 @@ def get_filtered_sliced_videos(encoding_config: EncodingConfig, input_dir: str) 
 
 def execute_encoding_benchmark():
 
-    send_ntfy(NTFY_TOPIC, 'start sequential encoding process')
+
     input_dir = INPUT_FILE_DIR
 
     for en_idx, encoding_config in enumerate(encoding_configs):
