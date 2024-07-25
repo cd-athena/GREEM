@@ -40,12 +40,3 @@ framerate:
   # - 24
   - 30
   - 60
-
-encode_all_videos: True
-
-videos_to_encode:
-  - AncientThought
-  # - Eldorado
-
-input_directory_path:
-  - ''
