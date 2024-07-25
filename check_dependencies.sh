@@ -58,15 +58,25 @@ else
     echo -e "${GREEN}- nvidia-smi installed.${RESET}"
 fi
 
-if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+# Check for typical Linux paths or environment variables
+if   [ "$(uname -s)" = "Linux" ] || [ "$ID" = "linux" ] || [[ "$OSTYPE" == "linux-gnu"* ]]; then
     if [ -d "/sys/class/powercap/intel-rapl"]; then
         echo -e "${GREEN}CPU power measurements likely supported by system."
         echo -e "Ensure that the usergroup has access to /sys/class/powercap/intel-rapl."
         echo -e "Quick workaround:${RESET}"
         echo -e "${BLUE}sudo chmod -R a+r /sys/class/powercap/intel-rapl${RESET}"
     else
-        echo -e "${YELLOW}CPU power measurements might not be supported by this system."
+        echo -e "${YELLOW}CPU power measurements might only be estimates on this system.${RESET}"
     fi
-else
-    echo -e "${YELLOW}CPU power measurements might not be supported by this system."
+fi
+
+# Check for typical Windows paths or environment variables
+if [ "$OS" = "Windows_NT" ] || [ -d "/c/Program Files" ] || [ -d "/c/Windows" ]; then
+    echo -e "${YELLOW}For Windows systems using Intel CPUs, please check out how to install Intel PowerGadget.${RESET}"
+fi
+
+
+# Check for typical macOS paths or environment variables
+if [ "$(uname -s)" = "Darwin" ] || [ -d "/System/Library/CoreServices" ] || command -v sw_vers >/dev/null 2>&1; then
+    echo -e "${YELLOW}For MacOS systems using Apple Silicon, CPU power measurements are only estimates at the moment!${RESET}"
 fi
