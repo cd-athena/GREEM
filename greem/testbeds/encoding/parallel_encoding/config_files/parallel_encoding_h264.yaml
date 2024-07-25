@@ -7,7 +7,7 @@ presets:
   # - veryfast
   # - faster
   - fast
-  - medium
+  # - medium
   - slow
   # - slower
   # - veryslow
