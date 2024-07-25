@@ -1,6 +1,24 @@
+"""
+Module for managing video encoding and decoding configurations.
+
+This module defines classes and functions to handle various configurations and 
+operations related to video encoding and decoding, including reading from YAML files, 
+representing resolutions and renditions, and generating encoding and decoding DTOs.
+
+Classes:
+    EncodingVariant: Enum representing encoding variants (SEQUENTIAL, BATCH).
+    Resolution: Pydantic BaseModel representing a video resolution.
+    Rendition: Pydantic BaseModel representing a video rendition, inheriting from Resolution.
+    EncodingConfigDTO: Pydantic BaseModel representing a single encoding configuration.
+    EncodingConfig: Pydantic BaseModel representing the configuration for video encoding.
+    DecodingConfigDTO: Dataclass representing the configuration for video decoding.
+    DecodingConfig: Pydantic BaseModel representing the configuration for video decoding.
+
+Functions:
+    read_yaml(file_path: str) -> dict:
+        Reads a YAML file and returns its contents as a Python dictionary.
+"""
 import itertools
-# Sources:
-# * https://stackoverflow.com/questions/51286748/make-the-python-json-encoder-support-pythons-new-dataclasses
 
 from dataclasses import dataclass
 from typing import Type
@@ -11,9 +29,12 @@ from pydantic import BaseModel
 
 
 class EncodingVariant(Enum):
+    '''EncodingVariant: Enum representing encoding variants (SEQUENTIAL, BATCH).'''
     SEQUENTIAL = 1
     BATCH = 2
 
+# Sources:
+# * https://stackoverflow.com/questions/51286748/make-the-python-json-encoder-support-pythons-new-dataclasses
 
 def read_yaml(file_path: str) -> dict:
     '''Reads a YAML file and returns a Python dictionary'''
