@@ -15,12 +15,10 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
   - [Quick Setup](#quick-setup)
   - [On System Installation](#on-system-installation)
   - [Docker Installation](#docker-installation)
-- [Benchmarks](#benchmarks)
-- [Troubleshoot](#troubleshoot)
+- [Testbeds](#testbeds)
   - [CUDA Hardware Acceleration not Working Properly](#cuda-hardware-acceleration-not-working-properly)
   - [FFmpeg - cuda encode - OpenEncodeSessionEx failed: out of memory](#ffmpeg---cuda-encode---openencodesessionex-failed-out-of-memory)
   - [Docker - Could not select device driver "nvidia"](#docker---could-not-select-device-driver-nvidia)
-
 
 ## Prerequisites
 
@@ -37,8 +35,12 @@ We present a monitoring tool that is open-source, easy-to-use, and easy-to-set u
 If all prerequisites are met, use the quick setup at the root of the project to get started.
 
 ```bash
+# Creates the Python virtual envorinment with Anaconda
 conda env create -f environment.yml
+# Activates the Python virtual environment
+# Always has to be activated!
 conda activate greem
+# Installs the project paths
 pip install -e .
 ```
 
@@ -50,9 +52,9 @@ The [Installation README](INSTALL.md) contains the necessary steps to install al
 
 The [Docker Installation](README.Docker.md) file contains instructions to build and run a Docker container for GREEM.
 
-# Benchmarks
+# Testbeds
 
-Inside the [benchmark](gaia/benchmark/README.md) folder, benchmarks are located to measure the energy impact in various scenarios. Troubleshoot
+Inside the [testbeds](greem/testbeds/README.md) folder, testbeds are located to measure the energy impact in various scenarios.
 
 This section contains information about some issues encountered during the creation and execution of this library.
 
