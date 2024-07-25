@@ -5,7 +5,7 @@ from datetime import datetime
 
 import pandas as pd
 from codecarbon import track_emissions
-from dacite import MissingValueError
+from websockets import InvalidState
 
 from greem.utility.ffmpeg import create_sequential_encoding_cmd
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
@@ -36,6 +36,11 @@ USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
+
+metric_results: list[pd.DataFrame] = []
+
+nvidia_top = NvidiaTop() if USE_CUDA else None
+
 
 """
 def encoding(input_ffmpeg: str,
@@ -246,20 +251,9 @@ def prepare_data_directories(
 
 
 def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> list[str]:
-    def is_file_in_config(file_name: str) -> bool:
-        if encoding_config.encode_all_videos:
-            return True
-
-        file = file_name.split(".")[0]
-        if USE_SLICED_VIDEOS:
-            file = file.split("_")[0]
-        return (
-            encoding_config.videos_to_encode is not None
-            and file in encoding_config.videos_to_encode
-        )
 
     input_files: list[str] = [
-        file_name for file_name in os.listdir(video_dir) if is_file_in_config(file_name)
+        file_name for file_name in os.listdir(video_dir)
     ]
 
     if len(input_files) == 0:
@@ -359,7 +353,6 @@ def execute_scaling_stage(
 def execute_encoding_cmd(
     cmd: str, encoding_dto: EncodingConfigDTO, video_name: str
 ) -> None:
-    global metric_results, nvidia_top
 
     if USE_CUDA:
         # executes the cmd with nvidia monitoring
@@ -389,7 +382,6 @@ def execute_encoding_cmd(
 
 
 def write_encoding_results_to_csv():
-    global nvidia_top, metric_results
 
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     result_path = f"{RESULT_ROOT}/encoding_results_{current_time}.csv"
@@ -427,18 +419,15 @@ if __name__ == "__main__":
         ]
 
         if len(encoding_configurations) == 0:
-            raise MissingValueError("No encoding configuration files provided")
+            raise InvalidState("No encoding configuration files provided")
 
         metric_results: list[pd.DataFrame] = []
         timing_metadata: dict[int, dict] = {}
 
         execute_encoding_benchmark(encoding_configurations)
 
-    except MissingValueError as err:
+    except InvalidState as err:
         print(err)
-
-    except Exception as err:
-        print("err", err)
 
     finally:
         print("done")
