@@ -7,10 +7,10 @@
     - [Install Miniconda from CLI](#install-miniconda-from-cli)
   - [Setting up the Python Environment](#setting-up-the-python-environment)
     - [Create Anaconda Environment](#create-anaconda-environment)
-    - [NVIDIA \& CUDA Drivers](#nvidia--cuda-drivers)
     - [FFmpeg](#ffmpeg)
       - [Install FFmpeg](#install-ffmpeg)
       - [Install FFmpeg Video Codec Libraries](#install-ffmpeg-video-codec-libraries)
+    - [NVIDIA \& CUDA Drivers](#nvidia--cuda-drivers)
       - [FFmpeg with NVIDIA GPU Support](#ffmpeg-with-nvidia-gpu-support)
   - [Video Processing Testbeds](#video-processing-testbeds)
     - [Download and Add Videos to Testbeds](#download-and-add-videos-to-testbeds)
@@ -104,9 +104,6 @@ pip install -e .
 
 at the root level of this repository. This will install the projects as a module and setup the paths that can then be easily important inside the project itself.
 
-### NVIDIA & CUDA Drivers
-
-In order to be able to utilize NVIDIA GPUs for the benchmarks, ensure that NVIDIA and CUDA drivers are installed on the system.
 
 ### FFmpeg
 
@@ -148,6 +145,10 @@ sudo apt-get install -yq  libaom-dev libass-dev libc6 libc6-dev libfreetype6-dev
                           libxcb1-dev zlib1g-dev
 ```
 
+### NVIDIA & CUDA Drivers
+
+In order to be able to utilize NVIDIA GPUs for the benchmarks, ensure that NVIDIA and CUDA drivers are installed on the system.
+
 #### FFmpeg with NVIDIA GPU Support
 
 The guide [How to install FFmpeg with NVIDIA GPU support](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/) lists the necessary steps to install FFmpeg with NVIDIA GPU support.
@@ -158,10 +159,10 @@ An alternative guide how to do so can be found at [NVIDIA docs](https://docs.nvi
 
 This step is required if you plan to process videos with GPU support.
 
-
 ## Video Processing Testbeds
 
-In order to use the encoding/decoding benchmark Python scripts, it is required to follow the installation steps below.
+In order to use the encoding/decoding benchmark Python scripts, input videos are required.
+To make this process easier, we provide different Python scripts that download publicly available video files into the project.
 
 ### Download and Add Videos to Testbeds
 
