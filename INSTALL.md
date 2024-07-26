@@ -4,15 +4,16 @@
   - [Prerequisites](#prerequisites)
     - [Python 3](#python-3)
     - [Anaconda/Miniconda](#anacondaminiconda)
-      - [Install Miniconda from CLI](#install-miniconda-from-cli)
-    - [NVIDIA \& CUDA Drivers](#nvidia--cuda-drivers)
-    - [FFmpeg](#ffmpeg)
-      - [Install FFmpeg Video Codec Libraries](#install-ffmpeg-video-codec-libraries)
-      - [FFmpeg with NVIDIA GPU Support](#ffmpeg-with-nvidia-gpu-support)
+    - [Install Miniconda from CLI](#install-miniconda-from-cli)
   - [Setting up the Python Environment](#setting-up-the-python-environment)
     - [Create Anaconda Environment](#create-anaconda-environment)
-  - [Video Processing Benchmarks](#video-processing-benchmarks)
-    - [Download and Add Videos to Benchmarks](#download-and-add-videos-to-benchmarks)
+    - [FFmpeg](#ffmpeg)
+      - [Install FFmpeg](#install-ffmpeg)
+      - [Install FFmpeg Video Codec Libraries](#install-ffmpeg-video-codec-libraries)
+    - [NVIDIA \& CUDA Drivers](#nvidia--cuda-drivers)
+      - [FFmpeg with NVIDIA GPU Support](#ffmpeg-with-nvidia-gpu-support)
+  - [Video Processing Testbeds](#video-processing-testbeds)
+    - [Download and Add Videos to Testbeds](#download-and-add-videos-to-testbeds)
   - [(Optional) Installing Prerequisites on AWS Instance](#optional-installing-prerequisites-on-aws-instance)
 
 This section has instructions to install the necessary tools and libraries to run GREEM directly on the system.
@@ -47,7 +48,10 @@ To install the Python virtual environment with all required libraries, GREEM use
 
 If Anaconda/Miniconda is not installed on the system, the following commands provide a quick installation guide to install Miniconda.
 
+If you use a Bash shell environment:
+
 ```bash
+# Bash Shell
 mkdir -p ~/miniconda3
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
 bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
@@ -55,59 +59,18 @@ rm -rf ~/miniconda3/miniconda.sh
 ~/miniconda3/bin/conda init bash
 ```
 
+If you use a Zsh shell environment:
+
+```bash
+# Zsh Shell
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+zsh ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm -rf ~/miniconda3/miniconda.sh
+~/miniconda3/bin/conda init zsh
+```
+
 Miniconda is a minimal installer for `conda` that only includes the `conda` binaries, Python and the packages they depend on.
-
-
-### NVIDIA & CUDA Drivers
-
-In order to be able to utilize NVIDIA GPUs for the benchmarks, ensure that NVIDIA and CUDA drivers are installed on the system.
-
-### FFmpeg
-
-To use the video processing benchmarks in the `encoding` and `decoding` folders, codec libraries need to be installed first.
-
-To test if FFMPEG is properly installed by executing the command:
-
-```bash
-ffmpeg -version
-```
-
-#### Install FFmpeg Video Codec Libraries
-
-A command including many codec libraries is shown below.
-
-```bash
-# update aptitude
-sudo apt-get update -y
-
-# install FFmpeg libraries
-sudo apt-get install -yq  libaom-dev libass-dev libc6 libc6-dev libfreetype6-dev \ 
-                          libgpac-dev libmp3lame-dev libnuma-dev libnuma1 libopus-dev \
-                          libsdl1.2-dev libsdl2-dev libtheora-dev libunistring-dev \
-                          libva-dev libvdpau-dev libvorbis-dev libvpx-dev \
-                          libx264-dev libx265-dev libxcb-shm0-dev libxcb-xfixes0-dev \
-                          libxcb1-dev zlib1g-dev
-```
-
-
-#### FFmpeg with NVIDIA GPU Support
-
-The guide [How to install FFmpeg with NVIDIA GPU support](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/) lists the necessary steps to install FFmpeg with NVIDIA GPU support.
-
----
-
-An alternative guide how to do so can be found at [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html).
-
-This step is required if you plan to process videos with GPU support.
-
-#### Install FFmpeg
-
-Use the following command to install FFmpeg if it is not already installed.
-
-```bash
-# Install FFmpeg
-sudo apt-get install ffmpeg -y
-```
 
 ## Setting up the Python Environment
 
@@ -141,13 +104,69 @@ pip install -e .
 
 at the root level of this repository. This will install the projects as a module and setup the paths that can then be easily important inside the project itself.
 
-## Video Processing Benchmarks
 
-In order to use the encoding/decoding benchmark Python scripts, it is required to follow the installation steps below.
+### FFmpeg
 
-### Download and Add Videos to Benchmarks
+To use the video processing benchmarks in the `encoding` and `decoding` folders, codec libraries need to be installed first.
 
-Within the `benchmark` folder, two Python scripts can be found to download video files.
+#### Install FFmpeg
+
+Use the following command to install FFmpeg if it is not already installed.
+
+```bash
+# Install FFmpeg
+sudo apt-get install ffmpeg -y
+```
+
+To test if FFMPEG is properly installed by executing the command:
+
+```bash
+ffmpeg -version
+```
+
+This should prompt you with the installed version number.
+
+Additionally, the installed codecs can be checked using `ffmpeg` in the CLI.
+
+#### Install FFmpeg Video Codec Libraries
+
+A command including many codec libraries is shown below.
+
+```bash
+# update aptitude
+sudo apt-get update -y
+
+# install FFmpeg libraries
+sudo apt-get install -yq  libaom-dev libass-dev libc6 libc6-dev libfreetype6-dev \ 
+                          libgpac-dev libmp3lame-dev libnuma-dev libnuma1 libopus-dev \
+                          libsdl1.2-dev libsdl2-dev libtheora-dev libunistring-dev \
+                          libva-dev libvdpau-dev libvorbis-dev libvpx-dev \
+                          libx264-dev libx265-dev libxcb-shm0-dev libxcb-xfixes0-dev \
+                          libxcb1-dev zlib1g-dev
+```
+
+### NVIDIA & CUDA Drivers
+
+In order to be able to utilize NVIDIA GPUs for the benchmarks, ensure that NVIDIA and CUDA drivers are installed on the system.
+
+#### FFmpeg with NVIDIA GPU Support
+
+The guide [How to install FFmpeg with NVIDIA GPU support](https://www.cyberciti.biz/faq/how-to-install-ffmpeg-with-nvidia-gpu-acceleration-on-linux/) lists the necessary steps to install FFmpeg with NVIDIA GPU support.
+
+---
+
+An alternative guide how to do so can be found at [NVIDIA docs](https://docs.nvidia.com/video-technologies/video-codec-sdk/12.0/ffmpeg-with-nvidia-gpu/index.html).
+
+This step is required if you plan to process videos with GPU support.
+
+## Video Processing Testbeds
+
+In order to use the encoding/decoding benchmark Python scripts, input videos are required.
+To make this process easier, we provide different Python scripts that download publicly available video files into the project.
+
+### Download and Add Videos to Testbeds
+
+Within the `testbeds` folder, two Python scripts can be found to download video files.
 
 The `download_full_input_files.py` script can be used to download input videos from Youtube.
 

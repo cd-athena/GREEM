@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     configs: list[EncodingConfig] = [EncodingConfig.from_file(
         file_path) for file_path in ENCODING_CONFIG_PATHS]
-    timing_metadata: dict[int, dict] = dict()
+    timing_metadata: dict[int, dict] = {}
 
     prepare_all_video_directories(configs, EncodingVariant.BATCH)
     gpu_monitoring = GpuMonitoring(RESULT_ROOT)

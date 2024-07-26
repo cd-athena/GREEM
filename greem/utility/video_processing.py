@@ -1,6 +1,6 @@
 from enum import Enum
-from typing import Literal
 from greem.utility.configuration_classes import Rendition
+
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
     '''Returns the codec for the ffmpeg command'''
@@ -14,8 +14,9 @@ def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
         return 'libvpx-vp9'
     if value == 'vvc':
         return 'vvc'
-        
+
     return ''
+
 
 class Codecs(str, Enum):
     """Enum class providing supported video processing codecs.
@@ -24,10 +25,10 @@ class Codecs(str, Enum):
     -------
     Codecs Enum
         _description_
-        
+
     Functions
     ---------
-    
+
     get_lib_codec(self, cuda_mode) -> str
         returns the FFmpeg library as string of the instance
 
@@ -44,7 +45,7 @@ class Codecs(str, Enum):
     def get_lib_codec(self, cuda_mode: bool = False) -> str:
         '''Returns the codec for the ffmpeg command'''
         return get_lib_codec(self.value, cuda_mode)
-    
+
     @staticmethod
     def get_enum_from_str(codec: str):
         if codec == 'h264':
@@ -57,9 +58,9 @@ class Codecs(str, Enum):
             return Codecs.VP9
         if codec == 'vvc':
             return Codecs.VVC
-            
+
         return None
-        
+
 
 class FFmpeg():
 
@@ -70,7 +71,6 @@ class FFmpeg():
     ):
         pass
 
-
     @classmethod
     def _get_representation_ffmpeg_flags(
             cls,
@@ -79,21 +79,21 @@ class FFmpeg():
             codec: str,
     ) -> list[str]:
         representations: list[str] = []
-        
+
         for idx, rendition in enumerate(renditions):
             bitrate = rendition.bitrate
             height = rendition.height
             width = rendition.width
-            
+
             representation: list[str] = [
-            f'-b:v:{idx} {bitrate}k',
-            # f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
-            f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
-            f'"scale={width}:{height}"',
-            # f'{fps_repr}"',
-            f'-preset {preset}'
+                f'-b:v:{idx} {bitrate}k',
+                # f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
+                f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
+                f'"scale={width}:{height}"',
+                # f'{fps_repr}"',
+                f'-preset {preset}'
             ]
-            
+
             representations.extend(representation)
-        
+
         return representations
