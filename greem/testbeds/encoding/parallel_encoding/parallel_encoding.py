@@ -1,11 +1,11 @@
 import os
 from datetime import datetime
-from enum import Enum
 from pathlib import Path
 import sys
 
 import pandas as pd
 
+from greem.testbeds.encoding.parallel_encoding.parallel_utils import ParallelMode, get_gpu_count, prepare_data_directories
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
 from greem.utility.ffmpeg import (
@@ -44,67 +44,16 @@ TEST_REPETITIONS: int = 1
 
 assert TEST_REPETITIONS > 0, "must be bigger than zero"
 
-GPU_COUNT = 0
-
-if USE_CUDA:
-    from greem.utility.gpu_utils import NvidiaGPUMetadata, NvidiaGpuUtils
-
-    gpu_utils = NvidiaGpuUtils()
-    has_nvidia = gpu_utils.has_nvidia_gpu
-    GPU_COUNT = gpu_utils.gpu_count
-    GPU_INFO: list[NvidiaGPUMetadata] = (
-        gpu_utils.nvidia_metadata.gpu if has_nvidia else []
-    )
-    del gpu_utils
+GPU_COUNT = get_gpu_count(USE_CUDA)
 
 hardware_tracker = HardwareTracker(
     cuda_enabled=USE_CUDA, measure_power_secs=0.5)
 
 
-class ParallelMode(Enum):
-    ONE_VIDEO_MULTIPLE_REPRESENTATIONS = 1
-    MULTIPLE_VIDEOS_ONE_REPRESENTATION = 2
-    MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS = 3
-
+# Change to encode in a different parallel mode
+parallel_mode = ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION
 
 monitoring_results: list = []
-
-
-def prepare_data_directories(
-    encoding_config: EncodingConfig, result_root: str = RESULT_ROOT, video_names=None
-) -> list[str]:
-    """Used to generate all directories that are used for the video encoding
-
-    Args:
-        encoding_config (EncodingConfig): config class that contains the values that are required to generate the directories.
-        result_root (str, optional): _description_. Defaults to RESULT_ROOT.
-        video_names (list[str], optional): _description_. Defaults to list().
-
-    Returns:
-        list[str]: returns a list of all directories that were created
-    """
-    if video_names is None:
-        video_names = list()
-    data_directories = encoding_config.get_all_result_directories()
-
-    for directory in data_directories:
-        directory_path: str = f"{result_root}/{directory}"
-        Path(directory_path).mkdir(parents=True, exist_ok=True)
-
-    return data_directories
-
-
-def get_video_input_files(video_dir: str) -> list[str]:
-
-    input_files: list[str] = [
-        file_name for file_name in os.listdir(video_dir)
-    ]
-
-    if len(input_files) == 0:
-        raise ValueError("no video files to encode")
-
-    return input_files
-
 
 def one_video_multiple_representations_encoding(
     encoding_config: EncodingConfig,
@@ -160,7 +109,6 @@ def multiple_video_one_representation_encoding(
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
     gpu_count = GPU_COUNT if USE_CUDA and GPU_COUNT > 0 else 1
 
-    # [1, 2, 5, 10, 15, 20]
     for window_size in range(window_size_start, window_size_end + 1):
         step_size: int = window_size * gpu_count
 
@@ -210,6 +158,7 @@ def reduced_multiple_video_one_representation_encoding(
 
         for idx_offset in range(0, len(input_files), step_size):
             window_idx: int = window_size * gpu_count + idx_offset
+
             # make sure we don't exceed the index of available input videos
             # and still encode the remainder of a run
             if window_idx > len(input_files):
@@ -235,6 +184,7 @@ def reduced_multiple_video_one_representation_encoding(
 
                 execute_encoding_cmd(cmd, dto, input_slice)
 
+        # store results for each num_videos_in_parallel iteration
         store_monitoring_results(
             reset_monitoring_results=True, window_size=window_size * gpu_count
         )
@@ -250,11 +200,21 @@ def multiple_video_multiple_representations_encoding() -> None:
 
 
 def store_monitoring_results(
-    reset_monitoring_results: bool = False, window_size: int = 1
+    reset_monitoring_results: bool = False,
+    window_size: int = 1
 ) -> None:
     if len(monitoring_results) > 0:
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
-        result_path = f"{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}"
+
+        # result_path = f"{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}"
+        result_path = RESULT_ROOT + '_'.join([
+            'encoding_results',
+            parallel_mode.get_abbr(),
+            str(window_size),
+            'vids',
+            current_time,
+            HOST_NAME
+        ])
         df = pd.concat(monitoring_results)
         df.to_parquet(f"{result_path}.parquet", index=True)
 
@@ -265,7 +225,7 @@ def store_monitoring_results(
 
 
 def execute_encoding_benchmark(
-    encoding_configuration: list[EncodingConfig], parallel_mode: ParallelMode
+    encoding_configuration: list[EncodingConfig]
 ) -> None:
     input_dir = INPUT_FILE_DIR
     input_files = sorted(
@@ -311,13 +271,19 @@ def execute_encoding_cmd(
 ) -> None:
     if not DRY_RUN:
         hardware_tracker.monitor_process(cmd)
-        add_monitoring_results(dto, input_slice)
+        if parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
+            # TODO
+            pass
+        if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
+            add_mvor_monitoring_results(dto, input_slice)
+
+
         hardware_tracker.clear()
     else:
         print(cmd)
 
 
-def add_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> None:
+def add_mvor_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> None:
     preset, codec, rendition = dto.preset, dto.codec, dto.rendition
     bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
     framerate, segment_duration = dto.framerate, dto.segment_duration
@@ -360,12 +326,9 @@ if __name__ == "__main__":
 
     hardware_tracker.start()
 
-    # Change to encode in a different parallel mode
-    pm = ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION
-
     hardware_tracker.stop()
     sys.exit(0)
 
-    execute_encoding_benchmark(encoding_configs, pm)
+    execute_encoding_benchmark(encoding_configs)
 
     hardware_tracker.stop()
