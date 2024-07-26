@@ -211,7 +211,7 @@ def store_monitoring_results(
     if len(monitoring_results) > 0:
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-        result_path = RESULT_ROOT + "_".join(
+        result_path = f'{RESULT_ROOT}/' + "_".join(
             [
                 "encoding_results",
                 parallel_mode.get_abbr(),
