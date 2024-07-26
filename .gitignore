@@ -36,3 +36,4 @@ gaia/energy/*
 .vscode/*
 .idea/*
 greem/evaluation/parallel_encoding/mvor/*
+*.parquet
