@@ -7,7 +7,7 @@ import pandas as pd
 from greem.testbeds.encoding.parallel_encoding.parallel_utils import (
     ParallelMode,
     get_gpu_count,
-    prepare_data_directories
+    prepare_data_directories,
 )
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
@@ -153,7 +153,6 @@ def reduced_multiple_video_one_representation_encoding(
     input_files: list[str],
     input_dir: str = INPUT_FILE_DIR,
 ) -> None:
-
     encoding_dtos: list[EncodingConfigDTO] = encoding_config.get_encoding_dtos()
     gpu_count = GPU_COUNT if USE_CUDA and GPU_COUNT > 0 else 1
 
@@ -207,20 +206,21 @@ def multiple_video_multiple_representations_encoding() -> None:
 
 
 def store_monitoring_results(
-    reset_monitoring_results: bool = False,
-    window_size: int = 1
+    reset_monitoring_results: bool = False, window_size: int = 1
 ) -> None:
     if len(monitoring_results) > 0:
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-        result_path = RESULT_ROOT + '_'.join([
-            'encoding_results',
-            parallel_mode.get_abbr(),
-            str(window_size),
-            'vids',
-            current_time,
-            HOST_NAME
-        ])
+        result_path = RESULT_ROOT + "_".join(
+            [
+                "encoding_results",
+                parallel_mode.get_abbr(),
+                str(window_size),
+                "vids",
+                current_time,
+                HOST_NAME,
+            ]
+        )
         df = pd.concat(monitoring_results)
         df.to_parquet(f"{result_path}.parquet", index=True)
 
@@ -230,9 +230,7 @@ def store_monitoring_results(
         print("no monitoring results found")
 
 
-def execute_encoding_benchmark(
-    encoding_configuration: list[EncodingConfig]
-) -> None:
+def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]) -> None:
     input_dir = INPUT_FILE_DIR
     input_files = sorted(
         [
@@ -255,7 +253,8 @@ def execute_encoding_benchmark(
             if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
                 if SMALL_TESTBED:
                     reduced_multiple_video_one_representation_encoding(
-                        encoding_config, input_files, input_dir)
+                        encoding_config, input_files, input_dir
+                    )
                 else:
                     multiple_video_one_representation_encoding(
                         encoding_config, 1, 20, input_files, input_dir
