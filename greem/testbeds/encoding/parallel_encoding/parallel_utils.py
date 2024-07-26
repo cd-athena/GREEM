@@ -81,3 +81,8 @@ def get_video_input_files(video_dir: str) -> list[str]:
         raise ValueError("no video files to encode")
 
     return input_files
+
+
+def video_cleanup(videos: list[str]) -> None:
+    for video in videos:
+        Path(video).unlink()

@@ -1,11 +1,14 @@
 import os
 from datetime import datetime
 from pathlib import Path
-import sys
 
 import pandas as pd
 
-from greem.testbeds.encoding.parallel_encoding.parallel_utils import ParallelMode, get_gpu_count, prepare_data_directories
+from greem.testbeds.encoding.parallel_encoding.parallel_utils import (
+    ParallelMode,
+    get_gpu_count,
+    prepare_data_directories
+)
 from greem.utility.cli_parser import CLI_PARSER
 from greem.utility.configuration_classes import EncodingConfig, EncodingConfigDTO
 from greem.utility.ffmpeg import (
@@ -30,21 +33,17 @@ INPUT_FILE_DIR: str = "../../dataset/Inter4K/60fps/HEVC"
 RESULT_ROOT: str = "results"
 COUNTRY_ISO_CODE: str = "AUT"
 
-USE_SLICED_VIDEOS: bool = CLI_PARSER.is_sliced_encoding()
 # if True, no encoding will be executed
 DRY_RUN: bool = CLI_PARSER.is_dry_run()
 USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
-INCLUDE_CODE_CARBON: bool = CLI_PARSER.is_code_carbon_enabled()
-SMALL_TESTBED: bool = False
+SMALL_TESTBED: bool = True
 HOST_NAME: str = os.uname()[1]
-
-CLEANUP: bool = False
 
 TEST_REPETITIONS: int = 1
 
 assert TEST_REPETITIONS > 0, "must be bigger than zero"
 
-GPU_COUNT = get_gpu_count(USE_CUDA)
+GPU_COUNT: int = get_gpu_count(USE_CUDA)
 
 hardware_tracker = HardwareTracker(
     cuda_enabled=USE_CUDA, measure_power_secs=0.5)
@@ -55,13 +54,14 @@ parallel_mode = ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION
 
 monitoring_results: list = []
 
+
 def one_video_multiple_representations_encoding(
     encoding_config: EncodingConfig,
     window_size_start: int,
     window_size_end: int,
     input_files: list[str],
     input_dir: str = INPUT_FILE_DIR,
-):
+) -> None:
     assert window_size_start > 0
     assert window_size_start < window_size_end
 
@@ -135,7 +135,13 @@ def multiple_video_one_representation_encoding(
                     pretty_print=DRY_RUN,
                 )
 
-                execute_encoding_cmd(cmd, dto, input_slice)
+                if not DRY_RUN:
+                    hardware_tracker.monitor_process(cmd)
+                    add_mvor_monitoring_results(dto, input_slice)
+                    hardware_tracker.clear()
+
+                else:
+                    print(cmd)
 
         store_monitoring_results(
             reset_monitoring_results=True, window_size=window_size * gpu_count
@@ -182,7 +188,12 @@ def reduced_multiple_video_one_representation_encoding(
                     pretty_print=DRY_RUN,
                 )
 
-                execute_encoding_cmd(cmd, dto, input_slice)
+                if not DRY_RUN:
+                    hardware_tracker.monitor_process(cmd)
+                    add_mvor_monitoring_results(dto, input_slice)
+
+                else:
+                    print(cmd)
 
         # store results for each num_videos_in_parallel iteration
         store_monitoring_results(
@@ -190,12 +201,8 @@ def reduced_multiple_video_one_representation_encoding(
         )
 
 
-def video_cleanup(videos: list[str]) -> None:
-    for video in videos:
-        Path(video).unlink()
-
-
 def multiple_video_multiple_representations_encoding() -> None:
+    # TODO
     pass
 
 
@@ -206,7 +213,6 @@ def store_monitoring_results(
     if len(monitoring_results) > 0:
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-        # result_path = f"{RESULT_ROOT}/encoding_results_{window_size}_vids_{current_time}_{HOST_NAME}"
         result_path = RESULT_ROOT + '_'.join([
             'encoding_results',
             parallel_mode.get_abbr(),
@@ -247,11 +253,13 @@ def execute_encoding_benchmark(
             prepare_data_directories(encoding_config, video_names=output_files)
 
             if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
-                reduced_multiple_video_one_representation_encoding(
-                    encoding_config, input_files, input_dir)
-                # multiple_video_one_representation_encoding(
-                #     encoding_config, 1, 20, input_files, input_dir
-                # )
+                if SMALL_TESTBED:
+                    reduced_multiple_video_one_representation_encoding(
+                        encoding_config, input_files, input_dir)
+                else:
+                    multiple_video_one_representation_encoding(
+                        encoding_config, 1, 20, input_files, input_dir
+                    )
 
             elif parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
                 one_video_multiple_representations_encoding(
@@ -264,23 +272,6 @@ def execute_encoding_benchmark(
                 # multiple_video_multiple_representations_encoding()
 
     store_monitoring_results()
-
-
-def execute_encoding_cmd(
-    cmd: str, dto: EncodingConfigDTO, input_slice: list[str]
-) -> None:
-    if not DRY_RUN:
-        hardware_tracker.monitor_process(cmd)
-        if parallel_mode == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
-            # TODO
-            pass
-        if parallel_mode == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
-            add_mvor_monitoring_results(dto, input_slice)
-
-
-        hardware_tracker.clear()
-    else:
-        print(cmd)
 
 
 def add_mvor_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> None:
@@ -325,9 +316,6 @@ if __name__ == "__main__":
     ]
 
     hardware_tracker.start()
-
-    hardware_tracker.stop()
-    sys.exit(0)
 
     execute_encoding_benchmark(encoding_configs)
 
