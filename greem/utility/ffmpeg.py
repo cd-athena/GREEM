@@ -27,7 +27,7 @@ def get_join_string(pretty_print: bool) -> str:
     Examples:
         >>> get_join_string(True)
         ' \\n'
-        
+
         >>> get_join_string(False)
         ' '
     """
@@ -142,6 +142,7 @@ def create_sequential_encoding_cmd(
         dto=encoding_dto,
         constant_rate_factor=constant_rate_factor
     )
+
 
 def create_dash_ffmpeg_cmd(
     input_file_path: str,
@@ -374,8 +375,6 @@ def create_multi_video_ffmpeg_command(
     if cuda_mode and gpu_count > 0:
         cmd.extend(
             [f'-hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
-        # cmd.extend(
-        #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
 
     else:
         cmd.extend([f'-i {video}' for video in video_input_file_paths])
@@ -440,7 +439,8 @@ def create_multi_video_ffmpeg_yuv_to_mp4_command(
         #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
 
     else:
-        cmd.extend([f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -i {video}' for video in video_input_file_paths])
+        cmd.extend(
+            [f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -i {video}' for video in video_input_file_paths])
 
     cmd.append('-t 5')
 
@@ -495,9 +495,9 @@ def multi_video_ffmpeg_yuv_to_mp4_command_per_gpu(
 
     cmd.extend(
         [f'-hwaccel_device {gpu_idx} {CUDA_ENC_FLAG} -f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -t 5 -i {video}' for video in video_input_file_paths])
-        # [f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -hwaccel_device {gpu_idx} {CUDA_ENC_FLAG} -t 5 -i {video}' for video in video_input_file_paths])
-        # cmd.extend(
-        #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
+    # [f'-f rawvideo -video_size 3840x2160 -pix_fmt yuv420p -hwaccel_device {gpu_idx} {CUDA_ENC_FLAG} -t 5 -i {video}' for video in video_input_file_paths])
+    # cmd.extend(
+    #     [f'-hwaccel_device 0 {CUDA_ENC_FLAG} -i {video}' for idx, video in enumerate(video_input_file_paths)])
 
     # cmd.append('-t 5')
 
