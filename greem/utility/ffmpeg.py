@@ -382,7 +382,7 @@ def create_multi_video_ffmpeg_command(
     if cuda_mode and gpu_count > 0:
         cmd.extend(
             [
-                f"-hwaccel_device {idx % gpu_count} -filter_hw_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}"
+                f"-hwaccel_device {idx % gpu_count} {CUDA_ENC_FLAG} -i {video}"
                 for idx, video in enumerate(video_input_file_paths)
             ]
         )
