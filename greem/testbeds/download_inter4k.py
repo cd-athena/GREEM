@@ -13,7 +13,7 @@ if __name__ == '__main__':
     Path(destination_directory).mkdir(parents=True, exist_ok=True)
 
     # create the rsync command to download the video files onto the system
-    rsync_cmd = f'rsync -arP cbauer@gpu5.itec.aau.at:/home/itec/cbauer/GAIATools/greem/testbeds/dataset/Inter4K/60fps/HEVC/ {destination_directory}'
+    rsync_cmd = f'rsync -arP cbauer@gpu5.itec.aau.at:/home/shared/athena/GAIA/GREEM/greem/testbeds/dataset/Inter4K/60fps/HEVC {destination_directory}'
 
     # download video files
     print('start download of Inter4K raw HEVC')
