@@ -17,6 +17,7 @@ class ParallelMode(Enum):
         MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS (int):
             Mode where multiple videos are processed, each to produce multiple representations.
     """
+
     ONE_VIDEO_MULTIPLE_REPRESENTATIONS = 1
     MULTIPLE_VIDEOS_ONE_REPRESENTATION = 2
     MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS = 3
@@ -32,11 +33,11 @@ class ParallelMode(Enum):
                 'mvmr' for MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS.
         """
         if self == ParallelMode.ONE_VIDEO_MULTIPLE_REPRESENTATIONS:
-            return 'ovmr'
+            return "ovmr"
         if self == ParallelMode.MULTIPLE_VIDEOS_ONE_REPRESENTATION:
-            return 'mvor'
+            return "mvor"
 
-        return 'mvmr'
+        return "mvmr"
 
 
 def get_gpu_count(use_cuda: bool) -> int:
@@ -44,13 +45,14 @@ def get_gpu_count(use_cuda: bool) -> int:
 
     if use_cuda:
         from greem.utility.gpu_utils import NvidiaGpuUtils
+
         gpu_count = NvidiaGpuUtils().gpu_count
 
     return gpu_count
 
 
 def prepare_data_directories(
-    encoding_config: EncodingConfig, result_root: str = 'results', video_names=None
+    encoding_config: EncodingConfig, result_root: str = "results", video_names=None
 ) -> list[str]:
     """Used to generate all directories that are used for the video encoding
 
@@ -74,7 +76,6 @@ def prepare_data_directories(
 
 
 def get_video_input_files(video_dir: str) -> list[str]:
-
     input_files: list[str] = os.listdir(video_dir)
 
     if len(input_files) == 0:

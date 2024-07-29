@@ -766,9 +766,6 @@ class CodecProcessing(BaseModel):
         )
         return cmd
 
-    def av1_sequential_encoding_cmd(self, dto: EncodingConfigDTO) -> list[str]:
-        pass
-
     def vvc_sequential_encoding_cmd(
         self,
         dto: EncodingConfigDTO,
