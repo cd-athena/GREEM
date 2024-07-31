@@ -54,7 +54,7 @@ The [Docker Installation](README.Docker.md) file contains instructions to build 
 
 # Testbeds
 
-Inside the [testbeds](greem/testbeds/README.md) folder, testbeds are located to measure the energy impact in various scenarios.
+Inside the [testbeds](greem/testbeds/TESTBEDS.md) folder, testbeds are located to measure the energy impact in various scenarios.
 
 This section contains information about some issues encountered during the creation and execution of this library.
 
