@@ -1,3 +1,4 @@
+import subprocess
 from enum import Enum
 import os
 from pathlib import Path
@@ -40,15 +41,40 @@ class ParallelMode(Enum):
         return "mvmr"
 
 
-def get_gpu_count(use_cuda: bool) -> int:
-    gpu_count: int = 0
+def get_gpu_count() -> int:
+    """
+    Returns the number of NVIDIA GPUs installed on the system.
 
-    if use_cuda:
-        from greem.utility.gpu_utils import NvidiaGpuUtils
+    This function uses the `nvidia-smi` command-line tool to determine the number of GPUs available on the system.
+    It counts the lines returned by `nvidia-smi --list-gpus`, where each line corresponds to a GPU.
 
-        gpu_count = NvidiaGpuUtils().gpu_count
+    Returns:
+        int: The number of GPUs detected. If `nvidia-smi` is not available or an error occurs, it returns 0.
 
+    Exceptions:
+        - subprocess.CalledProcessError: Handles the case where the `nvidia-smi` command fails.
+        - FileNotFoundError: Handles the case where `nvidia-smi` is not found (e.g., NVIDIA drivers or CUDA not installed).
+    """
+    try:
+        output = subprocess.check_output(["nvidia-smi", "--list-gpus"])
+        gpu_count = len(output.decode('utf-8').strip().split('\n'))
+    except subprocess.CalledProcessError:
+        gpu_count = 0
+    except FileNotFoundError:
+        gpu_count = 0
     return gpu_count
+
+# num_gpus = get_gpu_count()
+
+# def get_gpu_count(use_cuda: bool) -> int:
+#     gpu_count: int = 0
+
+#     if use_cuda:
+#         from greem.utility.gpu_utils import NvidiaGpuUtils
+
+#         gpu_count = NvidiaGpuUtils().gpu_count
+
+#     return gpu_count
 
 
 def prepare_data_directories(
@@ -85,5 +111,23 @@ def get_video_input_files(video_dir: str) -> list[str]:
 
 
 def video_cleanup(videos: list[str]) -> None:
+    """
+    Deletes a list of video files from the filesystem, ignoring missing files.
+
+    This function takes a list of file paths (as strings) and removes each corresponding file from the filesystem. 
+    It will ignore files that do not exist without raising an exception.
+
+    Args:
+        videos (list[str]): A list of paths to video files that need to be deleted.
+
+    Returns:
+        None
+    """
     for video in videos:
-        Path(video).unlink()
+        Path(video).unlink(missing_ok=True)
+
+
+if __name__ == '__main__':
+    num_gpu = get_gpu_count()
+
+    print(f'Available NVIDIA GPUs: {num_gpu}')
