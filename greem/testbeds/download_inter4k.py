@@ -39,7 +39,7 @@ if __name__ == "__main__":
     assert num_of_videos > 0 and num_of_videos <= 1000, "invalid range of videos"
 
     ftp_video_segments: list[tuple[str, str]] = [
-        (f"{ftp_path}/{n}.265", f"{destination_directory}/{n}.265")
+        (f"{ftp_path}/{n}.265", f"{destination_directory}/")
         for n in range(1, num_of_videos + 1)
     ]
 
