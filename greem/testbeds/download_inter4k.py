@@ -23,14 +23,13 @@ def download_parallel(args) -> None:
 
 
 if __name__ == "__main__":
-
     ftp_path: str = "https://ftp.itec.aau.at/datasets/Inter4K_HEVC"
 
     # check the directory path of this file as a reference point
     cwd: str = os.path.dirname(os.path.realpath(__file__))
 
     # # check if destination folder exists and create if not
-    inter_4k_directory: str = f'{cwd}/dataset/Inter4K/'
+    inter_4k_directory: str = f"{cwd}/dataset/Inter4K/"
     destination_directory: str = f"{cwd}/dataset/Inter4K/60fps/HEVC"
     Path(destination_directory).mkdir(parents=True, exist_ok=True)
 

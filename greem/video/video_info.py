@@ -5,8 +5,7 @@ import subprocess
 import os
 
 
-class VideoInfo():
-
+class VideoInfo:
     def __init__(self, file_path: str) -> None:
         self.file_path = file_path
         self.video = cv2.VideoCapture(self.file_path)
@@ -14,10 +13,13 @@ class VideoInfo():
 
     def _get_ffprobe_values(self):
         cmd = [
-            'ffprobe',
-            '-v', 'quiet',
-            '-print_format', 'json',
-            '-show_format', '-show_streams',
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
             self.file_path,
         ]
 
@@ -42,7 +44,7 @@ class VideoInfo():
 
 
 @dataclass
-class VideoDTO():
+class VideoDTO:
     path: str
     segment_seconds: int = field(default=4)
     name: str = field(init=False)
@@ -57,9 +59,9 @@ class VideoDTO():
         """
         Sets instance variable values after the `__init__` function is completed
         """
-        self.name: str = self.path.split('/')[-1].split('.')[0]
+        self.name: str = self.path.split("/")[-1].split(".")[0]
 
-        self.name_abbreviation = ''.join(
+        self.name_abbreviation = "".join(
             [char for char in self.name if char.isupper()])
         video_analyser = VideoInfo(self.path)
         self.fps: int = video_analyser.get_fps()
@@ -70,9 +72,9 @@ class VideoDTO():
         self.segment_element_size: int = self.fps * self.segment_seconds
 
 
-if __name__ == '__main__':
-    ancient = VideoDTO('AncientThought.webm')
-    friend = VideoDTO('UnspokenFriend.webm')
+if __name__ == "__main__":
+    ancient = VideoDTO("AncientThought.webm")
+    friend = VideoDTO("UnspokenFriend.webm")
 
     print(ancient)
     print(friend)
@@ -80,16 +82,20 @@ if __name__ == '__main__':
     input_file_name = ancient.path
 
     test = [
-        'ffprobe',
-        '-v', 'quiet',
-        '-print_format', 'json',
-        '-show_format', '-show_streams',
+        "ffprobe",
+        "-v",
+        "quiet",
+        "-print_format",
+        "json",
+        "-show_format",
+        "-show_streams",
         input_file_name,
     ]
 
     # print(shlex.split(f'ffprobe -i {input_file_name}'))
-    data = subprocess.Popen(test, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, universal_newlines=True)
+    data = subprocess.Popen(
+        test, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
+    )
     out, err = data.communicate()
 
     print(out)

@@ -1,21 +1,22 @@
 from enum import Enum
+
 from greem.utility.configuration_classes import Rendition
 
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
-    '''Returns the codec for the ffmpeg command'''
-    if value == 'h264':
-        return 'h264_nvenc' if cuda_mode else 'libx264'
-    if value == 'h265':
-        return 'hevc_nvenc' if cuda_mode else 'libx265'
-    if value == 'av1':
-        return 'libsvtav1'
-    if value == 'vp9':
-        return 'libvpx-vp9'
-    if value == 'vvc':
-        return 'vvc'
+    """Returns the codec for the ffmpeg command"""
+    if value == "h264":
+        return "h264_nvenc" if cuda_mode else "libx264"
+    if value == "h265":
+        return "hevc_nvenc" if cuda_mode else "libx265"
+    if value == "av1":
+        return "libsvtav1"
+    if value == "vp9":
+        return "libvpx-vp9"
+    if value == "vvc":
+        return "vvc"
 
-    return ''
+    return ""
 
 
 class Codecs(str, Enum):
@@ -34,49 +35,49 @@ class Codecs(str, Enum):
 
 
     """
-    H264 = 'h264'
-    H265 = 'h265'
-    AVC = 'h264'
-    HEVC = 'h265'
-    AV1 = 'av1'
-    VP9 = 'vp9'
-    VVC = 'vvc'
+
+    H264 = "h264"
+    H265 = "h265"
+    AVC = "h264"
+    HEVC = "h265"
+    AV1 = "av1"
+    VP9 = "vp9"
+    VVC = "vvc"
 
     def get_lib_codec(self, cuda_mode: bool = False) -> str:
-        '''Returns the codec for the ffmpeg command'''
+        """Returns the codec for the ffmpeg command"""
         return get_lib_codec(self.value, cuda_mode)
 
     @staticmethod
     def get_enum_from_str(codec: str):
-        if codec == 'h264':
+        if codec == "h264":
             return Codecs.H264
-        if codec == 'h265':
+        if codec == "h265":
             return Codecs.H265
-        if codec == 'av1':
+        if codec == "av1":
             return Codecs.AV1
-        if codec == 'vp9':
+        if codec == "vp9":
             return Codecs.VP9
-        if codec == 'vvc':
+        if codec == "vvc":
             return Codecs.VVC
 
         return None
 
 
-class FFmpeg():
-
+class FFmpeg:
     @staticmethod
     def create_cmd_all_renditions(
-            input_file_path: str,
-            output_dir: str,
+        input_file_path: str,
+        output_dir: str,
     ):
         pass
 
     @classmethod
     def _get_representation_ffmpeg_flags(
-            cls,
-            renditions: list[Rendition],
-            preset: str,
-            codec: str,
+        cls,
+        renditions: list[Rendition],
+        preset: str,
+        codec: str,
     ) -> list[str]:
         representations: list[str] = []
 
@@ -86,12 +87,12 @@ class FFmpeg():
             width = rendition.width
 
             representation: list[str] = [
-                f'-b:v:{idx} {bitrate}k',
+                f"-b:v:{idx} {bitrate}k",
                 # f'-b:v:{idx} {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k',
-                f'-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}',
+                f"-c:v:{idx} {get_lib_codec(codec)} -filter:v:{idx}",
                 f'"scale={width}:{height}"',
                 # f'{fps_repr}"',
-                f'-preset {preset}'
+                f"-preset {preset}",
             ]
 
             representations.extend(representation)

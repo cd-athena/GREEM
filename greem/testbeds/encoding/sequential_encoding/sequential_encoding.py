@@ -24,7 +24,7 @@ NTFY_TOPIC: str = "aws_encoding"
 ENCODING_CONFIG_PATHS: list[str] = [
     # "config_files/segment_encoding_h264.yaml",
     # "config_files/segment_encoding_h265.yaml",
-    'config_files/test_encoding_config.yaml'
+    "config_files/test_encoding_config.yaml"
 ]
 
 INPUT_FILE_DIR: str = "../dataset/ref_265"
@@ -239,8 +239,7 @@ def prepare_data_directories(
     # data_directories = encoding_config.get_all_result_directories(video_names)
 
     data_directories = [
-        dto.get_output_directory()
-        for dto in encoding_config.get_encoding_dtos()
+        dto.get_output_directory() for dto in encoding_config.get_encoding_dtos()
     ]
 
     for directory in data_directories:
@@ -251,10 +250,7 @@ def prepare_data_directories(
 
 
 def get_video_input_files(video_dir: str, encoding_config: EncodingConfig) -> list[str]:
-
-    input_files: list[str] = [
-        file_name for file_name in os.listdir(video_dir)
-    ]
+    input_files: list[str] = [file_name for file_name in os.listdir(video_dir)]
 
     if len(input_files) == 0:
         raise ValueError("no video files to encode")
@@ -271,7 +267,6 @@ def get_filtered_sliced_videos(
 
 
 def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
-
     input_dir = INPUT_FILE_DIR
 
     for encoding_config in encoding_configs:
@@ -289,10 +284,11 @@ def execute_encoding_benchmark(encoding_configs: list[EncodingConfig]):
         for video_name in input_files:
             for dto in encoding_dtos:
                 # output_dir = f'{RESULT_ROOT}/{dto.get_output_directory(video_name.removesuffix(".265"))}'
-                input_file_path = f'{input_dir}/{video_name}'
+                input_file_path = f"{input_dir}/{video_name}"
                 encoding_cmd = (
                     create_sequential_encoding_cmd(
-                        input_file_path, video_name, RESULT_ROOT, dto)
+                        input_file_path, video_name, RESULT_ROOT, dto
+                    )
                     if not DRY_RUN
                     else "sleep 0.1"
                 )
@@ -353,7 +349,6 @@ def execute_scaling_stage(
 def execute_encoding_cmd(
     cmd: str, encoding_dto: EncodingConfigDTO, video_name: str
 ) -> None:
-
     if USE_CUDA:
         # executes the cmd with nvidia monitoring
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
@@ -382,7 +377,6 @@ def execute_encoding_cmd(
 
 
 def write_encoding_results_to_csv():
-
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     result_path = f"{RESULT_ROOT}/encoding_results_{current_time}.csv"
     if INCLUDE_CODE_CARBON:

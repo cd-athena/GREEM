@@ -5,8 +5,11 @@ from multiprocessing.pool import ThreadPool
 
 all_segments = [
     # ("AncientThought_s0{}", 0, 36),
-    ("Basketball_s0{}", 0, 1), ("Beauty_s0{}", 0, 0),
-    ("Bosohorus_s0{}", 0, 0), ("BundNightScape_s0{}", 0, 1), ("Bunny_s0{}", 0, 1),
+    ("Basketball_s0{}", 0, 1),
+    ("Beauty_s0{}", 0, 0),
+    ("Bosohorus_s0{}", 0, 0),
+    ("BundNightScape_s0{}", 0, 1),
+    ("Bunny_s0{}", 0, 1),
     # ("Busy_City_s0{}", 0, 24), ("CampfireParty_s0{}", 0, 1), ("Characters_s0{}", 0, 1),
     # ("Childs_Play_s0{}", 0, 18), ("CityAlley_s0{}", 0, 1), ("ConstructionField_s0{}", 0, 1),
     # ("Construction_s0{}", 0, 1), ("Crowd_s0{}", 0, 1), ("Dolls_s0{}", 0, 1), ("Eldorado_s0{}", 0, 35),
@@ -26,18 +29,25 @@ video_path_list: list[str] = list()
 for j in range(len(all_segments)):
     for file_pattern, idx_start, idx_end in [all_segments[j]]:
         for i in range(idx_start, idx_end + 1):
-            in_file_full: str = ''
+            in_file_full: str = ""
 
             if i <= 9:
-                in_file_full = "https://ftp.itec.aau.at/datasets/video-complexity/1-ref/" + file_pattern.format(
-                    "0{}".format(i)) + ".265"
+                in_file_full = (
+                    "https://ftp.itec.aau.at/datasets/video-complexity/1-ref/"
+                    + file_pattern.format("0{}".format(i))
+                    + ".265"
+                )
             else:
-                in_file_full = "https://ftp.itec.aau.at/datasets/video-complexity/1-ref/" + file_pattern.format(
-                    "{}".format(i)) + ".265"
+                in_file_full = (
+                    "https://ftp.itec.aau.at/datasets/video-complexity/1-ref/"
+                    + file_pattern.format("{}".format(i))
+                    + ".265"
+                )
             video_path_list.append(in_file_full)
 
 video_input_outputs: list[tuple[str, str]] = [
-    (video, 'dataset/ref_265') for video in video_path_list]
+    (video, "dataset/ref_265") for video in video_path_list
+]
 
 
 def download_url(args):
@@ -45,11 +55,11 @@ def download_url(args):
     print(args)
     url, output = args[0], args[1]
     try:
-        wget_call = ['wget', url, '-P', output]
+        wget_call = ["wget", url, "-P", output]
         call(wget_call)
         return (url, time.time() - start_time)
     except Exception as e:
-        print(f'Exception in {__name__}', e)
+        print(f"Exception in {__name__}", e)
 
 
 def download_parallel(args):
