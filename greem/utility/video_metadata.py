@@ -6,8 +6,7 @@ from dacite import from_dict as fd
 
 
 @dataclass
-class VideoFormatTags():
-
+class VideoFormatTags:
     major_brand: str
     minor_version: str
     compatible_brands: str
@@ -15,8 +14,7 @@ class VideoFormatTags():
 
 
 @dataclass
-class VideoFormat():
-
+class VideoFormat:
     filename: str
     nb_streams: int
     nb_programs: int
@@ -31,8 +29,7 @@ class VideoFormat():
 
 
 @dataclass
-class StreamDisposition():
-
+class StreamDisposition:
     default: int
     dub: int
     original: int
@@ -53,8 +50,7 @@ class StreamDisposition():
 
 
 @dataclass
-class StreamTags():
-
+class StreamTags:
     language: str
     handler_name: str
     vendor_id: str
@@ -62,12 +58,11 @@ class StreamTags():
 
 @dataclass
 class VideoStreamTags(StreamTags):
-
     encoder: str
 
 
 @dataclass
-class BaseStream():
+class BaseStream:
     """Base Stream class that is the parent class for both video and audio streaming format"""
 
     avg_frame_rate: str
@@ -94,26 +89,24 @@ class BaseStream():
 
     @classmethod
     def from_dict(
-        cls: Type['BaseStream'],
-        data: dict
-    ) -> Type['VideoStream'] | Type['AudioStream'] | Type['BaseStream']:
-        '''Returns a Stream object depending on the fields inside of the given dictionary'''
+        cls: Type["BaseStream"], data: dict
+    ) -> Type["VideoStream"] | Type["AudioStream"] | Type["BaseStream"]:
+        """Returns a Stream object depending on the fields inside of the given dictionary"""
 
-        if 'width' in data.keys():
+        if "width" in data.keys():
             return fd(data_class=VideoStream, data=data)
-        elif 'channel_layout' in data.keys():
+        elif "channel_layout" in data.keys():
             return fd(data_class=AudioStream, data=data)
         return fd(data_class=BaseStream, data=data)
 
     def __post_init__(self):
-        avg_fps = self.avg_frame_rate.split('/')[0]
+        avg_fps = self.avg_frame_rate.split("/")[0]
         # ffprobe represents frames per second in the thousands
         self.average_fps = float(avg_fps) / 1000
 
 
 @dataclass
 class VideoStream(BaseStream):
-
     width: int
     height: int
     coded_width: int
@@ -140,7 +133,6 @@ class VideoStream(BaseStream):
 
 @dataclass
 class AudioStream(BaseStream):
-
     channel_layout: str
     initial_padding: int
     bits_per_sample: int
@@ -150,32 +142,33 @@ class AudioStream(BaseStream):
 
 
 @dataclass
-class VideoMetadata():
-
+class VideoMetadata:
     streams: list[VideoStream | AudioStream]
     format: VideoFormat
 
     @classmethod
-    def from_dict(cls: Type['VideoMetadata'], data: dict) -> Type['VideoMetadata']:
+    def from_dict(cls: Type["VideoMetadata"], data: dict) -> Type["VideoMetadata"]:
         vm: VideoMetadata = fd(data_class=VideoMetadata, data=data)
         return vm
 
     @classmethod
-    def from_file(cls: Type['VideoMetadata'], file_path: str) -> Type['VideoMetadata']:
+    def from_file(cls: Type["VideoMetadata"], file_path: str) -> Type["VideoMetadata"]:
         cmd = [
-            'ffprobe',
-            '-v', 'quiet',
-            '-print_format', 'json',
-            '-show_format', '-show_streams',
+            "ffprobe",
+            "-v",
+            "quiet",
+            "-print_format",
+            "json",
+            "-show_format",
+            "-show_streams",
             file_path,
         ]
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE, universal_newlines=True)
+        p = subprocess.Popen(
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
+        )
         output, _ = p.communicate()
 
-        return cls.from_dict(
-            VideoMetadata.__convert_pipe_output_to_dict(output)
-        )
+        return cls.from_dict(VideoMetadata.__convert_pipe_output_to_dict(output))
 
     @staticmethod
     def __convert_pipe_output_to_dict(pipe_output: str) -> dict:
@@ -191,7 +184,7 @@ class VideoMetadata():
         return [stream for stream in self.streams if isinstance(stream, AudioStream)]
 
 
-if __name__ == '__main__':
-    vm = VideoMetadata.from_file('../data/Eldorado.mp4')
+if __name__ == "__main__":
+    vm = VideoMetadata.from_file("../data/Eldorado.mp4")
     # print(vm.streams)
     print(vm)
