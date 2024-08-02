@@ -43,7 +43,7 @@ TEST_REPETITIONS: int = 1
 
 assert TEST_REPETITIONS > 0, "must be bigger than zero"
 
-GPU_COUNT: int = get_gpu_count(USE_CUDA)
+GPU_COUNT: int = get_gpu_count()
 
 hardware_tracker = HardwareTracker(
     cuda_enabled=USE_CUDA, measure_power_secs=0.5)
