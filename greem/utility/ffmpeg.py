@@ -391,18 +391,22 @@ def create_multi_video_ffmpeg_command(
         cmd.extend([f"-i {video}" for video in video_input_file_paths])
 
     bitrate = int(dto.rendition.bitrate)
+    br_str = f"{bitrate}k"
 
     output_file_names: list[str] = [get_video_name(x) for x in video_input_file_paths]
 
-    scale_flag = "scale_cuda" if cuda_mode else "scale"
+    scale_flag = "hwupload,scale_cuda" if cuda_mode else "scale"
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
             f"-map {idx}:0",
-            f"-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}".replace(
+            f"-vf {scale_flag}={dto.rendition.get_resolution_dir_representation()}".replace(
                 "x", ":"
             ),
+            # add codec and preset
             f"-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}",
-            f"-minrate {bitrate}k -maxrate {bitrate}k -bufsize {5*bitrate}k",
+            # add bitrate flags
+            f"-b:v {br_str} -minrate {br_str} -maxrate {br_str} -bufsize {5*bitrate}k",
+            # add framerate filter
             f"-filter:v fps={dto.framerate}",
         ]
 

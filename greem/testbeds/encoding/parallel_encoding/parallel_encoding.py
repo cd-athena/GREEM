@@ -39,14 +39,13 @@ USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 SMALL_TESTBED: bool = True
 HOST_NAME: str = os.uname()[1]
 
-TEST_REPETITIONS: int = 1
+TEST_REPETITIONS: int = 3
 
 assert TEST_REPETITIONS > 0, "must be bigger than zero"
 
 GPU_COUNT: int = get_gpu_count()
 
-hardware_tracker = HardwareTracker(
-    cuda_enabled=USE_CUDA, measure_power_secs=0.5)
+hardware_tracker = HardwareTracker(cuda_enabled=USE_CUDA, measure_power_secs=0.5)
 
 
 # Change to encode in a different parallel mode
@@ -174,7 +173,7 @@ def reduced_multiple_video_one_representation_encoding(
                 for file_slice in input_files[idx_offset:window_idx]
             ]
 
-            for dto in encoding_dtos[:1]:
+            for dto in encoding_dtos:
                 output_directory: str = f"{RESULT_ROOT}/{dto.get_output_directory()}"
 
                 cmd = create_multi_video_ffmpeg_command(
@@ -281,6 +280,7 @@ def add_mvor_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) 
     result_df[["preset", "codec"]] = preset, codec
     result_df[["framerate", "segment_duration"]] = framerate, segment_duration
     result_df[["bitrate", "width", "height"]] = bitrate, width, height
+
     if USE_CUDA and GPU_COUNT > 0:
         video_list = [
             f'{abbreviate_video_name(video.split("/")[-1])}_gpu:{idx % GPU_COUNT}'
@@ -297,8 +297,7 @@ def add_mvor_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) 
             )
     else:
         result_df["video_list"] = ",".join(
-            [abbreviate_video_name(video.split("/")[-1])
-             for video in input_slice]
+            [abbreviate_video_name(video.split("/")[-1]) for video in input_slice]
         )
     result_df["num_videos"] = len(input_slice)
 
