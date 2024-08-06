@@ -23,7 +23,7 @@ class ParallelMode(Enum):
     MULTIPLE_VIDEOS_ONE_REPRESENTATION = 2
     MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS = 3
 
-    def get_abbr(self) -> str:
+    def get_abbreviation(self) -> str:
         """
         Get the abbreviation for the parallel processing mode.
 
