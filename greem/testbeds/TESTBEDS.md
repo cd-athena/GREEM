@@ -8,9 +8,14 @@ The `GREEM/greem/testbeds/encoding/` contains all testbeds that focus on encodin
 
 This folder contains different Python scripts to download publicly available video datasets such as:
 
-- `download_full_input_files.py`
 - `download_inter4k.py`
+  - Downloads the Inter4k dataset in the RAW HEVC video codec format.
+  - This dataset resides on the AAU FTP server and will be downloaded from there.
+  - The dataset size is `340GB` and consists of 1000 videos.
+  - The downloaded dataset is located at `GREEM/greem/testbeds/dataset/Inter4K/60fps/HEVC`.
+
 - `download_segments.py`
+- `download_full_input_files.py`
 
 Further, the subfolders contained in the `encoding` folder are explained:
 
