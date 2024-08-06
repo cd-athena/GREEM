@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from greem.video.video_info import VideoInfo
 from greem.utility.configuration_classes import (
-    Rendition,
+    Representation,
     EncodingConfig,
     EncodingConfigDTO,
 )
@@ -98,7 +98,7 @@ def remove_yuv(video: str):
 
 
 def get_representation_ffmpeg_flags(
-    renditions: list[Rendition],
+    renditions: list[Representation],
     preset: str,
     codec: str,
     fps: str = "",
@@ -151,7 +151,7 @@ def create_sequential_encoding_cmd(
 def create_dash_ffmpeg_cmd(
     input_file_path: str,
     output_dir: str,
-    renditions: list[Rendition],
+    renditions: list[Representation],
     preset: str,
     codec: str,
     segment_seconds: int = 4,
@@ -211,7 +211,7 @@ def create_dash_ffmpeg_cmd(
 def create_simple_multi_video_ffmpeg_command(
     video_input_file_paths: list[str],
     output_directories: list[str],
-    renditions: list[Rendition],
+    renditions: list[Representation],
     preset: str,
     codec: str,
     segment_seconds: int = 4,
@@ -307,12 +307,12 @@ def create_one_video_multiple_representation_command(
     framerate: int = encoding_config.framerate[0]
 
     # add encoding outputs
-    for r in encoding_config.renditions:
+    for r in encoding_config.representations:
         height, width, bitrate = r.height, r.width, r.bitrate
         encoding_codec = get_lib_codec(codec, cuda_mode)
         # create DTO for output dir
         dto = EncodingConfigDTO(
-            codec=codec, preset=preset, rendition=r, framerate=framerate
+            codec=codec, preset=preset, representation=r, framerate=framerate
         )
         sub_cmd: list[str] = [
             f"-s {width}x{height}",
@@ -390,7 +390,7 @@ def create_multi_video_ffmpeg_command(
     else:
         cmd.extend([f"-i {video}" for video in video_input_file_paths])
 
-    bitrate = int(dto.rendition.bitrate)
+    bitrate = int(dto.representation.bitrate)
     br_str = f"{bitrate}k"
 
     output_file_names: list[str] = [get_video_name(x) for x in video_input_file_paths]
@@ -399,7 +399,7 @@ def create_multi_video_ffmpeg_command(
     for idx in range(len(video_input_file_paths)):
         map_cmd: list[str] = [
             f"-map {idx}:0",
-            f"-vf {scale_flag}={dto.rendition.get_resolution_dir_representation()}".replace(
+            f"-vf {scale_flag}={dto.representation.get_resolution_dir_representation()}".replace(
                 "x", ":"
             ),
             # add codec and preset
@@ -467,7 +467,7 @@ def create_multi_video_ffmpeg_yuv_to_mp4_command(
 
     cmd.append("-t 5")
 
-    bitrate = int(dto.rendition.bitrate)
+    bitrate = int(dto.representation.bitrate)
 
     output_file_names: list[str] = [get_video_name(x) for x in video_input_file_paths]
 
@@ -476,7 +476,7 @@ def create_multi_video_ffmpeg_yuv_to_mp4_command(
         map_cmd: list[str] = [
             f"-map {idx}:0",
             # f'-filter_hw_device {idx}',
-            f"-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}".replace(
+            f"-vf hwupload,{scale_flag}={dto.representation.get_resolution_dir_representation()}".replace(
                 "x", ":"
             ),
             f"-c:v {get_lib_codec(dto.codec, cuda_mode)} -preset {dto.preset}",
@@ -532,7 +532,7 @@ def multi_video_ffmpeg_yuv_to_mp4_command_per_gpu(
 
     # cmd.append('-t 5')
 
-    bitrate = int(dto.rendition.bitrate)
+    bitrate = int(dto.representation.bitrate)
 
     output_file_names: list[str] = [get_video_name(x) for x in video_input_file_paths]
 
@@ -541,7 +541,7 @@ def multi_video_ffmpeg_yuv_to_mp4_command_per_gpu(
         map_cmd: list[str] = [
             f"-map {idx}:0",
             # f'-filter_hw_device {idx}',
-            f"-vf hwupload,{scale_flag}={dto.rendition.get_resolution_dir_representation()}".replace(
+            f"-vf hwupload,{scale_flag}={dto.representation.get_resolution_dir_representation()}".replace(
                 "x", ":"
             ),
             f"-c:v {get_lib_codec(dto.codec, True)} -preset {dto.preset}",
@@ -751,7 +751,7 @@ class CodecProcessing(BaseModel):
 
         cmd.extend(
             get_representation_ffmpeg_flags(
-                [dto.rendition], dto.preset, dto.codec, fps=fps_str
+                [dto.representation], dto.preset, dto.codec, fps=fps_str
             )
         )
 
@@ -777,7 +777,7 @@ class CodecProcessing(BaseModel):
         cmd: list[str] = [
             "-vcodec omx_enc_vvc",
             # '-vcodec vvc',
-            f"-b:v {dto.rendition.bitrate}",
+            f"-b:v {dto.representation.bitrate}",
             f"-period {dto.segment_duration}",  # GOP in seconds
             f"-preset {dto.preset}",
         ]

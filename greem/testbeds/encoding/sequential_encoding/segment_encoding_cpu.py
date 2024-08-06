@@ -141,7 +141,7 @@ def execute_encoding_benchmark():
                     create_ffmpeg_encoding_command(
                         f"{input_dir}/{video_name}",
                         output_dir,
-                        dto.rendition,
+                        dto.representation,
                         dto.preset,
                         duration,
                         dto.codec,
@@ -177,7 +177,7 @@ def execute_encoding_cmd(
         # executes the cmd with nvidia monitoring
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
 
-        rendition = encoding_dto.rendition
+        rendition = encoding_dto.representation
 
         result_df[["preset", "codec", "duration"]] = (
             encoding_dto.preset,

@@ -11,7 +11,7 @@ from greem.utility.ffmpeg import CUDA_ENC_FLAG, QUIET_FLAG, get_lib_codec
 from greem.utility.configuration_classes import (
     EncodingConfig,
     EncodingConfigDTO,
-    Rendition,
+    Representation,
 )
 
 from greem.utility.timing import IdleTimeEnergyMeasurement
@@ -84,7 +84,7 @@ def create_ffmpeg_encoding_command(
         f' -b:v {bitrate}k -minrate {bitrate}k -maxrate {bitrate}k -bufsize {3*int(bitrate)}k' \
         f' {result_file_path}'
         """
-    rendition = dto.rendition
+    rendition = dto.representation
     cmd: list[str] = ["ffmpeg -y"]
     if cuda_enabled:
         cmd.append(CUDA_ENC_FLAG)
@@ -174,7 +174,7 @@ def create_ffmpeg_scaling_command(
 
     cmd.extend(
         [
-            f"-vf scale={dto.rendition.get_resolution_dir_representation()}",
+            f"-vf scale={dto.representation.get_resolution_dir_representation()}",
             f"{output_dir}/scaling_output.mp4",
         ]
     )
@@ -190,7 +190,7 @@ def create_ffmpeg_scaling_command(
 
 
 def get_representation_ffmpeg_flags(
-    renditions: list[Rendition],
+    renditions: list[Representation],
     preset: str,
     codec: str,
     fps: str = "",
@@ -365,7 +365,7 @@ def execute_encoding_cmd(
         # executes the cmd with nvidia monitoring
         result_df = nvidia_top.get_resource_metric_as_dataframe(cmd)
 
-        rendition = encoding_dto.rendition
+        rendition = encoding_dto.representation
 
         result_df[["preset", "codec", "duration"]] = (
             encoding_dto.preset,

@@ -1,6 +1,6 @@
 from enum import Enum
 
-from greem.utility.configuration_classes import Rendition
+from greem.utility.configuration_classes import Representation
 
 
 def get_lib_codec(value: str, cuda_mode: bool = False) -> str:
@@ -75,7 +75,7 @@ class FFmpeg:
     @classmethod
     def _get_representation_ffmpeg_flags(
         cls,
-        renditions: list[Rendition],
+        renditions: list[Representation],
         preset: str,
         codec: str,
     ) -> list[str]:

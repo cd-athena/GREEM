@@ -118,16 +118,23 @@ def execute_encoding_benchmark():
                     --- config - ({en_idx + 1}/{len(encoding_configs)})
                     --- {dto} - ({dto_idx + 1}/{len(encoding_dtos)})
                     ''')
-                cmd = create_ffmpeg_encoding_command(
-                            f'{input_dir}/{video_name}',
-                            output_dir, 
-                            dto.rendition, dto.preset, duration, dto.codec,
-                            framerate=dto.framerate,
-                            use_dash=False,
-                            pretty_print=DRY_RUN,
-                            cuda_enabled=False,
-                            quiet_mode=CLI_PARSER.is_quiet_ffmpeg()
-                        ) if not DRY_RUN else 'sleep 0.1'
+                cmd = (
+                    create_ffmpeg_encoding_command(
+                        f"{input_dir}/{video_name}",
+                        output_dir,
+                        dto.representation,
+                        dto.preset,
+                        duration,
+                        dto.codec,
+                        framerate=dto.framerate,
+                        use_dash=False,
+                        pretty_print=DRY_RUN,
+                        cuda_enabled=False,
+                        quiet_mode=CLI_PARSER.is_quiet_ffmpeg(),
+                    )
+                    if not DRY_RUN
+                    else "sleep 0.1"
+                )
             
                 execute_encoding_cmd(cmd, dto, video_name)     
 

@@ -3,17 +3,18 @@ import json
 import pytest
 from greem.utility.configuration_classes import (
     Resolution,
-    Rendition,
+    Representation,
     EncodingConfigDTO,
-    EncodingConfig)
+    EncodingConfig,
+)
 
-BITRATE: str = 'bitrate'
+BITRATE: str = "bitrate"
 BITRATE_BASE_VALUE: int = 1000
 
-WIDTH: str = 'width'
+WIDTH: str = "width"
 WIDTH_BASE_VALUE: int = 200
 
-HEIGHT: str = 'height'
+HEIGHT: str = "height"
 HEIGHT_BASE_VALUE: int = 100
 
 
@@ -29,25 +30,30 @@ def get_base_resolution() -> Resolution:
     return Resolution(height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE)
 
 
-def get_base_rendition() -> Rendition:
-    return Rendition(height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE, bitrate=BITRATE_BASE_VALUE)
+def get_base_representation() -> Representation:
+    return Representation(
+        height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE, bitrate=BITRATE_BASE_VALUE
+    )
 
 
 def get_base_encoding_config_dto() -> EncodingConfigDTO:
-    return EncodingConfigDTO(codec='avc', preset='medium',
-                             rendition=get_base_rendition(), segment_duration=1, framerate=10)
+    return EncodingConfigDTO(
+        codec="avc",
+        preset="medium",
+        representation=get_base_representation(),
+        segment_duration=1,
+        framerate=10,
+    )
 
 
 def get_base_encoding_config() -> EncodingConfig:
     return EncodingConfig(
-        codecs=['avc', 'hevc'],
-        presets=['medium'],
-        renditions=[get_base_rendition(), Rendition.new()],
+        codecs=["avc", "hevc"],
+        presets=["medium"],
+        representations=[get_base_representation(), Representation.new()],
         segment_duration=[1, 2],
         framerate=[24, 30],
-        encode_all_videos=True,
-        videos_to_encode=[],
-        input_directory_path=['input_path'])
+    )
 
 
 # '''
@@ -73,8 +79,10 @@ def test_resolution_dir_repr_basic() -> None:
 
     assert resolution is not None
     assert isinstance(resolution.get_resolution_dir_representation(), str)
-    assert resolution.get_resolution_dir_representation(
-    ) == f'{WIDTH_BASE_VALUE}x{HEIGHT_BASE_VALUE}'
+    assert (
+        resolution.get_resolution_dir_representation()
+        == f"{WIDTH_BASE_VALUE}x{HEIGHT_BASE_VALUE}"
+    )
 
 
 def test_resolution_from_dict() -> None:
@@ -102,9 +110,9 @@ def test_resolution_to_dict() -> None:
     # test if dump json is containing the string values
     assert json_dump is not None
     assert HEIGHT in json_dump
-    assert f'{HEIGHT_BASE_VALUE}' in json_dump
+    assert f"{HEIGHT_BASE_VALUE}" in json_dump
     assert WIDTH in json_dump
-    assert f'{WIDTH_BASE_VALUE}' in json_dump
+    assert f"{WIDTH_BASE_VALUE}" in json_dump
 
     # test that converting to dictionary works
     json_dict: dict = json.loads(json_dump)
@@ -118,45 +126,47 @@ def test_resolution_to_dict() -> None:
     assert json_dict[WIDTH] == 200
 
 
-def test_rendition_basic() -> None:
-    rendition = get_base_rendition()
+def test_representation_basic() -> None:
+    representation = get_base_representation()
 
-    assert rendition is not None
-    assert isinstance(rendition.height, int)
-    assert rendition.height == HEIGHT_BASE_VALUE
-    assert isinstance(rendition.width, int)
-    assert rendition.width == WIDTH_BASE_VALUE
-
-
-def test_rendition_dir_repr_basic() -> None:
-    rendition = get_base_rendition()
-
-    assert rendition is not None
-    assert isinstance(rendition.get_rendition_dir_representation(), str)
-    assert rendition.get_rendition_dir_representation(
-    ) == f'{BITRATE_BASE_VALUE}k_{WIDTH_BASE_VALUE}x{HEIGHT_BASE_VALUE}'
-
-    cls_rendition = Rendition.new()
-    assert cls_rendition is not None
-    assert isinstance(cls_rendition.get_rendition_dir_representation(), str)
-    assert cls_rendition.get_rendition_dir_representation() == '0k_0x0'
+    assert representation is not None
+    assert isinstance(representation.height, int)
+    assert representation.height == HEIGHT_BASE_VALUE
+    assert isinstance(representation.width, int)
+    assert representation.width == WIDTH_BASE_VALUE
 
 
-def test_rendition_from_dict() -> None:
+def test_representation_dir_repr_basic() -> None:
+    representation = get_base_representation()
+
+    assert representation is not None
+    assert isinstance(representation.get_representation_dir_string(), str)
+    assert (
+        representation.get_representation_dir_string()
+        == f"{BITRATE_BASE_VALUE}k_{WIDTH_BASE_VALUE}x{HEIGHT_BASE_VALUE}"
+    )
+
+    cls_representation = Representation.new()
+    assert cls_representation is not None
+    assert isinstance(cls_representation.get_representation_dir_string(), str)
+    assert cls_representation.get_representation_dir_string() == "0k_0x0"
+
+
+def test_representation_from_dict() -> None:
     test_dict = {
         BITRATE: 1000,
         WIDTH: 200,
         HEIGHT: 100,
     }
-    rendition = Rendition(**test_dict)
+    representation = Representation(**test_dict)
 
-    assert rendition is not None
-    assert isinstance(rendition.height, int)
-    assert rendition.height == HEIGHT_BASE_VALUE
-    assert isinstance(rendition.width, int)
-    assert rendition.width == WIDTH_BASE_VALUE
-    assert isinstance(rendition.bitrate, int)
-    assert rendition.bitrate == BITRATE_BASE_VALUE
+    assert representation is not None
+    assert isinstance(representation.height, int)
+    assert representation.height == HEIGHT_BASE_VALUE
+    assert isinstance(representation.width, int)
+    assert representation.width == WIDTH_BASE_VALUE
+    assert isinstance(representation.bitrate, int)
+    assert representation.bitrate == BITRATE_BASE_VALUE
 
 
 def test_encoding_config_dto_basic() -> None:
@@ -169,19 +179,19 @@ def test_encoding_config_dto_basic() -> None:
     assert isinstance(dto.segment_duration, int)
     assert isinstance(dto.framerate, int)
 
-    assert dto.codec == 'avc'
-    assert dto.preset == 'medium'
+    assert dto.codec == "avc"
+    assert dto.preset == "medium"
     assert dto.segment_duration == 1
     assert dto.framerate == 10
 
 
 def test_encoding_config_dto_from_dict() -> None:
     data = {
-        'codec': 'avc',
-        'preset': 'medium',
-        'rendition': get_base_rendition(),
-        'segment_duration': 1,
-        'framerate': 10
+        "codec": "avc",
+        "preset": "medium",
+        "representation": get_base_representation(),
+        "segment_duration": 1,
+        "framerate": 10,
     }
     dto = EncodingConfigDTO(**data)
 
@@ -192,8 +202,8 @@ def test_encoding_config_dto_from_dict() -> None:
     assert isinstance(dto.segment_duration, int)
     assert isinstance(dto.framerate, int)
 
-    assert dto.codec == 'avc'
-    assert dto.preset == 'medium'
+    assert dto.codec == "avc"
+    assert dto.preset == "medium"
     assert dto.segment_duration == 1
     assert dto.framerate == 10
 
@@ -201,8 +211,8 @@ def test_encoding_config_dto_from_dict() -> None:
 def test_encoding_config_dto_get_output_directory() -> None:
     dto = get_base_encoding_config_dto()
 
-    video_name: str = 'AncientThought'
-    extension: str = '.mp4'  # should be removed by function
+    video_name: str = "AncientThought"
+    extension: str = ".mp4"  # should be removed by function
 
     output_dir_path = dto.get_output_directory()
 
@@ -223,29 +233,29 @@ def test_encoding_config_base() -> None:
 
     assert len(config.codecs) > 0
     assert len(config.presets) > 0
-    assert len(config.renditions) > 0
+    assert len(config.representations) > 0
 
 
 def test_encoding_config_from_file() -> None:
-
     # this config file should exist
     config = EncodingConfig.from_file(
-        'greem/tests/utility_tests/test_datasets/test_config_file.yaml')
+        "greem/tests/utility_tests/test_datasets/test_config_file.yaml"
+    )
 
     assert config is not None
     assert isinstance(config, EncodingConfig)
 
     assert len(config.codecs) == 2
     assert len(config.presets) == 10
-    assert len(config.renditions) == 6
+    assert len(config.representations) == 6
     assert len(config.framerate) == 2  # type: ignore
 
 
 def test_encoding_config_get_encoding_dtos() -> None:
-
     # this config file should exist
     config = EncodingConfig.from_file(
-        'greem/tests/utility_tests/test_datasets/test_config_file.yaml')
+        "greem/tests/utility_tests/test_datasets/test_config_file.yaml"
+    )
 
     encoding_dtos: list[EncodingConfigDTO] = config.get_encoding_dtos()
 
@@ -264,15 +274,25 @@ def test_encoding_config_get_encoding_dtos() -> None:
 
     for dto in encoding_dtos:
         assert dto.is_dash is False
-        assert dto.codec in ['h264', 'h265']
-        assert dto.preset in ['ultrafast',
-                              'superfast', 'veryfast', 'faster', 'fast',
-                              'medium', 'slow', 'slower', 'veryslow', 'placebo']
+        assert dto.codec in ["h264", "h265"]
+        assert dto.preset in [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow",
+            "placebo",
+        ]
         assert dto.framerate in [24, 30]
 
     # this config file should exist
     config = EncodingConfig.from_file(
-        'greem/tests/utility_tests/test_datasets/test_config_file.yaml')
+        "greem/tests/utility_tests/test_datasets/test_config_file.yaml"
+    )
     config.is_dash = True
 
     encoding_dtos: list[EncodingConfigDTO] = config.get_encoding_dtos()
@@ -286,17 +306,25 @@ def test_encoding_config_get_encoding_dtos() -> None:
 
     for dto in encoding_dtos:
         assert dto.is_dash is True
-        assert dto.codec in ['h264', 'h265']
-        assert dto.preset in ['ultrafast',
-                              'superfast', 'veryfast', 'faster', 'fast',
-                              'medium', 'slow', 'slower', 'veryslow', 'placebo']
+        assert dto.codec in ["h264", "h265"]
+        assert dto.preset in [
+            "ultrafast",
+            "superfast",
+            "veryfast",
+            "faster",
+            "fast",
+            "medium",
+            "slow",
+            "slower",
+            "veryslow",
+            "placebo",
+        ]
         assert dto.framerate in [24, 30]
 
 
 def test_encoding_config_from_file_raises_error() -> None:
-
     with pytest.raises(FileNotFoundError):
-        EncodingConfig.from_file('your_file_is_in_another_castle')
+        EncodingConfig.from_file("your_file_is_in_another_castle")
 
 
 def test_encoding_config_get_all_result_directories() -> None:
@@ -308,10 +336,10 @@ def test_encoding_config_get_all_result_directories() -> None:
     assert len(result_directories) == 8
     for result in result_directories:
         assert len(result) > 0
-        assert 'avc' in result or 'hevc' in result
-        assert 'medium' in result
-        assert 'fps' in result
-        assert '24fps' in result or '30fps' in result
+        assert "avc" in result or "hevc" in result
+        assert "medium" in result
+        assert "fps" in result
+        assert "24fps" in result or "30fps" in result
 
     config = get_base_encoding_config()
     config.is_dash = True
@@ -320,7 +348,7 @@ def test_encoding_config_get_all_result_directories() -> None:
     assert len(result_directories) == 16
     for result in result_directories:
         assert len(result) > 0
-        assert 'avc' in result or 'hevc' in result
-        assert 'medium' in result
-        assert 'fps' in result
-        assert '24fps' in result or '30fps' in result
+        assert "avc" in result or "hevc" in result
+        assert "medium" in result
+        assert "fps" in result
+        assert "24fps" in result or "30fps" in result

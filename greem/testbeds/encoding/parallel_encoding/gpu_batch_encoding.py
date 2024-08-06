@@ -4,7 +4,7 @@ from pathlib import Path
 from greem.utility.ffmpeg import create_dash_ffmpeg_cmd
 from greem.utility.configuration_classes import (
     EncodingConfig,
-    Rendition,
+    Representation,
     EncodingVariant,
 )
 from greem.utility.timing import (
@@ -113,7 +113,7 @@ def encode_batch(
                     cmd = create_dash_ffmpeg_cmd(
                         input_file_path,
                         output_dir,
-                        encoding_config.renditions,
+                        encoding_config.representations,
                         preset,
                         codec,
                         segment_duration,
@@ -131,7 +131,7 @@ def encode_batch(
                         video_name,
                         codec,
                         preset,
-                        Rendition.new(),
+                        Representation.new(),
                         segment_duration,
                     )
                     timing_metadata[len(timing_metadata)] = metadata.to_dict()

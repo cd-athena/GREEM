@@ -1,25 +1,7 @@
 import os
 from pathlib import Path
-from subprocess import call
-import time
-from multiprocessing import cpu_count
-from multiprocessing.pool import ThreadPool
 
-
-def download_url(args) -> tuple[str, float]:
-    start_time = time.time()
-    url, output = args[0], args[1]
-    wget_call = ["wget", url, "-P", output]
-    call(wget_call)
-    return (url, time.time() - start_time)
-
-
-def download_parallel(args) -> None:
-    cpus = cpu_count()
-    results = ThreadPool(cpus - 1).imap_unordered(download_url, args)
-
-    for result in results:
-        print(result)
+from utility import download_parallel
 
 
 if __name__ == "__main__":
