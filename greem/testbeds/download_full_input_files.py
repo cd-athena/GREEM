@@ -18,7 +18,7 @@ all_video_urls: dict[str, str] = {
 }
 
 
-def convert_webm_to_mp4():
+def convert_webm_to_mp4() -> None:
     video_file_paths = [video for video in os.listdir() if video.endswith("webm")]
 
     for video in video_file_paths:
@@ -28,7 +28,7 @@ def convert_webm_to_mp4():
         os.system(ffmpeg_call)
 
 
-def rename_videos(dir_path: str = "."):
+def rename_videos(dir_path: str = ".") -> None:
     file_list: list[str] = os.listdir(dir_path)
     file_list = [file for file in file_list if file.endswith("mp4")]
     output_names: list[str] = [
