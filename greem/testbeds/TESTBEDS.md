@@ -55,5 +55,6 @@ While the encoding testbed is running, monitoring will wrap the encoding process
 
 For decoding the `segment_decoding.py` testbed is available.
 In order for the testbed to work, encoded videos are required to be available.
+The decoding testbed loads the dataset and decodes each video sequentially.
 
 While the decoding testbed is running, monitoring will wrap the encoding process to keep track of the system.
