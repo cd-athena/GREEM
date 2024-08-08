@@ -1,4 +1,4 @@
-from utility import download_parallel
+from greem.testbeds.download_utility import download_parallel
 
 all_segments = [
     ("AncientThought_s0{}", 0, 36),

@@ -1,6 +1,6 @@
 import os
 
-from utility import download_parallel
+from greem.testbeds.download_utility import download_parallel
 
 # Source: https://www.cablelabs.com/4k
 
@@ -35,10 +35,10 @@ def rename_videos(dir_path: str = ".") -> None:
         f"{file.split(' HEVC')[0].replace(' ', '_')}.mp4" for file in file_list
     ]
 
-    for input, output in zip(file_list, output_names):
-        input = f"{dir_path}{input}"
-        output = f"{dir_path}{output}"
-        os.rename(input, output)
+    for i, o in zip(file_list, output_names):
+        i = f"{dir_path}{i}"
+        o = f"{dir_path}{o}"
+        os.rename(i, o)
 
 
 if __name__ == "__main__":

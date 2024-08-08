@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 
-from utility import download_parallel
+from greem.testbeds.download_utility import download_parallel
 
 
 if __name__ == "__main__":
