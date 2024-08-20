@@ -39,14 +39,12 @@ USE_CUDA: bool = CLI_PARSER.is_cuda_enabled()
 SMALL_TESTBED: bool = True
 HOST_NAME: str = os.uname()[1]
 
-TEST_REPETITIONS: int = 1
-
+TEST_REPETITIONS: int = 3
 assert TEST_REPETITIONS > 0, "must be bigger than zero"
 
-GPU_COUNT: int = get_gpu_count(USE_CUDA)
+GPU_COUNT: int = get_gpu_count()
 
-hardware_tracker = HardwareTracker(
-    cuda_enabled=USE_CUDA, measure_power_secs=0.5)
+hardware_tracker = HardwareTracker(cuda_enabled=USE_CUDA, measure_power_secs=0.5)
 
 
 # Change to encode in a different parallel mode
@@ -74,7 +72,7 @@ def one_video_multiple_representations_encoding(
     for codec in encoding_config.codecs:
         for preset in encoding_config.presets:
             for framerate in encoding_config.framerate:
-                print(codec, preset, framerate, encoding_config.renditions)
+                print(codec, preset, framerate, encoding_config.representations)
                 for input_file in input_files:
                     input_file_dir = f"{input_dir}/{input_file}"
                     # TODO
@@ -86,9 +84,16 @@ def one_video_multiple_representations_encoding(
                         pretty_print=False,
                     )
 
-                    print(cmd)
-                    print()
-                print()
+                    if not DRY_RUN:
+                        hardware_tracker.monitor_process(cmd)
+                        # TODO add ovmr monitoring results
+                        # _add_ovmr_monitoring_results(encoding_config, inpu)
+                        hardware_tracker.clear()
+
+                    else:
+                        print(cmd)
+
+            # store_monitoring_results(reset_monitoring_results=True, window_size=winsi)
 
         # for idx_offset in range(0, len(encoding_dtos), step_size):
         #     window_idx: int = window_size + idx_offset
@@ -103,6 +108,46 @@ def multiple_video_one_representation_encoding(
     input_files: list[str],
     input_dir: str = INPUT_FILE_DIR,
 ) -> None:
+    """
+    Encodes multiple video files in batches, applying a single representation
+    from the provided encoding configuration. The encoding process is performed
+    using the FFmpeg command with support for GPU acceleration.
+
+    Args:
+        encoding_config (EncodingConfig): An object containing the configuration
+            details for encoding, including the target formats, resolutions, and
+            other relevant parameters.
+        window_size_start (int): The initial window size (batch size) for processing
+            the video files. It determines how many files are processed in each batch.
+        window_size_end (int): The final window size (batch size) for processing the
+            video files. The function will iterate from `window_size_start` to
+            `window_size_end`, increasing the batch size progressively.
+        input_files (list[str]): A list of video file names (relative paths) to be
+            processed, located in `input_dir`.
+        input_dir (str, optional): The directory where the input video files are
+            located. Defaults to the globally defined `INPUT_FILE_DIR`.
+
+    Returns:
+        None: This function does not return any value. It processes the video files
+        and stores the encoded outputs in the specified directories.
+
+    Raises:
+        AssertionError: If `window_size_start` is less than or equal to 0, or if
+        `window_size_start` is not less than `window_size_end`.
+
+    Notes:
+        - The function calculates the batch size for each iteration by multiplying
+          the window size by the number of available GPUs. If CUDA is not enabled
+          or the GPU count is zero, it defaults to a single GPU.
+        - For each batch of video files, the function constructs an FFmpeg command
+          to perform the encoding, with optional support for CUDA-based acceleration.
+        - If `DRY_RUN` is enabled, the function will print the FFmpeg commands
+          instead of executing them.
+        - Hardware resource monitoring is integrated during the encoding process,
+          and results are stored for further analysis.
+        - The function handles batches of files by slicing `input_files` according
+          to the calculated window size and processes each batch sequentially.
+    """
     assert window_size_start > 0
     assert window_size_start < window_size_end
 
@@ -137,7 +182,7 @@ def multiple_video_one_representation_encoding(
 
                 if not DRY_RUN:
                     hardware_tracker.monitor_process(cmd)
-                    add_mvor_monitoring_results(dto, input_slice)
+                    _add_mvor_monitoring_results(dto, input_slice)
                     hardware_tracker.clear()
 
                 else:
@@ -174,7 +219,7 @@ def reduced_multiple_video_one_representation_encoding(
                 for file_slice in input_files[idx_offset:window_idx]
             ]
 
-            for dto in encoding_dtos[:1]:
+            for dto in encoding_dtos:
                 output_directory: str = f"{RESULT_ROOT}/{dto.get_output_directory()}"
 
                 cmd = create_multi_video_ffmpeg_command(
@@ -189,7 +234,7 @@ def reduced_multiple_video_one_representation_encoding(
 
                 if not DRY_RUN:
                     hardware_tracker.monitor_process(cmd)
-                    add_mvor_monitoring_results(dto, input_slice)
+                    _add_mvor_monitoring_results(dto, input_slice)
 
                 else:
                     print(cmd)
@@ -211,10 +256,10 @@ def store_monitoring_results(
     if len(monitoring_results) > 0:
         current_time = datetime.now().strftime("%Y-%m-%d_%H-%M")
 
-        result_path = f'{RESULT_ROOT}/' + "_".join(
+        result_path = f"{RESULT_ROOT}/" + "_".join(
             [
                 "encoding_results",
-                parallel_mode.get_abbr(),
+                parallel_mode.get_abbreviation(),
                 str(window_size),
                 "vids",
                 current_time,
@@ -273,15 +318,22 @@ def execute_encoding_benchmark(encoding_configuration: list[EncodingConfig]) -> 
     store_monitoring_results()
 
 
-def add_mvor_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) -> None:
-    preset, codec, rendition = dto.preset, dto.codec, dto.rendition
-    bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
-    framerate, segment_duration = dto.framerate, dto.segment_duration
+def _add_mvor_monitoring_results(
+    dto: EncodingConfigDTO, input_slice: list[str]
+) -> None:
     result_df = hardware_tracker.to_dataframe()
+    preset, codec, rendition = dto.preset, dto.codec, dto.representation
     result_df[["preset", "codec"]] = preset, codec
+
+    framerate, segment_duration = dto.framerate, dto.segment_duration
     result_df[["framerate", "segment_duration"]] = framerate, segment_duration
+
+    bitrate, width, height = rendition.bitrate, rendition.width, rendition.height
     result_df[["bitrate", "width", "height"]] = bitrate, width, height
+
     if USE_CUDA and GPU_COUNT > 0:
+        result_df["use_gpu"] = True
+        result_df["gpu_count"] = GPU_COUNT
         video_list = [
             f'{abbreviate_video_name(video.split("/")[-1])}_gpu:{idx % GPU_COUNT}'
             for idx, video in enumerate(input_slice)
@@ -297,10 +349,58 @@ def add_mvor_monitoring_results(dto: EncodingConfigDTO, input_slice: list[str]) 
             )
     else:
         result_df["video_list"] = ",".join(
-            [abbreviate_video_name(video.split("/")[-1])
-             for video in input_slice]
+            [abbreviate_video_name(video.split("/")[-1]) for video in input_slice]
         )
     result_df["num_videos"] = len(input_slice)
+
+    monitoring_results.append(result_df)
+    hardware_tracker.clear()
+
+
+def _add_ovmr_monitoring_results(
+    enc_config: EncodingConfig, input_slice: list[str]
+) -> None:
+    assert enc_config is not None, "EncodingConfig is None"
+    assert (
+        len(enc_config.codecs) > 0
+    ), "EncodingConfig does not contain any video codecs"
+    assert len(input_slice), "list of input slices is empty"
+
+    # base_dto: EncodingConfigDTO =
+    result_df = hardware_tracker.to_dataframe()
+
+    result_df[["codec", "preset"]] = enc_config.codecs[0], enc_config.presets[0]
+
+    framerate, segment_duration = (
+        enc_config.framerate[0],
+        enc_config.segment_duration[0],
+    )
+    result_df[["framerate", "segment_duration"]] = framerate, segment_duration
+
+    representations: list[str] = [
+        r.get_representation_dir_string() for r in enc_config.representations
+    ]
+
+    result_df["representations"] = ",".join(representations)
+
+    if USE_CUDA and GPU_COUNT > 0:
+        result_df["use_gpu"] = True
+        result_df["gpu_count"] = GPU_COUNT
+        video_list = [
+            f'{abbreviate_video_name(video.split("/")[-1])}_gpu:{idx % GPU_COUNT}'
+            for idx, video in enumerate(input_slice)
+        ]
+        for idx in range(len(video_list)):
+            idx_mod = idx % GPU_COUNT
+            result_df[f"video_list_gpu:{idx_mod}"] = ",".join(
+                [
+                    video.removesuffix(f"_gpu:{idx_mod}")
+                    for video in video_list
+                    if f"gpu:{idx_mod}" in video
+                ]
+            )
+    else:
+        result_df["use_gpu"] = False
 
     monitoring_results.append(result_df)
     hardware_tracker.clear()

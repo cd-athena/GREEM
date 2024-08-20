@@ -14,7 +14,7 @@ presets:
   - veryslow
   - placebo
 
-renditions:
+representations:
   - bitrate: 145
     height: 360
     width: 640

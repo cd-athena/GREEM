@@ -5,24 +5,24 @@ from dataclasses import dataclass, field, asdict
 from types import NoneType
 from dacite import from_dict
 
-DISABLED_KW: str = 'Disabled'
-NA_KW: str = 'N/A'
+DISABLED_KW: str = "Disabled"
+NA_KW: str = "N/A"
 
 DEFAULT_UPDATE_QUERY_KEY_LIST: list[str] = [
-    'uuid',
-    'fan.speed',
-    'memory.free',
-    'memory.used',
-    'utilization.gpu',
-    'utilization.memory',
-    'temperature.gpu',
-    'temperature.memory',
-    'power.draw',
-    'clocks.current.graphics',
-    'clocks.current.memory'
+    "uuid",
+    "fan.speed",
+    "memory.free",
+    "memory.used",
+    "utilization.gpu",
+    "utilization.memory",
+    "temperature.gpu",
+    "temperature.memory",
+    "power.draw",
+    "clocks.current.graphics",
+    "clocks.current.memory",
 ]
 
-DEFAULT_UPDATE_QUERY_AS_STRING: str = ', '.join(DEFAULT_UPDATE_QUERY_KEY_LIST)
+DEFAULT_UPDATE_QUERY_AS_STRING: str = ", ".join(DEFAULT_UPDATE_QUERY_KEY_LIST)
 
 
 @dataclass
@@ -49,7 +49,7 @@ class GpuUtilisation:
     memory_util: float = field(default=0)
     encoder_util: float = field(default=0)
     decoder_util: float = field(default=0)
-    unit: str = field(default='%')
+    unit: str = field(default="%")
 
 
 @dataclass
@@ -57,7 +57,7 @@ class GpuMemoryUsage:
     total: float = 0
     used: float = 0
     free: float = 0
-    unit: str = 'MiB'
+    unit: str = "MiB"
 
 
 @dataclass
@@ -65,7 +65,7 @@ class GpuTemperature:
     gpu_temp: float = 0
     gpu_temp_max_threshold: float = 0
     gpu_temp_slow_threshold: float = 0
-    unit: str = field(default='C')
+    unit: str = field(default="C")
 
 
 @dataclass
@@ -73,7 +73,7 @@ class GpuClocks:
     graphics_clock: int = 0
     sm_clock: int = 0
     mem_clock: int = 0
-    unit: 'str' = field(default='MHz')
+    unit: "str" = field(default="MHz")
 
 
 @dataclass
@@ -85,8 +85,8 @@ class GPUPowerReadings:
     enforced_power_limit: float
     min_power_limit: float
     max_power_limit: float
-    power_state: str = field(default='P8')
-    unit: str = field(default='W')
+    power_state: str = field(default="P8")
+    unit: str = field(default="W")
 
 
 @dataclass
@@ -159,49 +159,48 @@ class NvidiaMetadataHandler:
     )
 
     @classmethod
-    def from_smi(cls: Type['NvidiaMetadataHandler']) -> "NvidiaMetadataHandler":
-
+    def from_smi(cls: Type["NvidiaMetadataHandler"]) -> "NvidiaMetadataHandler":
         nvidia_smi = cls.nvidia_smi_instance
         data = nvidia_smi.DeviceQuery()
 
         metadata_handler: NvidiaMetadataHandler = from_dict(
-            data_class=NvidiaMetadataHandler, data=data)
+            data_class=NvidiaMetadataHandler, data=data
+        )
         return metadata_handler
 
     def get_update_metadata(
-            self,
-            update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING
+        self, update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING
     ) -> dict | pd.DataFrame:
         if isinstance(update_query, list):
-            query: str = ', '.join(update_query)
+            query: str = ", ".join(update_query)
         elif isinstance(update_query, str):
             query: str = update_query
         else:
-            raise Exception('wrong query data type in parameter')
+            raise Exception("wrong query data type in parameter")
 
         query_dict: dict = NvidiaMetadataHandler.nvidia_smi_instance.DeviceQuery(
             query)
 
-        for query_result in query_dict['gpu']:
-            uuid: str = query_result['uuid']
+        for query_result in query_dict["gpu"]:
+            uuid: str = query_result["uuid"]
             gpu_metadata = self.get_gpu_per_uuid(uuid)
             if gpu_metadata is None:
-                raise Exception(f'GPU not found with UUID {uuid}')
+                raise Exception(f"GPU not found with UUID {uuid}")
 
             gpu_metadata.__dict__.update(query_result)
 
         return query_dict
 
     def get_update_as_pandas_df(
-            self,
-            update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING,
+        self,
+        update_query: list[str] | str = DEFAULT_UPDATE_QUERY_AS_STRING,
     ) -> pd.DataFrame:
         update_query_dict = self.get_update_metadata(update_query)
         df_entries: list[pd.DataFrame] = list()
-        for gpu in update_query_dict['gpu']:
+        for gpu in update_query_dict["gpu"]:
             df = pd.json_normalize(gpu)
-            df.index = pd.Series([pd.Timestamp('now')] * len(df))
-            df.index.name = 'date_time'
+            df.index = pd.Series([pd.Timestamp("now")] * len(df))
+            df.index.name = "date_time"
             df_entries.append(df)
         return pd.concat(df_entries)
 
@@ -242,7 +241,7 @@ def has_nvidia_gpu():
         nvmlInit()
         return True
     except Exception as e:
-        print('NVIDIA GPU not found', e)
+        print("NVIDIA GPU not found", e)
         return False
 
 
@@ -253,17 +252,15 @@ class NvidiaGpuUtils:
     gpu_count: int = field(init=False)
     has_nvidia_gpu: bool = field(init=False)
     nvidia_metadata: NvidiaMetadataHandler = field(init=False)
-    
 
     def __post_init__(self):
         self.has_nvidia_gpu = has_nvidia_gpu()
         if self.has_nvidia_gpu:
             self.gpu_count = self.get_device_count()
             self.nvidia_metadata = NvidiaMetadataHandler.from_smi()
-            
+
         else:
             self.gpu_count = 0
-            
 
     @staticmethod
     def get_device_count():

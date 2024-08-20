@@ -3,9 +3,10 @@ import json
 import pytest
 from greem.utility.configuration_classes import (
     Resolution,
-    Rendition,
+    Representation,
     EncodingConfigDTO,
-    EncodingConfig)
+    EncodingConfig,
+)
 
 from greem.utility.ffmpeg import CodecProcessing, get_lib_codec
 
@@ -31,25 +32,33 @@ def get_base_resolution() -> Resolution:
     return Resolution(height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE)
 
 
-def get_base_rendition() -> Rendition:
-    return Rendition(height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE, bitrate=BITRATE_BASE_VALUE)
+def get_base_rendition() -> Representation:
+    return Representation(
+        height=HEIGHT_BASE_VALUE, width=WIDTH_BASE_VALUE, bitrate=BITRATE_BASE_VALUE
+    )
 
 
 def get_base_encoding_config_dto() -> EncodingConfigDTO:
-    return EncodingConfigDTO(codec='avc', preset='medium',
-                             rendition=get_base_rendition(), segment_duration=1, framerate=10)
+    return EncodingConfigDTO(
+        codec="avc",
+        preset="medium",
+        representation=get_base_rendition(),
+        segment_duration=1,
+        framerate=10,
+    )
 
 
 def get_base_encoding_config() -> EncodingConfig:
     return EncodingConfig(
-        codecs=['avc', 'hevc'],
-        presets=['medium'],
-        renditions=[get_base_rendition(), Rendition.new()],
+        codecs=["avc", "hevc"],
+        presets=["medium"],
+        representations=[get_base_rendition(), Representation.new()],
         segment_duration=[1, 2],
         framerate=[24, 30],
         encode_all_videos=True,
         videos_to_encode=[],
-        input_directory_path=['input_path'])
+        input_directory_path=["input_path"],
+    )
 
 
 # '''
@@ -180,6 +189,6 @@ def test_codec_processing_create_sequential_cmd():
     assert f'{output_dir_path}/{dto.get_output_directory()}' in sequential_cmd
 
     # rendition values should be included
-    assert str(dto.rendition.bitrate) in sequential_cmd
-    assert str(dto.rendition.height) in sequential_cmd
-    assert str(dto.rendition.width) in sequential_cmd
+    assert str(dto.representation.bitrate) in sequential_cmd
+    assert str(dto.representation.height) in sequential_cmd
+    assert str(dto.representation.width) in sequential_cmd

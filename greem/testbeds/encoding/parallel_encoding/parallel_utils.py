@@ -23,7 +23,7 @@ class ParallelMode(Enum):
     MULTIPLE_VIDEOS_ONE_REPRESENTATION = 2
     MULTIPLE_VIDEOS_MULTIPLE_REPRESENTATIONS = 3
 
-    def get_abbr(self) -> str:
+    def get_abbreviation(self) -> str:
         """
         Get the abbreviation for the parallel processing mode.
 
@@ -57,24 +57,12 @@ def get_gpu_count() -> int:
     """
     try:
         output = subprocess.check_output(["nvidia-smi", "--list-gpus"])
-        gpu_count = len(output.decode('utf-8').strip().split('\n'))
+        gpu_count = len(output.decode("utf-8").strip().split("\n"))
     except subprocess.CalledProcessError:
         gpu_count = 0
     except FileNotFoundError:
         gpu_count = 0
     return gpu_count
-
-# num_gpus = get_gpu_count()
-
-# def get_gpu_count(use_cuda: bool) -> int:
-#     gpu_count: int = 0
-
-#     if use_cuda:
-#         from greem.utility.gpu_utils import NvidiaGpuUtils
-
-#         gpu_count = NvidiaGpuUtils().gpu_count
-
-#     return gpu_count
 
 
 def prepare_data_directories(
@@ -114,7 +102,7 @@ def video_cleanup(videos: list[str]) -> None:
     """
     Deletes a list of video files from the filesystem, ignoring missing files.
 
-    This function takes a list of file paths (as strings) and removes each corresponding file from the filesystem. 
+    This function takes a list of file paths (as strings) and removes each corresponding file from the filesystem.
     It will ignore files that do not exist without raising an exception.
 
     Args:
@@ -127,7 +115,7 @@ def video_cleanup(videos: list[str]) -> None:
         Path(video).unlink(missing_ok=True)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
+    print("Test if get_gpu_count is properly working")
     num_gpu = get_gpu_count()
-
-    print(f'Available NVIDIA GPUs: {num_gpu}')
+    print(f"Available NVIDIA GPUs: {num_gpu}")

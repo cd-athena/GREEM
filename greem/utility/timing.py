@@ -6,7 +6,7 @@ from codecarbon import OfflineEmissionsTracker
 
 import time
 
-from greem.utility.configuration_classes import Rendition
+from greem.utility.configuration_classes import Representation
 
 
 class IdleTimeEnergyMeasurement():
@@ -45,7 +45,7 @@ class TimingMetadata():
     video_name: str
     codec: str
     preset: str
-    rendition: Rendition
+    rendition: Representation
     segment_duration: int
 
     def to_dict(self) -> dict:

@@ -1,6 +1,7 @@
 import os
 from dataclasses import dataclass, field
-from greem.utility.configuration_classes import Rendition
+from greem.utility.configuration_classes import Representation
+
 
 @dataclass
 class StreamingContainer:
@@ -12,7 +13,7 @@ class StreamingContainer:
     audio_stream_channel: str = field(default='stream1')
     num_of_streams: int = field(init=False, default=0)
     output_file_name: str = field(default='output')
-    rendition: Rendition = field(init=False)
+    rendition: Representation = field(init=False)
     encoding_preset: str = field(init=False)
     segment_length: str = field(init=False)
     video_name: str = field(init=False)
@@ -52,7 +53,7 @@ class StreamingContainer:
         metadata: list[str] = self.directory_path.split('/')
         
         rendition = metadata.pop()
-        self.rendition = Rendition.from_dir_representation(rendition)
+        self.rendition = Representation.from_dir_representation(rendition)
         self.encoding_preset = metadata.pop()
         self.segment_length = metadata.pop()
         self.video_name = metadata.pop()
